@@ -1,0 +1,9 @@
+/build/
+/engine/script.tab.hpp
+/engine/script.tab.cpp
+/engine/script.lex.cpp
+/engine/script.lex.hpp
+Interpreter.dSYM/
+Interpreter
+test/test1.sc
+test/builtin.sc
