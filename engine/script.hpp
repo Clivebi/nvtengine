@@ -12,17 +12,19 @@
 
 namespace Interpreter {
 namespace Instructions {
-typedef unsigned char Type;
+typedef unsigned short Type;
 const Type kNop = 0;
 #define CODE_BASE (0)
 const Type kConst = CODE_BASE + 1;
 const Type kNewVar = CODE_BASE + 2;
 const Type kReadVar = CODE_BASE + 3;
+const Type kObjectIndexer = CODE_BASE +4;
 //const Type kWriteVar = CODE_BASE + 4;
 const Type kNewFunction = CODE_BASE + 5;
 const Type kCallFunction = CODE_BASE + 6;
-const Type kReadAt = CODE_BASE + 7;
-const Type kWriteAt = CODE_BASE + 8;
+//const Type kReadAt = CODE_BASE + 7;
+const Type kPathReference = CODE_BASE+8;
+//const Type kWriteAt = CODE_BASE + 8;
 const Type kGroup = CODE_BASE + 9;
 const Type kContitionExpression = CODE_BASE + 10;
 const Type kIFStatement = CODE_BASE + 11;
@@ -35,44 +37,68 @@ const Type kCreateArray = CODE_BASE + 17;
 const Type kSlice = CODE_BASE + 18;
 const Type kForInStatement = CODE_BASE + 19;
 const Type kSwitchCaseStatement = CODE_BASE + 20;
-const Type kMinus = CODE_BASE+21;
+const Type kMinus = CODE_BASE + 21;
+const Type kReadReference = CODE_BASE +22;
 
-const Type kArithmeticOP = 40;
-const Type kADD = kArithmeticOP + 1;
-const Type kSUB = kArithmeticOP + 2;
-const Type kMUL = kArithmeticOP + 3;
-const Type kDIV = kArithmeticOP + 4;
-const Type kMOD = kArithmeticOP + 5;
-const Type kGT = kArithmeticOP + 6;
-const Type kGE = kArithmeticOP + 7;
-const Type kLT = kArithmeticOP + 8;
-const Type kLE = kArithmeticOP + 9;
-const Type kEQ = kArithmeticOP + 10;
-const Type kNE = kArithmeticOP + 11;
-const Type kNOT = kArithmeticOP + 12;
-const Type kBOR = kArithmeticOP + 13;
-const Type kBAND = kArithmeticOP + 14;
-const Type kBXOR = kArithmeticOP + 15;
-const Type kBNG = kArithmeticOP + 16;
-const Type kLSHIFT = kArithmeticOP + 17;
-const Type kRSHIFT = kArithmeticOP + 18;
-const Type kOR = kArithmeticOP + 19;
-const Type kAND = kArithmeticOP + 20;
-const Type kMAXArithmeticOP = kArithmeticOP + 20;
+const Type kBinaryOP = 40;
+const Type kADD = kBinaryOP + 1;
+const Type kSUB = kBinaryOP + 2;
+const Type kMUL = kBinaryOP + 3;
+const Type kDIV = kBinaryOP + 4;
+const Type kMOD = kBinaryOP + 5;
+const Type kGT = kBinaryOP + 6;
+const Type kGE = kBinaryOP + 7;
+const Type kLT = kBinaryOP + 8;
+const Type kLE = kBinaryOP + 9;
+const Type kEQ = kBinaryOP + 10;
+const Type kNE = kBinaryOP + 11;
+const Type kNOT = kBinaryOP + 12;
+const Type kBOR = kBinaryOP + 13;
+const Type kBAND = kBinaryOP + 14;
+const Type kBXOR = kBinaryOP + 15;
+const Type kBNG = kBinaryOP + 16;
+const Type kLSHIFT = kBinaryOP + 17;
+const Type kRSHIFT = kBinaryOP + 18;
+const Type kOR = kBinaryOP + 19;
+const Type kAND = kBinaryOP + 20;
+const Type kURSHIFT = kBinaryOP + 21;
+const Type kMAXBinaryOP = kBinaryOP + 21;
 
-const Type kWrite    = 70;
-const Type kADDWrite = 71;
-const Type kSUBWrite = 72;
-const Type kMULWrite = 73;
-const Type kDIVWrite = 74;
-const Type kINCWrite = 75;
-const Type kDECWrite = 76;
-const Type kBORWrite = 77;
-const Type kBANDWrite = 78;
-const Type kBXORWrite = 79;
-const Type kLSHIFTWrite = 80;
-const Type kRSHIFTWrite = 81;
+const Type kUpdate = 0x0100;
+const Type kuWrite = 0;
+const Type kuADD = 1;
+const Type kuSUB = 2;
+const Type kuMUL = 3;
+const Type kuDIV = 4;
+const Type kuINC = 5;
+const Type kuDEC = 6;
+const Type kuINCReturnOld = 7;
+const Type kuDECReturnOld = 8;
+const Type kuBOR = 9;
+const Type kuBAND = 10;
+const Type kuBXOR = 11;
+const Type kuLSHIFT = 12;
+const Type kuRSHIFT = 13;
+const Type kuURSHIFT = 14;
 }; // namespace Instructions
+
+namespace KnownListName {
+extern const char* kDecl;
+extern const char* kDeclAssign;
+extern const char* kElseIf;
+extern const char* kConst;
+extern const char* kDeclMore;
+extern const char* kDeclFuncArgs;
+extern const char* kValue;
+extern const char* kNamedValue;
+extern const char* kIndexer;
+extern const char* kAssign;
+extern const char* kMapValue;
+extern const char* kCaseItem;
+extern const char* kCase;
+extern const char* kBlockStatement;
+extern const char* kStatement;
+}; // namespace KnownListName
 
 class Instruction {
 public:
@@ -134,10 +160,10 @@ public:
     }
     bool IsNULL() const { return OpCode == Instructions::kNop; }
     std::string ToString() const {
-        if (OpCode >= Instructions::kADD && OpCode <= Instructions::kMAXArithmeticOP) {
+        if (OpCode >= Instructions::kADD && OpCode <= Instructions::kMAXBinaryOP) {
             return "Arithmetic Operation";
         }
-        if (OpCode >= Instructions::kWrite && OpCode <= Instructions::kRSHIFTWrite) {
+        if ((OpCode & Instructions::kUpdate) == Instructions::kUpdate) {
             return "Update Var:" + Name;
         }
         switch (OpCode) {
@@ -154,7 +180,7 @@ public:
         case Instructions::kCallFunction:
             return "Call Function:" + Name;
         case Instructions::kGroup:
-            return Name+"(list)";
+            return Name + "(list)";
         case Instructions::kContitionExpression:
             return "ContitionExpression";
         case Instructions::kIFStatement:
@@ -167,10 +193,6 @@ public:
             return "break Statement";
         case Instructions::kCONTINUEStatement:
             return "continue Statement";
-        case Instructions::kReadAt:
-            return "read at index";
-        case Instructions::kWriteAt:
-            return "write at index";
         case Instructions::kCreateMap:
             return "Create Map";
         case Instructions::kCreateArray:
@@ -349,85 +371,6 @@ public:
         return result;
     }
 
-    /*
-     $$= parser->CreateList("decl-assign",$1); 
-                $$= parser->CreateList("decl",$1); 
-                $$= parser->CreateList("elsif",$1); 
-                $$= parser->CreateList("const-list",$1); 
-                $$= parser->CreateList("decl-args",$1); 
-                $$= parser->CreateList("value-list",$1); 
-                $$= parser->CreateList("assign-list",$1);   
-                $$= parser->CreateList("map-items",$1);   
-                Instruction* obj = parser->CreateList("helper",$2); 
-                $$= parser->CreateList("case-list",$1); 
-                $$=parser->CreateList("st-blocklist",$1); 
-                $$=parser->CreateList("st-list",$1); 
-
-    */
-
-    void RestoreToCode(std::ostream& o, const Instruction* ins) {
-        if (ins->OpCode >= Instructions::kADD && ins->OpCode <= Instructions::kMAXArithmeticOP) {
-            return;
-        }
-        if (ins->OpCode >= Instructions::kWrite && ins->OpCode <= Instructions::kRSHIFTWrite) {
-            return;
-        }
-        switch (ins->OpCode) {
-        case Instructions::kNop:
-            return;
-        case Instructions::kConst:
-            return;
-        case Instructions::kNewVar:
-            return;
-        case Instructions::kReadVar:
-            return;
-        case Instructions::kNewFunction: {
-            o << "func " << Name << "( ";
-            const Instruction* args = GetInstruction(ins->Refs[0]);
-            const Instruction* body = GetInstruction(ins->Refs[1]);
-            o << JoinRefsName(args);
-            o << "){" << std::endl;
-            RestoreToCode(o,body);
-            o << std::endl;
-            o << "}" << std::endl;
-        } break;
-        case Instructions::kCallFunction:
-            o << ins->Name << "(";
-            RestoreToCode(o,GetInstruction(ins->Refs[0]));
-            o << ")";
-            return;
-        case Instructions::kGroup:
-            return;
-        case Instructions::kContitionExpression:
-            return;
-        case Instructions::kIFStatement:
-            return;
-        case Instructions::kRETURNStatement:
-            return;
-        case Instructions::kFORStatement:
-            return;
-        case Instructions::kBREAKStatement:
-            return;
-        case Instructions::kCONTINUEStatement:
-            return;
-        case Instructions::kReadAt:
-            return;
-        case Instructions::kWriteAt:
-            return;
-        case Instructions::kCreateMap:
-            return;
-        case Instructions::kCreateArray:
-            return;
-        case Instructions::kSlice:
-            return;
-        case Instructions::kForInStatement:
-            return;
-        case Instructions::kSwitchCaseStatement:
-            return;
-        default:
-            return;
-        }
-    }
     std::string DumpInstruction(const Instruction* ins, std::string prefix) {
         std::stringstream stream;
         stream << prefix;

@@ -294,7 +294,7 @@ func AppendUInt32ToBuffer(buf,val,isBigEndian){
     if(isBigEndian){
         return append(buf,(val>>24)&0xFF,(val>>16)&0xFF,(val>>8)&0xFF,val&0xFF);
     }
-    return append(buf,(val)&0xFF,(val>>8)&0xFF,(val>>16)&0xFF,(val>>24)&0xFF);
+    return append(buf,val&0xFF,(val>>8)&0xFF,(val>>16)&0xFF,(val>>24)&0xFF);
 }
 
 func ReadUInt32FromBuffer(buf,isBigEndian){
@@ -311,7 +311,7 @@ func AppendUInt16ToBuffer(buf,val,isBigEndian){
     if(isBigEndian){
         return append(buf,(val>>8)&0xFF,val&0xFF);
     }
-    return append(buf,(val)&0xFF,(val>>8)&0xFF);
+    return append(buf,val&0xFF,(val>>8)&0xFF);
 }
 
 func ReadUInt16FromBuffer(buf,isBigEndian){

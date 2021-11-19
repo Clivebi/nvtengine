@@ -7,8 +7,8 @@
 %}
 %require "3.2"
 %{
-using Instruction= Interpreter::Instruction;
-// https://stackoverflow.com/questions/23717039/generating-a-compiler-from-lex-and-yacc-grammar
+//using Instruction= Interpreter::Instruction;
+using namespace Interpreter;
 int yylex(Interpreter::Parser * parser);
 void yyerror(Interpreter::Parser * parser,const char *s);
 %}
@@ -20,18 +20,19 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 };
 
 %token  <identifier>VAR FUNCTION FOR IF ELIF ELSE ADD SUB MUL DIV MOD ASSIGN
-        EQ NE GT GE LT LE LP RP LC RC SEMICOLON IDENTIFIER 
+        EQ NE GT GE LT LE LP RP LC RC SEMICOLON IDENT
         BREAK CONTINUE RETURN COMMA STRING_LITERAL COLON ADDASSIGN SUBASSIGN
         MULASSIGN DIVASSIGN INC DEC NOT LB RB IN SWITCH CASE DEFAULT
         BOR BAND BXOR BNG LSHIFT RSHIFT  BORASSIGN BANDASSIGN BXORASSIGN 
-        LSHIFTASSIGN RSHIFTASSIGN OR AND POINT
+        LSHIFTASSIGN RSHIFTASSIGN OR AND POINT MOREVAL URSHIFT URSHIFTASSIGN
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
 
 %left  COMMA
 %right ASSIGN ADDASSIGN SUBASSIGN DIVASSIGN MULASSIGN
-       BORASSIGN BANDASSIGN BXORASSIGN LSHIFTASSIGN RSHIFTASSIGN
+       BORASSIGN BANDASSIGN BXORASSIGN LSHIFTASSIGN RSHIFTASSIGN URSHIFTASSIGN
+       LB RB
 %left OR
 %left AND 
 %left BOR
@@ -42,26 +43,28 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 
 
 %left  GT GE LT LE 
-%left  LSHIFT RSHIFT
+%left  LSHIFT RSHIFT URSHIFT
 %left  ADD SUB
 %left  MUL DIV MOD
 %left  COLON
-
-%right NOT INC DEC BNG
-%left LP RP LB RB
+%left LP RP 
+%right NOT INC DEC BNG 
 
 %nonassoc '|' UMINUS 
 
-
+%type <identifier> IDENTIFIER
 %type <object> declaration declarationlist var_declaration
-%type <object> declaration_and_assign declaration_and_assign_list var_declaration_and_assign
 
 %type <object> assign_expression assign_expression_list
 
-%type <object> const_value value_expression compare_expression math_expression
+%type <object> const_value lvalue rvalue  binary_expression unary_expression
+%type <object> slice 
+%type <object> map array map_pair map_pair_list
+%type <object> named_value named_value_list
+%type <object> value_indexer_path object_indexer  read_lvalue indexer
 
 %type <object> func_declaration func_call_expression return_expression
-%type <object> formal_parameter formal_parameterlist value_list
+%type <object> formal_parameter formal_parameterlist value_list condition_value
 
 %type <object> statementlist statement
 %type <object> statement_in_block_list statement_in_block block
@@ -69,11 +72,9 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 
 %type <object> for_init for_statement for_condition for_update
 %type <object> break_expression continue_expression 
-%type <object> map_value array_value map_item map_item_list
-%type <object> read_at_index slice index_to_write key_value write_indexer read_with_id
 %type <object> for_in_statement
 %type <object> case_item case_item_list switch_case_statement const_value_list
-%type <object> named_value named_value_list 
+
 %%
 
 %start  startstatement;
@@ -83,32 +84,20 @@ declaration: IDENTIFIER
         {
                 $$= parser->VarDeclarationExpresion($1,NULL);
         }
-        | IDENTIFIER ASSIGN value_expression
+        | IDENTIFIER ASSIGN rvalue
         {
                 $$= parser->VarDeclarationExpresion($1,$3);
         }
         ;
 
-declaration_and_assign:IDENTIFIER ASSIGN value_expression
+IDENTIFIER:IDENT
         {
-                $$= parser->VarDeclarationExpresion($1,$3);
+                $$= $1;
         }
-        ;
-declaration_and_assign_list:declaration_and_assign_list COMMA declaration_and_assign
+        |IN 
         {
-               $$= parser->AddToList($1,$3);
-        }
-        |declaration_and_assign
-        {
-               $$= parser->CreateList("decl-assign",$1); 
-        }
-        ;
-
-var_declaration_and_assign:VAR declaration_and_assign_list
-        {       
-                $$= $2;
-        }
-        ;
+                $$="in";
+        };
 
 declarationlist:declarationlist COMMA declaration
         {
@@ -116,7 +105,7 @@ declarationlist:declarationlist COMMA declaration
         }
         | declaration
         {
-                $$= parser->CreateList("decl",$1); 
+                $$= parser->CreateList(KnownListName::kDecl,$1); 
         }
         ;
 
@@ -155,7 +144,11 @@ condition_statement:if_expresion
         }
         ;
 
-if_expresion: IF LP value_expression RP block
+condition_value:rvalue
+        |assign_expression
+        ;
+
+if_expresion: IF LP condition_value RP block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -167,11 +160,11 @@ elseif_expresionlist:elseif_expresionlist  elseif_expresion
         }
         |elseif_expresion
         {
-                $$= parser->CreateList("elsif",$1); 
+                $$= parser->CreateList(KnownListName::kElseIf,$1); 
         }
         ;
 
-elseif_expresion: ELIF LP value_expression RP block
+elseif_expresion: ELIF LP condition_value RP block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -195,24 +188,18 @@ continue_expression:CONTINUE
         }
         ;
 
-for_init: var_declaration_and_assign
-        {
-                $$=$1;
-        }
-        | assign_expression_list
-        {
-                $$=$1;
-        }
+for_init: var_declaration
+        |assign_expression_list
+        |func_call_expression
+        |unary_expression
         |
         {
                 $$=parser->NULLObject();
         }
         ;
 
-for_condition: value_expression
-        {
-                $$=$1;
-        }
+for_condition: rvalue
+        |assign_expression
         |
         {
                 $$=parser->NULLObject();
@@ -220,9 +207,8 @@ for_condition: value_expression
         ;
 
 for_update:assign_expression_list
-        {
-                $$=$1;
-        }
+        |func_call_expression
+        |unary_expression
         |
         {
                 $$=parser->NULLObject();
@@ -240,11 +226,11 @@ for_statement: FOR LP for_init SEMICOLON for_condition SEMICOLON for_update RP b
         }
         ;
 
-for_in_statement:FOR IDENTIFIER COMMA IDENTIFIER IN value_expression block
+for_in_statement:FOR IDENTIFIER COMMA IDENTIFIER IN rvalue block
         {
                 $$=parser->CreateForInStatement($2,$4,$6,$7);
         }
-        | FOR IDENTIFIER IN value_expression block
+        | FOR IDENTIFIER IN rvalue block
         {
                 $$=parser->CreateForInStatement("",$2,$4,$5);
         }
@@ -271,13 +257,17 @@ const_value_list:const_value_list COMMA const_value
         }
         |const_value
         {
-                $$= parser->CreateList("const-list",$1); 
+                $$= parser->CreateList(KnownListName::kConst,$1); 
         }
         ;
 
-return_expression: RETURN value_expression
+return_expression: RETURN rvalue
         {
                 $$= parser->CreateReturnStatement($2);
+        }
+        | RETURN
+        {
+                $$= parser->CreateReturnStatement(NULL); 
         }
         ;
 
@@ -288,6 +278,12 @@ func_declaration:FUNCTION IDENTIFIER LP formal_parameterlist RP block
         | FUNCTION IDENTIFIER LP RP block
         {
                 $$=parser->CreateFunction($2,NULL,$5);
+        }
+        | FUNCTION IDENTIFIER LP IDENTIFIER MOREVAL RP block
+        {
+                Instruction* obj =parser->VarDeclarationExpresion($4,NULL);
+                obj= parser->CreateList(KnownListName::kDeclMore,obj); 
+                $$=parser->CreateFunction($2,obj,$7);
         }
         ;
 
@@ -311,7 +307,7 @@ formal_parameterlist:formal_parameterlist COMMA formal_parameter
         }
         |formal_parameter
         {
-             $$= parser->CreateList("decl-args",$1); 
+             $$= parser->CreateList(KnownListName::kDeclFuncArgs,$1); 
         }
         ;
 
@@ -322,17 +318,17 @@ formal_parameter:IDENTIFIER
         ;
 
 
-value_list:value_list COMMA value_expression
+value_list:value_list COMMA rvalue
         {
                 $$=parser->AddToList($1,$3);    
         }
-        |value_expression
+        |rvalue
         {
-                $$= parser->CreateList("value-list",$1); 
+                $$= parser->CreateList(KnownListName::kValue,$1); 
         }
         ;
 
-named_value:IDENTIFIER COLON value_expression
+named_value:IDENTIFIER COLON rvalue
         {
                 $$= parser->VarDeclarationExpresion($1,$3);
         }
@@ -344,208 +340,239 @@ named_value_list:named_value_list COMMA named_value
         }
         |named_value
         {
-                $$=parser->CreateList("nv-list",$1);
+                $$=parser->CreateList(KnownListName::kNamedValue,$1);
         };
 
-
-value_expression: const_value
-        {
-                $$=$1;
-        }
-        | IDENTIFIER
-        {
-                $$=parser->VarReadExpresion($1);
-        }
-        | func_call_expression
-        {
-                $$=$1;
-        }
-        | math_expression
-        {
-                $$=$1;
-        }
-        | compare_expression
-        {
-                $$=$1;
-        }
-        |LP value_expression RP
-        {
-                $$=$2;
-        }
-        |map_value
-        {
-                $$=$1;
-        }
-        |array_value
-        {
-                $$=$1;
-        }
-        |read_at_index
-        {
-                $$=$1;
-        }
+rvalue:indexer
+        |map
+        |array
         |slice
-        {
-                $$=$1;
-        }
-        | SUB value_expression %prec UMINUS
+        |SUB rvalue %prec UMINUS
         {
                 $$=parser->CreateMinus($2);
         }
-        |read_with_id
+        |LP SUB rvalue %prec UMINUS RP 
         {
-                $$=$1;
+                $$=parser->CreateMinus($3);
+        }
+        ;
+
+indexer:const_value 
+        |func_call_expression
+        |binary_expression
+        |unary_expression
+        |read_lvalue
+        ;
+
+value_indexer_path:LB indexer RB
+        { 
+                $$=parser->CreateList(KnownListName::kIndexer,$2);   
+        }
+        |value_indexer_path LB indexer RB
+        {
+                $$=parser->AddToList($1,$3);
+        }
+        ;
+
+object_indexer: POINT IDENTIFIER
+        {
+                $$=parser->CreateObjectIndexer($2);
+        }
+        | object_indexer POINT IDENTIFIER
+        {
+                $$=parser->AddObjectIndexer($1,$3);
+        }
+        ;
+        
+
+lvalue:IDENTIFIER
+        {
+                $$=parser->CreateReference($1,NULL);
+        }
+        | IDENTIFIER value_indexer_path
+        {
+                $$=parser->CreateReference($1,$2);
+        }
+        | IDENTIFIER object_indexer
+        {
+                $$=parser->CreateReference($1,$2);
+        }
+        ;
+
+read_lvalue:IDENTIFIER
+        {
+                $$=parser->VarReadExpresion($1);
+        }
+        | IDENTIFIER value_indexer_path
+        {
+                $$=parser->VarReadReference($1,$2);
+        }
+        | IDENTIFIER object_indexer
+        {
+                $$=parser->VarReadReference($1,$2);
         }
         ;
 
 
-math_expression: value_expression ADD value_expression
+binary_expression: rvalue ADD rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kADD);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kADD);
         }
-        | value_expression SUB value_expression
+        | rvalue SUB rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kSUB);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kSUB);
         }
-        | value_expression MUL value_expression
+        | rvalue MUL rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kMUL);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kMUL);
         }
-        | value_expression DIV value_expression
+        | rvalue DIV rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kDIV);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kDIV);
         }
-        | value_expression MOD value_expression
+        | rvalue MOD rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kMOD);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kMOD);
         }
-        |value_expression BAND value_expression
+        |rvalue BAND rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kBAND);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kBAND);
         }
-        |value_expression BOR value_expression
+        |rvalue BOR rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kBOR);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kBOR);
         }
-        |value_expression BXOR value_expression
+        |rvalue BXOR rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kBXOR);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kBXOR);
         }
-        |BNG value_expression
+        |BNG rvalue
         {
-                $$=parser->CreateArithmeticOperation($2,NULL,Interpreter::Instructions::kBNG);
+                $$=parser->CreateBinaryOperation($2,NULL,Interpreter::Instructions::kBNG);
         }
-        |value_expression LSHIFT value_expression
+        |rvalue LSHIFT rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kLSHIFT);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kLSHIFT);
         }
-        |value_expression RSHIFT value_expression
+        |rvalue RSHIFT rvalue
         {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kRSHIFT);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kRSHIFT);
+        }
+        |rvalue URSHIFT rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kURSHIFT);
+        }
+        |rvalue EQ rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kEQ);
+        }
+        |rvalue NE rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kNE);
+        }
+        |rvalue GT rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kGT);
+        }
+        |rvalue GE rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kGE);
+        }
+        |rvalue LT rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kLT);
+        }
+        |rvalue LE rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kLE);
+        }
+        |NOT rvalue
+        {
+                $$=parser->CreateBinaryOperation($2,NULL,Interpreter::Instructions::kNOT);
+        }
+        |rvalue OR rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kOR);
+        }
+        |rvalue AND rvalue
+        {
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kAND);
+        }
+        | LP binary_expression RP 
+        {
+                $$=$2;
         }
         ;
 
-compare_expression:value_expression EQ value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kEQ);
-        }
-        |value_expression NE value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kNE);
-        }
-        |value_expression GT value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kGT);
-        }
-        |value_expression GE value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kGE);
-        }
-        |value_expression LT value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kLT);
-        }
-        |value_expression LE value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kLE);
-        }
-        |NOT value_expression
-        {
-                $$=parser->CreateArithmeticOperation($2,NULL,Interpreter::Instructions::kNOT);
-        }
-        |value_expression OR value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kOR);
-        }
-        |value_expression AND value_expression
-        {
-                $$=parser->CreateArithmeticOperation($1,$3,Interpreter::Instructions::kAND);
-        }
-        ;
 
-assign_expression: IDENTIFIER ASSIGN value_expression
+assign_expression: lvalue ASSIGN rvalue
         {       
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuWrite);
         }
-        |IDENTIFIER ADDASSIGN value_expression
+        |lvalue ADDASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kADDWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuADD);
         }
-        |IDENTIFIER SUBASSIGN value_expression
+        |lvalue SUBASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kSUBWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuSUB);
         }
-        |IDENTIFIER MULASSIGN value_expression
+        |lvalue MULASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kMULWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuMUL);
         }
-        |IDENTIFIER DIVASSIGN value_expression
+        |lvalue DIVASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kDIVWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuDIV);
         }
-        |IDENTIFIER INC
+        |lvalue BANDASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,NULL,Interpreter::Instructions::kINCWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuBAND);
         }
-        |IDENTIFIER DEC 
+        |lvalue BORASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,NULL,Interpreter::Instructions::kDECWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuBOR);
         }
-        |IDENTIFIER BANDASSIGN value_expression
+        |lvalue BXORASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kBANDWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuBXOR);
         }
-        |IDENTIFIER BORASSIGN value_expression
+        |lvalue LSHIFTASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kBORWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuLSHIFT);
         }
-        |IDENTIFIER BXORASSIGN value_expression
+        |lvalue RSHIFTASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kBXORWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuRSHIFT);
         }
-        |IDENTIFIER LSHIFTASSIGN value_expression
+        |lvalue URSHIFTASSIGN rvalue
         {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kLSHIFTWrite);
-        }
-        |IDENTIFIER RSHIFTASSIGN value_expression
-        {
-                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kRSHIFTWrite);
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuURSHIFT);
         }
         ;
 
-write_indexer: write_indexer LB key_value RB 
-        {
-                $$= parser->AddToList($1,$3);
-        }
-        |LB key_value RB 
-        {
-                $$= parser->CreateList("index-list",$2); 
-        };
 
-index_to_write:IDENTIFIER write_indexer ASSIGN value_expression
+unary_expression: lvalue INC
         {
-                $$=parser->VarUpdateAtExression($1,$2,$4);
-        };
+                $$ = parser->VarUpdateExpression($1,NULL,Interpreter::Instructions::kuINCReturnOld);
+        }
+        |lvalue DEC
+        {
+                $$ = parser->VarUpdateExpression($1,NULL,Interpreter::Instructions::kuDECReturnOld);
+        }
+        |INC lvalue
+        {
+                $$ = parser->VarUpdateExpression($2,NULL,Interpreter::Instructions::kuINC);
+        }
+        |DEC lvalue
+        {
+                $$ = parser->VarUpdateExpression($2,NULL,Interpreter::Instructions::kuDEC);
+        }
+        |LP unary_expression RP 
+        {
+                $$=$2;
+        }
+        ;
 
 assign_expression_list: assign_expression_list COMMA assign_expression
         {
@@ -553,27 +580,27 @@ assign_expression_list: assign_expression_list COMMA assign_expression
         }
         |assign_expression
         {
-               $$= parser->CreateList("assign-list",$1);   
+               $$= parser->CreateList(KnownListName::kAssign,$1);   
         }
         ;
 
 
-map_item:value_expression COLON value_expression
+map_pair:rvalue COLON rvalue
         {
                 $$=parser->CreateMapItem($1,$3);
         }
         ;
-map_item_list:map_item_list COMMA map_item
+map_pair_list:map_pair_list COMMA map_pair
         {
                 $$=parser->AddToList($1,$3); 
         }
-        |map_item
+        |map_pair
         {
-                $$= parser->CreateList("map-items",$1);   
+                $$= parser->CreateList(KnownListName::kMapValue,$1);   
         }
         ;
 
-array_value:LB value_list RB
+array:LB value_list RB
         {
                 $$=parser->CreateArray($2);
         }
@@ -583,7 +610,7 @@ array_value:LB value_list RB
         }
         ;
 
-map_value: LC map_item_list RC
+map: LC map_pair_list RC
         {
                 $$=parser->CreateMap($2);
         }
@@ -593,50 +620,15 @@ map_value: LC map_item_list RC
         }
         ;
 
-key_value:math_expression
-        {
-                $$=$1;
-        }
-        |const_value
-        {
-                $$=$1;
-        }
-        |IDENTIFIER{
-                $$=parser->VarReadExpresion($1);
-        }
-        |read_at_index{
-                $$=$1;
-        }
-        ;
-
-read_at_index:IDENTIFIER LB key_value RB
-        {
-                $$=parser->VarReadAtExpression($1,$3);
-        }
-        | read_at_index LB key_value RB 
-        {
-                $$=parser->VarReadAtExpression($1,$3); 
-        }
-        ;
-
-read_with_id:IDENTIFIER POINT IDENTIFIER
-        {
-                $$=parser->VarReadAtExpression($1,$3);
-        }
-        |read_with_id POINT IDENTIFIER
-        {
-                $$=parser->VarReadAtExpression($1,$3);
-        };
-
-slice:IDENTIFIER LB key_value COLON key_value RB
+slice:IDENTIFIER LB rvalue COLON rvalue RB
         {
                 $$=parser->VarSlice($1,$3,$5);
         }
-        |IDENTIFIER LB key_value COLON RB
+        |IDENTIFIER LB rvalue COLON RB
         {
                 $$=parser->VarSlice($1,$3,NULL);
         }
-        |IDENTIFIER LB COLON key_value RB
+        |IDENTIFIER LB COLON rvalue RB
         {
                 $$=parser->VarSlice($1,NULL,$4);
         }
@@ -644,7 +636,7 @@ slice:IDENTIFIER LB key_value COLON key_value RB
 
 case_item:CASE const_value_list COLON block
         {
-                Instruction* obj = parser->CreateList("helper",$2); 
+                Instruction* obj = parser->CreateList(KnownListName::kCaseItem,$2); 
                 $$=parser->AddToList(obj,$4);
         }
         ;
@@ -654,15 +646,15 @@ case_item_list:case_item_list case_item
         }
         |case_item
         {
-                $$= parser->CreateList("case-list",$1); 
+                $$= parser->CreateList(KnownListName::kCase,$1); 
         }
         ;
 
-switch_case_statement: SWITCH LP value_expression RP LC case_item_list DEFAULT COLON block RC
+switch_case_statement: SWITCH LP rvalue RP LC case_item_list DEFAULT COLON block RC
         {
                 $$=parser->CreateSwitchCaseStatement($3,$6,$9);
         }
-        |SWITCH LP value_expression RP LC case_item_list RC
+        |SWITCH LP rvalue RP LC case_item_list RC
         {
                 $$=parser->CreateSwitchCaseStatement($3,$6,NULL);
         }
@@ -670,8 +662,8 @@ switch_case_statement: SWITCH LP value_expression RP LC case_item_list DEFAULT C
 
 
 statement_in_block:var_declaration SEMICOLON
-        |index_to_write SEMICOLON
         |assign_expression SEMICOLON
+        |unary_expression SEMICOLON
         |condition_statement
         |return_expression SEMICOLON
         |func_call_expression SEMICOLON
@@ -688,7 +680,7 @@ statement_in_block_list:statement_in_block_list statement_in_block
         }
         |statement_in_block
         {
-                $$=parser->CreateList("st-blocklist",$1); 
+                $$=parser->CreateList(KnownListName::kBlockStatement,$1); 
         }
         ;
 
@@ -702,7 +694,7 @@ statementlist: statementlist  statement
         }
         |statement
         {
-                $$=parser->CreateList("st-list",$1); 
+                $$=parser->CreateList(KnownListName::kStatement,$1); 
         }
         ;
 

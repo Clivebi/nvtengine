@@ -17,7 +17,8 @@ protected:
     bool mLogInstruction;
 
 public:
-    Parser() : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString() {}
+    void* mContext;
+    Parser() : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString(),mContext(NULL) {}
     ~Parser() { Finish(); }
 
     void Start(std::string name) { mScript = new Script(name); }
@@ -51,10 +52,17 @@ public:
     //instruction list
     Instruction* CreateList(const std::string& typeName, Instruction* element);
     Instruction* AddToList(Instruction* list, Instruction* element);
+    
+    //
+    Instruction* CreateObjectIndexer(const std::string& first);
+    Instruction* AddObjectIndexer(Instruction*src,const std::string& item);
+
+    Instruction* CreateReference(const std::string& root,Instruction* path);
+    Instruction* VarReadReference(const std::string& root,Instruction* path);
 
     //var declaration read & write
     Instruction* VarDeclarationExpresion(const std::string& name, Instruction* value);
-    Instruction* VarUpdateExpression(const std::string& name, Instruction* value, int opcode);
+    Instruction* VarUpdateExpression(Instruction* ref, Instruction* value, Instructions::Type opcode);
     Instruction* VarReadExpresion(const std::string& name);
 
     //const values
@@ -68,7 +76,7 @@ public:
     Instruction* CreateFunctionCall(const std::string& name, Instruction* actualParameters);
 
     //arithmetic operation +-*/% ,> >= < <= == !=
-    Instruction* CreateArithmeticOperation(Instruction* first, Instruction* second, int opcode);
+    Instruction* CreateBinaryOperation(Instruction* first, Instruction* second, Instructions::Type opcode);
 
     Instruction* CreateMinus(Instruction* value);
 
@@ -90,12 +98,7 @@ public:
     Instruction* CreateMapItem(Instruction* key, Instruction* value);
     Instruction* CreateMap(Instruction* list);
     Instruction* CreateArray(Instruction* list);
-    Instruction* VarReadAtExpression(const std::string& name, Instruction* where);
-    Instruction* VarReadAtExpression(const std::string& name, const std::string& where);
-    Instruction* VarReadAtExpression(Instruction* obj, Instruction* where);
-    Instruction* VarReadAtExpression(Instruction* obj, const std::string& where);
-    Instruction* VarUpdateAtExression(const std::string& name, Instruction* where,
-                                      Instruction* value);
+
     Instruction* VarSlice(const std::string& name, Instruction* from, Instruction* to);
     Instruction* CreateForInStatement(const std::string& key, const std::string& val,
                                       Instruction* obj, Instruction* body);

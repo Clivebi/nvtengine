@@ -6,6 +6,42 @@
 
 namespace Interpreter {
 
+namespace KnownListName {
+#ifndef _DEBUG
+const char* kDecl = "a";
+const char* kDeclAssign = "b";
+const char* kElseIf = "c";
+const char* kConst = "d";
+const char* kDeclMore = "e";
+const char* kDeclFuncArgs = "f";
+const char* kValue = "g";
+const char* kNamedValue = "h";
+const char* kIndexer = "i";
+const char* kAssign = "j";
+const char* kMapValue = "k";
+const char* kCaseItem = "o";
+const char* kCase = "p";
+const char* kBlockStatement = "r";
+const char* kStatement = "s";
+#else
+const char* kDecl = "decl";
+const char* kDeclAssign = "decl-assign";
+const char* kElseIf = "else-if";
+const char* kConst = "const";
+const char* kDeclMore = "decl-more";
+const char* kDeclFuncArgs = "decl-func-args";
+const char* kValue = "values";
+const char* kNamedValue = "named-values";
+const char* kIndexer = "indexer";
+const char* kAssign = "indexer-assign";
+const char* kMapValue = "map-value";
+const char* kCaseItem = "case-item";
+const char* kCase = "case-switch";
+const char* kBlockStatement = "block-statement";
+const char* kStatement = "statement";
+#endif
+}; // namespace KnownListName
+
 Instruction* Parser::NULLObject() {
     return mScript->NULLInstruction();
 }
@@ -36,13 +72,12 @@ Instruction* Parser::VarDeclarationExpresion(const std::string& name, Instructio
     return obj;
 }
 
-Instruction* Parser::VarUpdateExpression(const std::string& name, Instruction* value, int opcode) {
-    Instruction* obj = mScript->NewInstruction();
+Instruction* Parser::VarUpdateExpression(Instruction* ref, Instruction* value, Instructions::Type opcode) {
+    Instruction* obj = mScript->NewInstruction(ref);
     if (value != NULL) {
         obj->Refs.push_back(value->key);
     }
-    obj->Name = name;
-    obj->OpCode = opcode;
+    obj->OpCode = opcode | Instructions::kUpdate;
     if (mLogInstruction) {
         LOG(mScript->DumpInstruction(obj, ""));
     }
@@ -104,9 +139,9 @@ Instruction* Parser::CreateMinus(Instruction* val) {
     return obj;
 }
 
-Instruction* Parser::CreateArithmeticOperation(Instruction* first, Instruction* second,
-                                               int opcode) {
-    if (opcode < Instructions::kADD || opcode > Instructions::kMAXArithmeticOP) {
+Instruction* Parser::CreateBinaryOperation(Instruction* first, Instruction* second,
+                                               Instructions::Type opcode) {
+    if (opcode < Instructions::kADD || opcode > Instructions::kMAXBinaryOP) {
         throw RuntimeException("opcode not invalid");
         return NULL;
     }
@@ -145,7 +180,10 @@ Instruction* Parser::CreateIFStatement(Instruction* one, Instruction* tow, Instr
 }
 
 Instruction* Parser::CreateReturnStatement(Instruction* value) {
-    Instruction* obj = mScript->NewInstruction(value);
+    Instruction* obj = mScript->NewInstruction();
+    if (value != NULL) {
+        obj->Refs.push_back(value->key);
+    }
     obj->OpCode = Instructions::kRETURNStatement;
     if (mLogInstruction) {
         LOG(mScript->DumpInstruction(obj, ""));
@@ -215,45 +253,7 @@ Instruction* Parser::CreateArray(Instruction* list) {
     }
     return obj;
 }
-Instruction* Parser::VarReadAtExpression(const std::string& name, Instruction* where) {
-    Instruction* obj = mScript->NewInstruction(where);
-    obj->OpCode = Instructions::kReadAt;
-    obj->Name = name;
-    if (mLogInstruction) {
-        LOG(mScript->DumpInstruction(obj, ""));
-    }
-    return obj;
-}
-Instruction* Parser::VarReadAtExpression(const std::string& name, const std::string& key) {
-    Instruction* where = CreateConst(key);
-    return VarReadAtExpression(name, where);
-}
-Instruction* Parser::VarReadAtExpression(Instruction* obj, const std::string& key) {
-    Instruction* where = CreateConst(key);
-    return VarReadAtExpression(obj, where);
-}
-Instruction* Parser::VarReadAtExpression(Instruction* fromObj, Instruction* where) {
-    Instruction* obj = mScript->NewInstruction(where, fromObj);
-    obj->OpCode = Instructions::kReadAt;
-    if (mLogInstruction) {
-        LOG(mScript->DumpInstruction(obj, ""));
-    }
-    return obj;
-}
-Instruction* Parser::VarUpdateAtExression(const std::string& name, Instruction* where,
-                                          Instruction* value) {
-    assert(where->OpCode == Instructions::kGroup);
-    if (where->Refs.size() == 1) {
-        where = (Instruction*)mScript->GetInstruction(where->Refs[0]);
-    }
-    Instruction* obj = mScript->NewInstruction(where, value);
-    obj->OpCode = Instructions::kWriteAt;
-    obj->Name = name;
-    if (mLogInstruction) {
-        LOG(mScript->DumpInstruction(obj, ""));
-    }
-    return obj;
-}
+
 Instruction* Parser::VarSlice(const std::string& name, Instruction* from, Instruction* to) {
     if (from == NULL) {
         from = NULLObject();
@@ -290,6 +290,47 @@ Instruction* Parser::CreateSwitchCaseStatement(Instruction* value, Instruction* 
     }
     Instruction* obj = mScript->NewInstruction(value, cases, defbranch);
     obj->OpCode = Instructions::kSwitchCaseStatement;
+    if (mLogInstruction) {
+        LOG(mScript->DumpInstruction(obj, ""));
+    }
+    return obj;
+}
+
+Instruction* Parser::CreateObjectIndexer(const std::string& first) {
+    Instruction* obj = mScript->NewInstruction();
+    obj->OpCode = Instructions::kObjectIndexer;
+    obj->Name = first;
+    if (mLogInstruction) {
+        LOG(mScript->DumpInstruction(obj, ""));
+    }
+    return obj;
+}
+
+Instruction* Parser::AddObjectIndexer(Instruction* src, const std::string& item) {
+    src->Name += "/";
+    src->Name += item;
+    return src;
+}
+
+Instruction* Parser::CreateReference(const std::string& root, Instruction* path) {
+    Instruction* obj = mScript->NewInstruction();
+    obj->OpCode = Instructions::kPathReference;
+    obj->Name = root;
+    if(path != NULL){
+        obj->Refs.push_back(path->key);
+    }
+    if (mLogInstruction) {
+        LOG(mScript->DumpInstruction(obj, ""));
+    }
+    return obj;
+}
+Instruction* Parser::VarReadReference(const std::string& root, Instruction* path) {
+    Instruction* obj = mScript->NewInstruction();
+    obj->OpCode = Instructions::kReadReference;
+    obj->Name = root;
+    if(path != NULL){
+        obj->Refs.push_back(path->key);
+    }
     if (mLogInstruction) {
         LOG(mScript->DumpInstruction(obj, ""));
     }

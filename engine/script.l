@@ -79,10 +79,13 @@ int yywrap(void)
 <INITIAL>"||"        return OR;
 <INITIAL>"&&"        return AND;
 <INITIAL>"."         return POINT;
+<INITIAL>"..."       return MOREVAL;
+<INITIAL>">>>"       return URSHIFT;
+<INITIAL>">>>="      return URSHIFTASSIGN;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
     yylval.identifier = parser->CreateString(yytext);
-    return IDENTIFIER;
+    return IDENT;
 }
 <INITIAL>([1-9][0-9]*)|"0" {
     yylval.value_integer = strtoll(yytext,NULL,10);

@@ -568,7 +568,7 @@ Value operator%(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException("% operation not avaliable for this value ");
     }
-    return Value(left.ToInteger() & right.ToInteger());
+    return Value(left.ToInteger() % right.ToInteger());
 }
 
 bool operator<(const Value& left, const Value& right) {
