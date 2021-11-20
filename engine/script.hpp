@@ -18,12 +18,12 @@ const Type kNop = 0;
 const Type kConst = CODE_BASE + 1;
 const Type kNewVar = CODE_BASE + 2;
 const Type kReadVar = CODE_BASE + 3;
-const Type kObjectIndexer = CODE_BASE +4;
+const Type kObjectIndexer = CODE_BASE + 4;
 //const Type kWriteVar = CODE_BASE + 4;
 const Type kNewFunction = CODE_BASE + 5;
 const Type kCallFunction = CODE_BASE + 6;
 //const Type kReadAt = CODE_BASE + 7;
-const Type kPathReference = CODE_BASE+8;
+const Type kPathReference = CODE_BASE + 8;
 //const Type kWriteAt = CODE_BASE + 8;
 const Type kGroup = CODE_BASE + 9;
 const Type kContitionExpression = CODE_BASE + 10;
@@ -38,7 +38,7 @@ const Type kSlice = CODE_BASE + 18;
 const Type kForInStatement = CODE_BASE + 19;
 const Type kSwitchCaseStatement = CODE_BASE + 20;
 const Type kMinus = CODE_BASE + 21;
-const Type kReadReference = CODE_BASE +22;
+const Type kReadReference = CODE_BASE + 22;
 
 const Type kBinaryOP = 40;
 const Type kADD = kBinaryOP + 1;
@@ -80,6 +80,7 @@ const Type kuBXOR = 11;
 const Type kuLSHIFT = 12;
 const Type kuRSHIFT = 13;
 const Type kuURSHIFT = 14;
+const Type kuMOD = 15;
 }; // namespace Instructions
 
 namespace KnownListName {
@@ -161,7 +162,7 @@ public:
     bool IsNULL() const { return OpCode == Instructions::kNop; }
     std::string ToString() const {
         if (OpCode >= Instructions::kADD && OpCode <= Instructions::kMAXBinaryOP) {
-            return "Arithmetic Operation";
+            return "Binary Operation";
         }
         if ((OpCode & Instructions::kUpdate) == Instructions::kUpdate) {
             return "Update Var:" + Name;
@@ -203,6 +204,12 @@ public:
             return "for in statement";
         case Instructions::kSwitchCaseStatement:
             return "switch -- case statement";
+        case Instructions::kObjectIndexer:
+            return "object indexer:" + Name;
+        case Instructions::kReadReference:
+            return "read object value:" + Name;
+        case Instructions::kPathReference:
+            return "object path reference:" + Name;
 
         default:
             return "Unknown Op";
@@ -221,6 +228,7 @@ public:
         mInstructionTable[0] = new Instruction();
         mInstructionBase = 0;
         mConstBase = 0;
+        Status::sScriptCount++;
     }
     ~Script() {
         for (std::map<Instruction::keyType, Instruction*>::iterator iter =
@@ -230,6 +238,7 @@ public:
         }
         mInstructionTable.clear();
         mConstTable.clear();
+        Status::sScriptCount--;
     }
 
 protected:

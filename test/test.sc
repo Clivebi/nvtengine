@@ -362,6 +362,7 @@ func byteslib_test(){
     for v in list_array{
         assertEqual(v,"hello");
     }
+    DisplayContext();
     assertEqual(ToLowerString("heLLo"),"hello");
     assertEqual(ToUpperString("heLLo"),"HELLO");
     assertEqual(HasPrefixString(str,"!!! X"),false);

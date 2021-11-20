@@ -24,13 +24,13 @@ void yyerror(Interpreter::Parser * parser,const char *s);
         BREAK CONTINUE RETURN COMMA STRING_LITERAL COLON ADDASSIGN SUBASSIGN
         MULASSIGN DIVASSIGN INC DEC NOT LB RB IN SWITCH CASE DEFAULT
         BOR BAND BXOR BNG LSHIFT RSHIFT  BORASSIGN BANDASSIGN BXORASSIGN 
-        LSHIFTASSIGN RSHIFTASSIGN OR AND POINT MOREVAL URSHIFT URSHIFTASSIGN
+        LSHIFTASSIGN RSHIFTASSIGN OR AND POINT MOREVAL URSHIFT URSHIFTASSIGN MODASSIGN
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
 
 %left  COMMA
-%right ASSIGN ADDASSIGN SUBASSIGN DIVASSIGN MULASSIGN
+%right ASSIGN ADDASSIGN SUBASSIGN DIVASSIGN MULASSIGN MODASSIGN
        BORASSIGN BANDASSIGN BXORASSIGN LSHIFTASSIGN RSHIFTASSIGN URSHIFTASSIGN
        LB RB
 %left OR
@@ -61,10 +61,10 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %type <object> slice 
 %type <object> map array map_pair map_pair_list
 %type <object> named_value named_value_list
-%type <object> value_indexer_path object_indexer  read_lvalue indexer
+%type <object> value_indexer_path object_indexer  read_lvalue 
 
 %type <object> func_declaration func_call_expression return_expression
-%type <object> formal_parameter formal_parameterlist value_list condition_value
+%type <object> formal_parameter formal_parameterlist value_list 
 
 %type <object> statementlist statement
 %type <object> statement_in_block_list statement_in_block block
@@ -116,7 +116,7 @@ var_declaration: VAR declarationlist
         ;
 
 
-block: LC statement_in_block_list RC 
+block:  LC statement_in_block_list RC 
         {
                 $$=$2;
         }
@@ -144,11 +144,7 @@ condition_statement:if_expresion
         }
         ;
 
-condition_value:rvalue
-        |assign_expression
-        ;
-
-if_expresion: IF LP condition_value RP block
+if_expresion: IF LP rvalue RP block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -164,7 +160,7 @@ elseif_expresionlist:elseif_expresionlist  elseif_expresion
         }
         ;
 
-elseif_expresion: ELIF LP condition_value RP block
+elseif_expresion: ELIF LP rvalue RP block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -199,7 +195,6 @@ for_init: var_declaration
         ;
 
 for_condition: rvalue
-        |assign_expression
         |
         {
                 $$=parser->NULLObject();
@@ -343,7 +338,16 @@ named_value_list:named_value_list COMMA named_value
                 $$=parser->CreateList(KnownListName::kNamedValue,$1);
         };
 
-rvalue:indexer
+rvalue: LP rvalue RP
+        {
+                $$=$2;
+        }
+        |assign_expression
+        |const_value 
+        |func_call_expression
+        |binary_expression
+        |unary_expression
+        |read_lvalue
         |map
         |array
         |slice
@@ -351,24 +355,13 @@ rvalue:indexer
         {
                 $$=parser->CreateMinus($2);
         }
-        |LP SUB rvalue %prec UMINUS RP 
-        {
-                $$=parser->CreateMinus($3);
-        }
         ;
 
-indexer:const_value 
-        |func_call_expression
-        |binary_expression
-        |unary_expression
-        |read_lvalue
-        ;
-
-value_indexer_path:LB indexer RB
+value_indexer_path:LB rvalue RB
         { 
                 $$=parser->CreateList(KnownListName::kIndexer,$2);   
         }
-        |value_indexer_path LB indexer RB
+        |value_indexer_path LB rvalue RB
         {
                 $$=parser->AddToList($1,$3);
         }
@@ -486,21 +479,18 @@ binary_expression: rvalue ADD rvalue
         {
                 $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kLE);
         }
-        |NOT rvalue
+        | NOT rvalue
         {
                 $$=parser->CreateBinaryOperation($2,NULL,Interpreter::Instructions::kNOT);
         }
-        |rvalue OR rvalue
+        |
+        rvalue OR rvalue
         {
-                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kOR);
+                $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kOR); 
         }
-        |rvalue AND rvalue
+        | rvalue AND rvalue
         {
                 $$=parser->CreateBinaryOperation($1,$3,Interpreter::Instructions::kAND);
-        }
-        | LP binary_expression RP 
-        {
-                $$=$2;
         }
         ;
 
@@ -549,6 +539,10 @@ assign_expression: lvalue ASSIGN rvalue
         {
                 $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuURSHIFT);
         }
+        |lvalue MODASSIGN rvalue
+        {
+                $$=parser->VarUpdateExpression($1,$3,Interpreter::Instructions::kuMOD);
+        }
         ;
 
 
@@ -567,10 +561,6 @@ unary_expression: lvalue INC
         |DEC lvalue
         {
                 $$ = parser->VarUpdateExpression($2,NULL,Interpreter::Instructions::kuDEC);
-        }
-        |LP unary_expression RP 
-        {
-                $$=$2;
         }
         ;
 
@@ -672,6 +662,11 @@ statement_in_block:var_declaration SEMICOLON
         |continue_expression SEMICOLON
         |for_in_statement
         |switch_case_statement
+        |block
+        |SEMICOLON
+        {
+                $$=parser->NULLObject();
+        }
         ;
 
 statement_in_block_list:statement_in_block_list statement_in_block

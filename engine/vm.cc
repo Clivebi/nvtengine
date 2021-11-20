@@ -11,10 +11,7 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 void yyerror(Interpreter::Parser* parser, const char* s) {
     char message[1024] = {0};
     sprintf(message, "%s on line:%d", s, yylineno);
-    Interpreter::Executor* ptr = (Interpreter::Executor*)parser->mContext;
-    if (ptr) {
-        ptr->OnScriptError(message);
-    }
+    parser->mLastError = message;
 }
 
 void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
@@ -27,47 +24,50 @@ Executor::Executor(ExecutorCallback* callback) : mScriptList(), mCallback(callba
 
 bool Executor::Execute(const char* name, bool showWarning) {
     bool bRet = false;
-    scoped_refptr<Script> script = LoadScript(name);
+    std::string error = "";
+    scoped_refptr<Script> script = LoadScript(name, error);
     if (script == NULL) {
+        mCallback->OnScriptError(this, name, error.c_str());
         return false;
     }
     mScriptList.push_back(script);
-    scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL);
+    scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, name);
     context->SetEnableWarning(showWarning);
-    std::string error = "";
-    mCallback->OnScriptWillExecute(this, script, context);
+
     try {
+        mCallback->OnScriptWillExecute(this, script, context);
         Execute(script->EntryPoint, context);
         bRet = true;
     } catch (const RuntimeException& e) {
         error = e.what();
     }
     if (!bRet) {
-        OnScriptError(error);
+        mCallback->OnScriptError(this, name, error.c_str());
     }
     mCallback->OnScriptExecuted(this, script, context);
     mScriptList.clear();
     return bRet;
 }
 
-scoped_refptr<Script> Executor::LoadScript(const char* name) {
+scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error) {
     YY_BUFFER_STATE bp;
-    if (mCallback == NULL) {
-        return NULL;
-    }
     size_t size = 0;
     void* data = mCallback->LoadScriptFile(this, name, size);
-    scoped_refptr<Parser> parser = make_scoped_refptr(new Parser());
-    parser->mContext = this;
+    if (data == NULL) {
+        error = "callback LoadScriptFile failed";
+        return NULL;
+    }
+    scoped_refptr<Parser> parser = new Parser();
     bp = yy_scan_buffer((char*)data, size);
     yy_switch_to_buffer(bp);
     parser->Start(name);
-    int error = yyparse(parser.get());
+    int err = yyparse(parser.get());
     yy_flush_buffer(bp);
     yy_delete_buffer(bp);
     yylex_destroy();
     free(data);
-    if (error) {
+    if (err) {
+        error = parser->mLastError;
         return NULL;
     }
     return parser->Finish();
@@ -95,9 +95,10 @@ void Executor::RequireScript(const std::string& name, VMContext* ctx) {
         }
         iter++;
     }
-    scoped_refptr<Script> required = LoadScript(name.c_str());
+    std::string error;
+    scoped_refptr<Script> required = LoadScript(name.c_str(), error);
     if (required.get() == NULL) {
-        throw RuntimeException("load script <" + name + "> failed");
+        throw RuntimeException("load script <" + name + "> failed :" + error);
     }
     scoped_refptr<Script> last = mScriptList.back();
     required->RelocateInstruction(last->GetNextInstructionKey() + 100,
@@ -240,17 +241,17 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
     }
 
     case Instructions::kFORStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx);
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, "");
         ExecuteForStatement(ins, newCtx);
         return Value();
     }
     case Instructions::kForInStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx);
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, "");
         ExecuteForInStatement(ins, newCtx);
         return Value();
     }
     case Instructions::kSwitchCaseStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Switch, ctx);
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Switch, ctx, "");
         ExecuteSwitchStatement(ins, newCtx);
         return Value();
     }
@@ -367,6 +368,10 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         }
         uint64_t i = ((uint64_t)oldVal.ToInteger() >> val.ToInteger());
         oldVal.Integer = (Value::INTVAR)i;
+        break;
+    }
+    case Instructions::kuMOD: {
+        oldVal %= val;
         break;
     }
     default:
@@ -548,7 +553,7 @@ Value Executor::CallRutimeFunction(const Instruction* ins, VMContext* ctx,
 Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                                    const Instruction* func) {
     std::vector<Value> actualValues;
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, ins->Name);
     if (ins->Refs.size() == 1) {
         const Instruction* actual = GetInstruction(ins->Refs[0]);
         if (actual->Name == KnownListName::kNamedValue) {
@@ -590,7 +595,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
 Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMContext* ctx,
                                                      const Instruction* func) {
     std::vector<Value> actualValues;
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, ins->Name);
     std::vector<const Instruction*> actual = GetInstructions(GetInstruction(ins->Refs[0])->Refs);
     std::vector<const Instruction*> formalParamers =
             GetInstructions(GetInstruction(func->Refs[1])->Refs);
@@ -620,13 +625,14 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
 }
 Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& args,
                                    VMContext* ctx) {
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, name);
     const Instruction* func = ctx->GetFunction(name);
     const Instruction* body = GetInstruction(func->Refs[0]);
     if (func->Refs.size() == 2) {
         const Instruction* formalParamersList = GetInstruction(func->Refs[0]);
         if (args.size() != formalParamersList->Refs.size()) {
-            throw RuntimeException("actual parameters count not equal formal paramers");
+            throw RuntimeException("actual parameters count not equal formal paramers for func:" +
+                                   name);
         }
         std::vector<const Instruction*> formalParamers = GetInstructions(formalParamersList->Refs);
         std::vector<const Instruction*>::iterator iter = formalParamers.begin();
@@ -843,6 +849,10 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         oldVal.Integer = (Value::INTVAR)i;
         break;
     }
+    case Instructions::kuMOD: {
+        oldVal %= val;
+        break;
+    }
     default:
         LOG("Unknown Instruction code :" + ToString((int64_t)opCode));
     }
@@ -933,10 +943,6 @@ Value Executor::ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx) {
     }
     Execute(defaultBranch, ctx);
     return Value();
-}
-
-void Executor::OnScriptError(std::string error) {
-    mCallback->OnScriptError(this, error.c_str());
 }
 
 } // namespace Interpreter

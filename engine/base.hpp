@@ -10,7 +10,7 @@ public:
 
 protected:
     CRefCountedBase() : ref_count_(0) {}
-    ~CRefCountedBase();
+    ~CRefCountedBase(){};
     void AddRef() const { ref_count_++; }
     bool Release() const {
         if (--ref_count_ == 0) {
@@ -37,14 +37,24 @@ protected:
     CRefCountedThreadSafeBase() : ref_count_(0) {}
     ~CRefCountedThreadSafeBase() {}
 
-    void AddRef() const { __sync_fetch_and_add(&ref_count_,1); }
+    void AddRef() const {
+#ifdef WIN32
+        InterlockedIncrement(&ref_count_);
+#else
+        __sync_fetch_and_add(&ref_count_, 1);
+#endif
+    }
 
     // Returns true if the object should self-delete.
     bool Release() const {
-        if (!__sync_fetch_and_sub(&ref_count_,1)) {
+#ifdef WIN32
+        InterlockedDecrement(&ref_count_);
+#else
+        if (!__sync_sub_and_fetch(&ref_count_, 1)) {
             return true;
         }
         return false;
+#endif
     }
 
 private:

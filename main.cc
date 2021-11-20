@@ -1,16 +1,10 @@
+#include <dirent.h>
 #include <stdio.h>
 
 #include <fstream>
 
-#include "engine/parser.hpp"
 #include "engine/vm.hpp"
-using namespace Interpreter;
-#include "engine/script.lex.hpp"
-#include "engine/script.tab.hpp"
 #include "modules/modules.h"
-void yyerror(Interpreter::Parser* parser, const char* s) {
-    printf("%s on line:%d\n", s, yylineno);
-}
 
 char* read_file_content(const char* path, int* file_size) {
     FILE* f = NULL;
@@ -34,62 +28,103 @@ char* read_file_content(const char* path, int* file_size) {
         free(content);
         return NULL;
     }
-    *file_size = read_size;
+    *file_size = (read_size + 2);
     content[read_size] = 0;
     content[read_size + 1] = 0;
     return content;
 }
 
-scoped_refptr<Script> ParserFile(std::string path) {
-    YY_BUFFER_STATE bp;
-    char* context;
-    int file_size;
-    context = read_file_content(path.c_str(), &file_size);
-    if (context == NULL) {
-        return NULL;
+void ReadDir(std::string path, std::list<std::string>& result) {
+    struct dirent* entry = NULL;
+    DIR* dir = opendir(path.c_str());
+    if (dir == NULL) {
+        return;
     }
-    scoped_refptr<Parser> parser = make_scoped_refptr(new Parser());
-    bp = yy_scan_buffer(context, file_size + 2);
-    yy_switch_to_buffer(bp);
-    parser->Start(split(path, '/').back());
-    int error = yyparse(parser.get());
-    yy_flush_buffer(bp);
-    yy_delete_buffer(bp);
-    yylex_destroy();
-    free(context);
-    if (error) {
-        return NULL;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type & DT_DIR) {
+            continue;
+        }
+        if (entry->d_namlen > 0) {
+            std::string full = "";
+            full.append(entry->d_name, entry->d_namlen);
+            if (full.find(".sc") != std::string::npos && full.find(".inc.") == std::string::npos) {
+                result.push_back(full);
+            }
+        }
     }
-    return parser->Finish();
+    closedir(dir);
 }
 
-class DefaultExecutorCallback : public ExecutorCallback {
+bool stop = false;
+class DefaultExecutorCallback : public Interpreter::ExecutorCallback {
 protected:
     std::string mFolder;
 
 public:
-    DefaultExecutorCallback(const std::string& folder) : mFolder(folder) {}
-    scoped_refptr<Script> LoadScript(const char* name) {
+    DefaultExecutorCallback(std::string folder) : mFolder(folder) {}
+
+    void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+                             Interpreter::VMContext* ctx) {
+        vm->RequireScript("nasl.sc", ctx);
+    }
+    void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+                          Interpreter::VMContext* ctx) {}
+    void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
         std::string path = mFolder + name;
-        return ParserFile(path);
+        if (std::string(name) == "nasl.sc") {
+            path = "../script/nasl.sc";
+        }
+        int iSize = 0;
+        void* ptr = read_file_content(path.c_str(), &iSize);
+        size = iSize;
+        return ptr;
+    }
+    void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
+        std::string error = msg;
+        if (error.find("syntax error") != std::string::npos) {
+            stop = true;
+        }
+        if (error.find("function not found") != std::string::npos) {
+            return;
+        }
+        printf("%s %s\n", name, msg);
     }
 };
 
-int main(int argc, char* argv[]) {
-    std::string folder = argv[1];
-    folder = folder.substr(0, folder.rfind('/') + 1);
-    scoped_refptr<Script> script = ParserFile(argv[1]);
-    if (script != NULL) {
-        DefaultExecutorCallback callback(folder);
-        Executor exe(&callback);
-        std::string err = "";
-        RegisgerModulesBuiltinMethod(&exe);
-        //std::cout << script->DumpInstruction(script->EntryPoint,"")<<std::endl;
-        if (!exe.Execute(script, err, false)) {
-            fprintf(stderr, "execute error:%s\n", err.c_str());
-            return -1;
+bool ExecuteFile(std::string path, std::string name) {
+    DefaultExecutorCallback callback(path);
+    Interpreter::Executor exe(&callback);
+    RegisgerModulesBuiltinMethod(&exe);
+    return exe.Execute(name.c_str(), false);
+}
+
+void test_execute_full(bool debug) {
+    std::list<std::string> result;
+    ReadDir("/Volumes/work/convert", result);
+    auto iter = result.begin();
+    while (iter != result.end()) {
+        if (debug) {
+            std::cout << "start execute " << *iter << std::endl;
         }
+        ExecuteFile("/Volumes/work/convert/", *iter);
+        if (stop) {
+            break;
+        }
+        iter++;
+    }
+}
+
+int main(int argc, char* argv[]) {
+    if (argc == 2) {
+        std::string folder = argv[1];
+        size_t i = folder.rfind('/');
+        std::string dir = folder.substr(0, i + 1);
+        std::string name = folder.substr(i + 1);
+        ExecuteFile(dir, name);
+        std::cout << Interpreter::Status::ToString() << std::endl;
         return 0;
     }
-    return -1;
+    test_execute_full(false);
+    std::cout << Interpreter::Status::ToString() << std::endl;
+    return 0;
 }

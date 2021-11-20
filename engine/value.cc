@@ -2,6 +2,12 @@
 
 #include <sstream>
 namespace Interpreter {
+long Status::sResourceCount = 0;
+long Status::sArrayCount = 0;
+long Status::sMapCount = 0;
+long Status::sParserCount = 0;
+long Status::sScriptCount = 0;
+long Status::sVMContextCount = 0;
 
 std::list<std::string> split(const std::string& text, char split_char) {
     std::list<std::string> result;

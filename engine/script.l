@@ -51,6 +51,7 @@ int yywrap(void)
 <INITIAL>","         return COMMA;
 <INITIAL>"var"       return VAR;
 <INITIAL>"%"         return MOD;
+<INITIAL>"%="        return MODASSIGN;
 <INITIAL>"+="        return ADDASSIGN;
 <INITIAL>"-="        return SUBASSIGN;
 <INITIAL>"*="        return MULASSIGN;

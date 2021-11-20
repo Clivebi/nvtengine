@@ -25,6 +25,7 @@ protected:
         EXIT_FLAG = (1 << 3),
     };
 
+    std::string mName;
     VMContext* mParent;
     Type mType;
     int mDeepth;
@@ -36,7 +37,7 @@ protected:
     VMContext& operator=(const VMContext&);
 
 public:
-    VMContext(Type type, VMContext* Parent);
+    VMContext(Type type, VMContext* Parent, std::string Name);
     ~VMContext();
 
     void SetEnableWarning(bool val) { mIsEnableWarning = val; }
@@ -63,6 +64,8 @@ public:
     const Instruction* GetFunction(const std::string& name);
 
     Value GetTotalFunction();
+
+    std::string DumpContext();
 
 protected:
     void LoadBuiltinVar();

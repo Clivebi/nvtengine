@@ -70,13 +70,15 @@ func power(x,y){
 }
 
 func make_array(list...){
-	var size = len(list);
-	if((size < 2)||(size % 2)){
-		error("make_array: the count of parameters not algin to 2 <count="+ToString(size)+">");
-	}
 	var result = {};
-	for(i=0;i<size-1;i+=2){
-		result[list[i]] = list[i+1];
+	var size = len(list);
+	if(size > 0){
+		if(size %2){
+			error("make_array: the count of parameters not algin to 2 <count="+ToString(size)+">");
+		}
+		for(i=0;i<size-1;i+=2){
+			result[list[i]] = list[i+1];
+		}
 	}
 	return result;
 }

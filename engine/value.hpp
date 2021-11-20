@@ -5,6 +5,7 @@
 
 #include <list>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,25 @@
 #include "logger.hpp"
 
 namespace Interpreter {
+class Status {
+public:
+    static long sResourceCount;
+    static long sArrayCount;
+    static long sMapCount;
+    static long sParserCount;
+    static long sScriptCount;
+    static long sVMContextCount;
+    static std::string ToString() {
+        std::stringstream o;
+        o << "Res:\t" << sResourceCount << "\n";
+        o << "Array:\t" << sArrayCount << "\n";
+        o << "Map:\t" << sMapCount << "\n";
+        o << "Parser:\t" << sParserCount << "\n";
+        o << "Script:\t" << sScriptCount << "\n";
+        o << "Context:\t" << sVMContextCount << "\n";
+        return o.str();
+    }
+};
 
 std::list<std::string> split(const std::string& text, char split_char);
 std::string HTMLEscape(const std::string& src);
@@ -22,7 +42,11 @@ std::string HexEncode(const char* buf, int count);
 
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
-    virtual ~Resource() { Close(); }
+    Resource() { Status::sResourceCount++; }
+    virtual ~Resource() {
+        Close();
+        Status::sResourceCount--;
+    }
     virtual void Close() {};
     virtual bool IsAvaliable() = 0;
     virtual std::string TypeName() = 0;
@@ -100,11 +124,14 @@ public:
 class ArrayObject : public Object {
 public:
     std::vector<Value> _array;
+    explicit ArrayObject() : _array() { Status::sArrayCount++; }
+    ~ArrayObject() { Status::sArrayCount--; }
 
 public:
     std::string ObjectType() const { return "array"; };
     std::string ToString() const;
     std::string ToJSONString() const;
+    DISALLOW_COPY_AND_ASSIGN(ArrayObject);
 };
 
 struct cmp_key {
@@ -114,11 +141,14 @@ typedef std::map<Value, Value, cmp_key> MAPTYPE;
 class MapObject : public Object {
 public:
     MAPTYPE _map;
+    explicit MapObject() : _map() { Status::sMapCount++; }
+    ~MapObject() { Status::sMapCount--; }
 
 public:
     std::string ObjectType() const { return "map"; };
     std::string ToString() const;
     std::string ToJSONString() const;
+    DISALLOW_COPY_AND_ASSIGN(MapObject);
 };
 
 inline bool IsMap(Object* obj) {
@@ -130,7 +160,7 @@ inline bool IsArray(Object* obj) {
 
 typedef scoped_refptr<Object> OBJECTPTR;
 typedef scoped_refptr<Resource> RESOURCE;
-class VMContext; 
+class VMContext;
 class Executor;
 typedef Value (*RUNTIME_FUNCTION)(std::vector<Value>& values, VMContext* ctx, Executor* vm);
 class Instruction;
@@ -141,8 +171,8 @@ public:
     union {
         INTVAR Integer;
         double Float;
-        const Instruction * Function;
-        RUNTIME_FUNCTION    RuntimeFunction;
+        const Instruction* Function;
+        RUNTIME_FUNCTION RuntimeFunction;
     };
     std::string bytes;
     RESOURCE resource;
@@ -161,8 +191,8 @@ public:
     Value(const char* str);
     Value(const Value& val);
     Value(Resource*);
-    Value(const Instruction* );
-    Value(RUNTIME_FUNCTION func );
+    Value(const Instruction*);
+    Value(RUNTIME_FUNCTION func);
     Value(const std::vector<Value>& val);
     Value& operator=(const Value& right);
 

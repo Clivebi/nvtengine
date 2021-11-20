@@ -17,9 +17,14 @@ protected:
     bool mLogInstruction;
 
 public:
-    void* mContext;
-    Parser() : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString(),mContext(NULL) {}
-    ~Parser() { Finish(); }
+    std::string mLastError;
+    Parser() : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString() {
+        Status::sParserCount++;
+    }
+    ~Parser() {
+        Finish();
+        Status::sParserCount--;
+    }
 
     void Start(std::string name) { mScript = new Script(name); }
     scoped_refptr<Script> Finish() {
@@ -52,17 +57,18 @@ public:
     //instruction list
     Instruction* CreateList(const std::string& typeName, Instruction* element);
     Instruction* AddToList(Instruction* list, Instruction* element);
-    
+
     //
     Instruction* CreateObjectIndexer(const std::string& first);
-    Instruction* AddObjectIndexer(Instruction*src,const std::string& item);
+    Instruction* AddObjectIndexer(Instruction* src, const std::string& item);
 
-    Instruction* CreateReference(const std::string& root,Instruction* path);
-    Instruction* VarReadReference(const std::string& root,Instruction* path);
+    Instruction* CreateReference(const std::string& root, Instruction* path);
+    Instruction* VarReadReference(const std::string& root, Instruction* path);
 
     //var declaration read & write
     Instruction* VarDeclarationExpresion(const std::string& name, Instruction* value);
-    Instruction* VarUpdateExpression(Instruction* ref, Instruction* value, Instructions::Type opcode);
+    Instruction* VarUpdateExpression(Instruction* ref, Instruction* value,
+                                     Instructions::Type opcode);
     Instruction* VarReadExpresion(const std::string& name);
 
     //const values
@@ -76,7 +82,8 @@ public:
     Instruction* CreateFunctionCall(const std::string& name, Instruction* actualParameters);
 
     //arithmetic operation +-*/% ,> >= < <= == !=
-    Instruction* CreateBinaryOperation(Instruction* first, Instruction* second, Instructions::Type opcode);
+    Instruction* CreateBinaryOperation(Instruction* first, Instruction* second,
+                                       Instructions::Type opcode);
 
     Instruction* CreateMinus(Instruction* value);
 

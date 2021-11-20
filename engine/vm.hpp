@@ -24,7 +24,7 @@ public:
                                      VMContext* ctx) = 0;
     virtual void OnScriptExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) = 0;
     virtual void* LoadScriptFile(Executor* vm, const char* name, size_t& size) = 0;
-    virtual void OnScriptError(Executor* vm, const char* msg) = 0;
+    virtual void OnScriptError(Executor* vm, const char* name, const char* msg) = 0;
 };
 
 class Executor {
@@ -37,10 +37,9 @@ public:
     Value CallScriptFunction(const std::string& name, std::vector<Value>& value, VMContext* ctx);
     void RequireScript(const std::string& name, VMContext* ctx);
     Value GetAvailableFunction(VMContext* ctx);
-    void OnScriptError(std::string error);
 
 protected:
-    scoped_refptr<Script> LoadScript(const char* name);
+    scoped_refptr<Script> LoadScript(const char* name, std::string& error);
     Value Execute(const Instruction* ins, VMContext* ctx);
     Value ExecuteList(std::vector<const Instruction*> insList, VMContext* ctx);
     Value CallFunction(const Instruction* ins, VMContext* ctx);
@@ -60,7 +59,8 @@ protected:
     Value ExecuteSlice(const Instruction* ins, VMContext* ctx);
     Value ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx);
     Value GetFunction(const std::string& name, VMContext* ctx);
-    Value UpdateValueAt(Value& toObject, const Value& index, const Value& val, Instructions::Type opCode);
+    Value UpdateValueAt(Value& toObject, const Value& index, const Value& val,
+                        Instructions::Type opCode);
     RUNTIME_FUNCTION GetBuiltinMethod(const std::string& name);
     const Instruction* GetInstruction(Instruction::keyType key);
     std::vector<const Instruction*> GetInstructions(std::vector<Instruction::keyType> keys);
