@@ -13,6 +13,9 @@ endif (NOT PKG_CONFIG_FOUND)
 
 pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.1.0)
+pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
+
+#https://github.com/google/brotli
 pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.9)
 
 if(NOT OPENSSL_FOUND)
@@ -59,4 +62,4 @@ add_executable(Interpreter
     main.cc 
     modules/module.cc
 )
-target_link_libraries(Interpreter  engine ${OPENSSL_LDFLAGS} ${ZLIB_LDFLAGS} ${BROTLI_LDFLAGS})
+target_link_libraries(Interpreter  engine ${OPENSSL_LDFLAGS} ${ZLIB_LDFLAGS} ${BROTLI_LDFLAGS} ${SQLITE_LDFLAGS})

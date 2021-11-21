@@ -29,15 +29,18 @@ public:
 
 class Executor {
 public:
-    Executor(ExecutorCallback* callback);
+    Executor(ExecutorCallback* callback, void* userContext);
 
 public:
     bool Execute(const char* name, bool showWarning = false);
-    void RegisgerFunction(BuiltinMethod methods[], int count);
+    void RegisgerFunction(BuiltinMethod methods[], int count, std::string prefix = "");
     Value CallScriptFunction(const std::string& name, std::vector<Value>& value, VMContext* ctx);
     void RequireScript(const std::string& name, VMContext* ctx);
     Value GetAvailableFunction(VMContext* ctx);
 
+    void* GetUserContext() { return mContext; }
+
+    Value GetFunction(const std::string& name, VMContext* ctx);
 protected:
     scoped_refptr<Script> LoadScript(const char* name, std::string& error);
     Value Execute(const Instruction* ins, VMContext* ctx);
@@ -58,7 +61,7 @@ protected:
     Value ExecuteCreateArray(const Instruction* ins, VMContext* ctx);
     Value ExecuteSlice(const Instruction* ins, VMContext* ctx);
     Value ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx);
-    Value GetFunction(const std::string& name, VMContext* ctx);
+    
     Value UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                         Instructions::Type opCode);
     RUNTIME_FUNCTION GetBuiltinMethod(const std::string& name);
@@ -69,6 +72,7 @@ protected:
     std::vector<Value> ObjectPathToIndexer(const Instruction* ins, VMContext* ctx);
 
 protected:
+    void* mContext;
     ExecutorCallback* mCallback;
     std::list<scoped_refptr<Script>> mScriptList;
     std::map<std::string, RUNTIME_FUNCTION> mBuiltinMethods;

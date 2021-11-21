@@ -2,6 +2,11 @@
     TypeName(const TypeName&);             \
     void operator=(const TypeName&)
 
+
+#ifndef BYTE
+#define BYTE unsigned char
+#endif
+
 class CRefCountedBase {
 public:
     static bool ImplementsThreadSafeReferenceCounting() { return false; }

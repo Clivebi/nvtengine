@@ -49,7 +49,7 @@ Value JSONValueToValue(json::JSONValue* val) {
     case json::JSONValue::NIL:
         return Value();
     case json::JSONValue::STRING:
-        return Value(val->Value);
+        return Value(DecodeJSONString(val->Value));
     default:
         return Value();
     }

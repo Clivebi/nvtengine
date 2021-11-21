@@ -23,4 +23,5 @@ add_library(engine STATIC
     value.cc
     vmcontext.cc 
     builtin.cc
+    utf8.cc
 )

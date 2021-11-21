@@ -2,7 +2,7 @@
 var NULL = nil;
 var TRUE = true;
 var FALSE = false;
-var description = false;
+var description = true;
 
 var IPPROTO_TCP = 6;
 var IPPROTO_UDP = 17;
@@ -86,9 +86,15 @@ func make_array(list...){
 #为了方便维护，所有内置函数不能通过命名参数来调用
 #所以原有的命名函数这里这里做中转
 func script_tag(name, value){
+	return ova_script_tag(name,value);
 }
 
 func script_xref(name, value){
+	return ova_script_xref(name,value);
+}
+
+func safe_checks(){
+	return false;
 }
 
 func egrep(pattern, string,icase){
@@ -98,12 +104,28 @@ func eregmatch(string, pattern,icase){
 }
 
 func set_kb_item(name, value){
+	return ova_set_kb_item(name,value);
 }
 
-func log_message(data, port){
+func log_message(port,protocol,data,uri,proto){
+	if(proto != nil){
+		protocol = proto;
+	}
+	return ova_log_message(port,protocol,data,uri);
 }
 
-func security_message(data,port){
+func security_message(port,protocol,data,uri,proto){
+	if(proto != nil){
+		protocol = proto;
+	}
+	return ova_security_message(port,protocol,data,uri);
+}
+
+func error_message(port,protocol,data,uri,proto){
+	if(proto != nil){
+		protocol = proto;
+	}
+	return ova_error_message(port,protocol,data,uri);
 }
 
 func http_get(item, port){
@@ -138,6 +160,10 @@ func str_replace(string, find, replace){
 
 #script_add_preference(name: "Prefix directory", type: "entry", value: "/etc/apache2/", id: 1)
 func script_add_preference(name,type, value, id){
+	if(id==nil){
+		id = -1;
+	}
+	return ova_script_add_preference(name,type,value,id);
 }
 
 func resolve_host_name(hostname){
@@ -150,10 +176,11 @@ func add_host_name(hostname,source){
 
 #script_get_preference("Launch IT-Grundschutz (10. EL)", id: 1)
 func script_get_preference(name,id){
+	return ova_script_get_preference(name,id);
 }
 
 func script_get_preference_file_content(name,id){
-
+	return ova_script_get_preference_file_content(name,id);
 }
 
 #open_sock_tcp(port, transport: ENCAPS_IP)

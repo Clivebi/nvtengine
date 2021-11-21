@@ -309,6 +309,19 @@ Value GetAvaliableFunction(std::vector<Value>& values, VMContext* ctx, Executor*
     return vm->GetAvailableFunction(ctx);
 }
 
+Value IsFunctionExist(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(values, 1);
+    Value& arg = values.front();
+    if (arg.Type != ValueType::kString && arg.Type != ValueType::kBytes) {
+        throw RuntimeException("IsFunctionExist parameter must a string");
+    }
+    Value ret = vm->GetFunction(arg.bytes, ctx);
+    if (ret.IsFunction()) {
+        return Value(true);
+    }
+    return Value(false);
+}
+
 Value Error(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(values, 1);
     Value& arg = values.front();
@@ -324,15 +337,26 @@ Value DisplayContext(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
 }
 
 BuiltinMethod builtinFunction[] = {
-        {"exit", Exit},           {"len", len},
-        {"append", append},       {"require", Require},
-        {"bytes", MakeBytes},     {"string", MakeString},
-        {"close", close},         {"typeof", TypeOf},
-        {"error", Error},         {"Println", Println},
-        {"ToString", ToString},   {"ToInteger", ToInteger},
-        {"ToFloat", ToFloat},     {"HexDecodeString", HexDecodeString},
-        {"HexEncode", HexEncode}, {"DisplayContext", DisplayContext},
-        {"VMEnv", VMEnv},         {"GetAvaliableFunction", GetAvaliableFunction}};
+        {"exit", Exit},
+        {"len", len},
+        {"append", append},
+        {"require", Require},
+        {"bytes", MakeBytes},
+        {"string", MakeString},
+        {"close", close},
+        {"typeof", TypeOf},
+        {"error", Error},
+        {"Println", Println},
+        {"ToString", ToString},
+        {"ToInteger", ToInteger},
+        {"ToFloat", ToFloat},
+        {"HexDecodeString", HexDecodeString},
+        {"HexEncode", HexEncode},
+        {"DisplayContext", DisplayContext},
+        {"VMEnv", VMEnv},
+        {"GetAvaliableFunction", GetAvaliableFunction},
+        {"IsFunctionExist", IsFunctionExist},
+};
 
 bool IsFunctionOverwriteEnabled(const std::string& name) {
     for (int i = 0; i < COUNT_OF(builtinFunction); i++) {

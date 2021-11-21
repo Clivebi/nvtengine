@@ -3,8 +3,10 @@
 
 #include <fstream>
 
+#include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
 #include "modules/modules.h"
+#include "modules/openvas/support/nvtidb.hpp"
 
 char* read_file_content(const char* path, int* file_size) {
     FILE* f = NULL;
@@ -91,11 +93,49 @@ public:
     }
 };
 
+void UpdateNVTI() {
+    std::list<std::string> result;
+    ReadDir("/Volumes/work/convert", result);
+    Value ret = Value::make_array();
+    auto iter = result.begin();
+    while (iter != result.end()) {
+        OVAContext context(*iter);
+        DefaultExecutorCallback callback("/Volumes/work/convert/");
+        Interpreter::Executor exe(&callback, &context);
+        RegisgerModulesBuiltinMethod(&exe);
+        bool error = exe.Execute(iter->c_str(), false);
+        if (error) {
+            ret._array().push_back(context.Nvti);
+            if (ret.Length() > 5000) {
+                openvas::NVTIDataBase db("attributes.db");
+                db.UpdateAll(ret);
+                ret._array().clear();
+            }
+        }
+        iter++;
+    }
+    {
+        openvas::NVTIDataBase db("attributes.db");
+        db.UpdateAll(ret);
+        ret._array().clear();
+    }
+}
+
 bool ExecuteFile(std::string path, std::string name) {
+    OVAContext context(name);
     DefaultExecutorCallback callback(path);
-    Interpreter::Executor exe(&callback);
+    Interpreter::Executor exe(&callback, &context);
     RegisgerModulesBuiltinMethod(&exe);
-    return exe.Execute(name.c_str(), false);
+    bool ret = exe.Execute(name.c_str(), false);
+    if (ret) {
+        openvas::NVTIDataBase* db = new openvas::NVTIDataBase("attributes.db");
+        db->UpdateOne(context.Nvti);
+        Value old = db->Get("1.3.6.1.4.1.25623.1.0.103680");
+        Value fromName = db->GetFromFileName(name);
+        assert(old == fromName);
+    }
+    std::cout << context.NvtiString() << std::endl;
+    return ret;
 }
 
 void test_execute_full(bool debug) {
@@ -124,7 +164,7 @@ int main(int argc, char* argv[]) {
         std::cout << Interpreter::Status::ToString() << std::endl;
         return 0;
     }
-    test_execute_full(false);
+    UpdateNVTI();
     std::cout << Interpreter::Status::ToString() << std::endl;
     return 0;
 }

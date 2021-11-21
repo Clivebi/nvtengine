@@ -18,7 +18,9 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 namespace Interpreter {
 
-Executor::Executor(ExecutorCallback* callback) : mScriptList(), mCallback(callback) {
+Executor::Executor(ExecutorCallback* callback, void* userContext)
+        : mScriptList(), mCallback(callback) {
+    mContext = userContext;
     RegisgerEngineBuiltinMethod(this);
 }
 
@@ -73,9 +75,9 @@ scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error)
     return parser->Finish();
 }
 
-void Executor::RegisgerFunction(BuiltinMethod methods[], int count) {
+void Executor::RegisgerFunction(BuiltinMethod methods[], int count, std::string prefix) {
     for (int i = 0; i < count; i++) {
-        mBuiltinMethods[methods[i].name] = methods[i].func;
+        mBuiltinMethods[prefix + methods[i].name] = methods[i].func;
     }
 }
 

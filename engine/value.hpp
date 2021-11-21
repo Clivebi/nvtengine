@@ -24,21 +24,32 @@ public:
     static long sVMContextCount;
     static std::string ToString() {
         std::stringstream o;
-        o << "Res:\t" << sResourceCount << "\n";
-        o << "Array:\t" << sArrayCount << "\n";
-        o << "Map:\t" << sMapCount << "\n";
-        o << "Parser:\t" << sParserCount << "\n";
-        o << "Script:\t" << sScriptCount << "\n";
+        o << "Res:\t\t" << sResourceCount << "\n";
+        o << "Array:\t\t" << sArrayCount << "\n";
+        o << "Map:\t\t" << sMapCount << "\n";
+        o << "Parser:\t\t" << sParserCount << "\n";
+        o << "Script:\t\t" << sScriptCount << "\n";
         o << "Context:\t" << sVMContextCount << "\n";
         return o.str();
     }
 };
 
 std::list<std::string> split(const std::string& text, char split_char);
+
 std::string HTMLEscape(const std::string& src);
+
 std::string ToString(double val);
+
 std::string ToString(int64_t val);
+
 std::string HexEncode(const char* buf, int count);
+
+std::string DecodeJSONString(const std::string& src) ;
+
+std::string EncodeJSONString(const std::string& src,bool escape) ;
+
+bool IsSafeSet(bool html, BYTE c);
+
 
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
@@ -296,22 +307,23 @@ public:
         return Value(~Integer);
     }
 
-    ArrayObject* Array() { return (ArrayObject*)object.get(); }
-    MapObject* Map() { return (MapObject*)object.get(); }
+    ArrayObject* Array() const { return (ArrayObject*)object.get(); }
+    MapObject* Map() const { return (MapObject*)object.get(); }
     MAPTYPE& _map() { return ((MapObject*)object.get())->_map; }
     std::vector<Value>& _array() { return ((ArrayObject*)object.get())->_array; }
 
     std::string MapKey() const;
     std::string ToString() const;
-    std::string ToJSONString() const;
+    std::string ToJSONString(bool escape = true) const;
     double ToFloat() const;
     INTVAR ToInteger() const;
 
-    size_t Length();
-    Value operator[](const Value& key);
+    size_t Length() const;
+    const Value operator[](const Value& key) const;
+    Value& operator[](const Value& key);
     std::string TypeName() const { return ValueType::ToString(Type); };
-    bool ToBoolean();
-    Value Slice(const Value& from, const Value& to);
+    bool ToBoolean() const;
+    Value Slice(const Value& from, const Value& to) const;
     void SetValue(const Value& key, const Value& val);
 };
 

@@ -1,5 +1,7 @@
 
-#include "./network/tcp.cc"
+#ifndef TCP_IMPL
+#include "./network/tcpstream.cc"
+#endif
 
 #include <array>
 #include "check.hpp"

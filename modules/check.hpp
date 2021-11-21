@@ -1,4 +1,5 @@
 #include <sstream>
+
 #include "../engine/vm.hpp"
 
 #ifndef _CHECK_HPP_
@@ -6,19 +7,25 @@
 inline std::string check_error(int i, const char* type) {
     std::stringstream s;
     s << " : the #" << i << " argument must be an " << type << std::endl;
-    ;
     return s.str();
 }
 
-#define CHECK_PARAMETER_COUNT(count)                                    \
-    if (args.size() < count) {                                          \
-        throw RuntimeException(std::string(__FUNCTION__) +              \
+#define CHECK_PARAMETER_COUNT(count)                                     \
+    if (args.size() < count) {                                           \
+        throw RuntimeException(std::string(__FUNCTION__) +               \
                                " : the count of parameters not enough"); \
     }
 
 #define CHECK_PARAMETER_STRING(i)                                                              \
     if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {             \
         throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "string or bytes")); \
+    }
+
+#define CHECK_PARAMETER_STRINGS()                                                                  \
+    for (size_t i = 0; i < args.size(); i++) {                                                     \
+        if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {             \
+            throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "string or bytes")); \
+        }                                                                                          \
     }
 
 #define CHECK_PARAMETER_INTEGER(i)                                                     \
@@ -37,7 +44,7 @@ inline std::string check_error(int i, const char* type) {
     }
 
 #define CHECK_PARAMETER_ARRAY(i)                                                     \
-    if (args[i].Type != ValueType::kArray) {                                           \
+    if (args[i].Type != ValueType::kArray) {                                         \
         throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "array")); \
     }
 #endif

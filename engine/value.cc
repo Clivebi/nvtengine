@@ -1,6 +1,11 @@
 #include "value.hpp"
 
+#include <string.h>
+
 #include <sstream>
+
+#include "utf8.hpp"
+
 namespace Interpreter {
 long Status::sResourceCount = 0;
 long Status::sArrayCount = 0;
@@ -23,31 +28,146 @@ std::list<std::string> split(const std::string& text, char split_char) {
         part += (*iter);
         iter++;
     }
-    result.push_back(part);
+    if (part.size()) {
+        result.push_back(part);
+    }
     return result;
 }
 
-std::string HTMLEscape(const std::string& src) {
+static std::string safeSet = " !\"#$%&\'()*+,-./:;<=>?@[\\]^_`{}|~\x7F";
+
+bool IsSafeSet(bool html, BYTE c) {
+    if (c >= 'a' && c <= 'z') {
+        return true;
+    }
+    if (c >= 'A' && c <= 'Z') {
+        return true;
+    }
+    if (c >= '0' && c <= '9') {
+        return true;
+    }
+    if (std::string::npos == safeSet.find((char)c)) {
+        return false;
+    }
+    if (c == '\"' || c == '\\') {
+        return false;
+    }
+    if (html && (c == '&' || c == '<' || c == '>')) {
+        return false;
+    }
+    return true;
+}
+
+void JSONEncodeString(std::stringstream& o, const std::string& src, bool escape) {
     const char* hex = "0123456789abcdef";
-    std::stringstream o;
-    int start = 0;
-    for (size_t i = 0; i < src.size(); i++) {
-        int c = src[i];
-        if (c == '<' || c == '>' || c == '&') {
-            o << "\\u00";
-            o << hex[c >> 4];
-            o << hex[c & 0xF];
-            start = i + 1;
-        }
-        if (c == 0xE2 && i + 2 < src.size() && (int)src[i + 1] == 0x80 &&
-            (src[i + 2] & (src[i + 2] ^ 1)) == 0xA8) {
+    size_t start = 0;
+    for (size_t i = 0; i < src.size();) {
+        BYTE b = src[i];
+        if (b < 0x80 || !escape) {
+            if (IsSafeSet(escape, b)) {
+                i++;
+                continue;
+            }
             if (start < i) {
                 o << src.substr(start, i - start);
             }
-            o << "\\u202";
-            o << hex[src[i + 2] & 0xF];
-            start = i + 3;
+            o << "\\";
+            switch (b) {
+            case '\\':
+            case '\"':
+                o << (char)b;
+                break;
+            case '\r':
+                o << "r";
+                break;
+            case '\t':
+                o << "t";
+                break;
+            case '\n':
+                o << "n";
+                break;
+
+            default:
+                o << "u00";
+                o << hex[b >> 4];
+                o << hex[b & 0xF];
+            }
+            i++;
+            start = i;
+            continue;
         }
+        int d_size;
+        int32_t c = utf8::DecodeRune(src.substr(i), d_size);
+        if (c == utf8::RuneError && d_size == 1) {
+            if (start < i) {
+                o << src.substr(start, i - start);
+            }
+            o << "\\fffd";
+            i += d_size;
+            start = i;
+            continue;
+        }
+        o << "\\u";
+        o << utf8::RuneString(c);
+        i += d_size;
+        start = i;
+    }
+    if (start < src.size()) {
+        o << src.substr(start);
+    }
+}
+
+std::string EncodeJSONString(const std::string& src, bool escape) {
+    std::stringstream o;
+    JSONEncodeString(o, src, escape);
+    return o.str();
+}
+
+std::string DecodeJSONString(const std::string& src) {
+    std::stringstream o;
+    size_t start = 0;
+    for (size_t i = 0; i < src.size();) {
+        if (src[i] != '\\') {
+            i++;
+            continue;
+        }
+        if (start < i) {
+            o << src.substr(start, i - start);
+        }
+        if (i + 1 >= src.size()) {
+            return src;
+        }
+        i++;
+        switch (src[i]) {
+        case 'r':
+            o << "\r";
+            i++;
+            break;
+        case 'n':
+            o << "\n";
+            i++;
+            break;
+        case 't':
+            o << "\t";
+            i++;
+            break;
+        case '\"':
+            o << "\"";
+            i++;
+            break;
+        case 'u':
+            i++;
+            if (i + 4 > src.size()) {
+                return src;
+            }
+            o << utf8::EncodeRune(utf8::ParseHex4((BYTE*)src.c_str() + i));
+            i += 4;
+            break;
+        default:
+            i++;
+            o << src[i];
+        }
+        start = i;
     }
     if (start < src.size()) {
         o << src.substr(start);
@@ -352,7 +472,7 @@ std::string Value::ToString() const {
         return "unknown";
     }
 }
-std::string Value::ToJSONString() const {
+std::string Value::ToJSONString(bool escape) const {
     switch (Type) {
     case ValueType::kArray:
     case ValueType::kMap:
@@ -360,7 +480,10 @@ std::string Value::ToJSONString() const {
         return object->ToJSONString();
     case ValueType::kBytes:
     case ValueType::kString:
-        return "\"" + HTMLEscape(bytes) + "\"";
+        return "\"" + EncodeJSONString(bytes, escape) + "\"";
+    case ValueType::kInteger:
+    case ValueType::kFloat:
+        return ToString();
     default:
         return "null";
     }
@@ -405,19 +528,19 @@ std::string Value::MapKey() const {
         return "unknown";
     }
 }
-size_t Value::Length() {
+size_t Value::Length() const {
     if (IsStringOrBytes()) {
         return bytes.size();
     }
     if (Type == ValueType::kArray) {
-        return _array().size();
+        return Array()->_array.size();
     }
     if (Type == ValueType::kMap) {
-        return _map().size();
+        return Map()->_map.size();
     }
     throw Interpreter::RuntimeException("this value type not have length ");
 }
-bool Value::ToBoolean() {
+bool Value::ToBoolean() const {
     if (Type == ValueType::kNULL) {
         return false;
     }
@@ -430,7 +553,7 @@ bool Value::ToBoolean() {
     return true;
 }
 
-Value Value::operator[](const Value& key) {
+const Value Value::operator[](const Value& key) const {
     if (IsStringOrBytes()) {
         if (!key.IsInteger()) {
             throw Interpreter::RuntimeException("the index key type must a Integer");
@@ -455,7 +578,7 @@ Value Value::operator[](const Value& key) {
     throw Interpreter::RuntimeException("value not support index operation");
 }
 
-Value Value::Slice(const Value& f, const Value& t) {
+Value Value::Slice(const Value& f, const Value& t) const {
     size_t from = 0, to = 0;
     if (!IsStringOrBytes() && Type != ValueType::kArray) {
         throw Interpreter::RuntimeException("the value type must slice able");
@@ -488,11 +611,26 @@ Value Value::Slice(const Value& f, const Value& t) {
     }
     Value ret = make_array();
     std::vector<Value> result;
-    std::vector<Value>& array = _array();
+    std::vector<Value>& array = Array()->_array;
     for (size_t i = from; i < to; i++) {
         ret.Array()->_array.push_back(array[i]);
     }
     return ret;
+}
+Value& Value::operator[](const Value& key) {
+    if (Type == ValueType::kArray) {
+        if (!key.IsInteger()) {
+            throw Interpreter::RuntimeException("the index key type must a Integer");
+        }
+        if (key.Integer < 0 || key.Integer >= Length()) {
+            throw Interpreter::RuntimeException("index of array out of range");
+        }
+        return _array()[key.Integer];
+    }
+    if (Type == ValueType::kMap) {
+        return _map()[key.MapKey()];
+    }
+    throw RuntimeException("the value type not have value[index]= val operation");
 }
 
 void Value::SetValue(const Value& key, const Value& val) {
