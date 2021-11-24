@@ -308,3 +308,11 @@ func socket_negotiate_ssl(socket){
 func gunzip(data){
 
 }
+
+func isnull(val){
+	return val==nil;
+}
+
+func defined_func(name){
+	return IsFunctionExist(name);
+}

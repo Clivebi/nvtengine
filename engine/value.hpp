@@ -44,12 +44,11 @@ std::string ToString(int64_t val);
 
 std::string HexEncode(const char* buf, int count);
 
-std::string DecodeJSONString(const std::string& src) ;
+std::string DecodeJSONString(const std::string& src);
 
-std::string EncodeJSONString(const std::string& src,bool escape) ;
+std::string EncodeJSONString(const std::string& src, bool escape);
 
 bool IsSafeSet(bool html, BYTE c);
-
 
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
@@ -221,6 +220,13 @@ public:
     }
     bool IsFunction() {
         return Type == ValueType::kFunction || Type == ValueType::kRuntimeFunction;
+    }
+    bool IsResource(std::string& name) {
+        if (Type == ValueType::kResource) {
+            name = resource->TypeName();
+            return true;
+        }
+        return false;
     }
 
     Value& operator+=(const Value& right);

@@ -92,6 +92,18 @@
         "cinttypes": "cpp",
         "filesystem": "cpp",
         "*.ipp": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "cerrno": "cpp",
+        "any": "cpp",
+        "csignal": "cpp",
+        "forward_list": "cpp",
+        "future": "cpp",
+        "buffer": "cpp",
+        "executor": "cpp",
+        "internet": "cpp",
+        "io_context": "cpp",
+        "netfwd": "cpp",
+        "socket": "cpp",
+        "timer": "cpp"
     }
 }

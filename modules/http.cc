@@ -1,7 +1,5 @@
 
-#ifndef TCP_IMPL
-#include "./network/tcpstream.cc"
-#endif
+#include "./network/tcpstream.hpp"
 #include <brotli/decode.h>
 #include <zlib.h>
 

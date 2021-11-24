@@ -13,3 +13,4 @@ void RegisgerModulesBuiltinMethod(Executor* vm) {
 
 #include "json/json_parser.cc"
 #include "thirdpart/http-parser/http_parser.c"
+#include "network/tcpstream.cc"

@@ -1,9 +1,7 @@
 
-#ifndef TCP_IMPL
-#include "./network/tcpstream.cc"
-#endif
-
 #include <array>
+
+#include "./network/tcpstream.hpp"
 #include "check.hpp"
 using namespace Interpreter;
 Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

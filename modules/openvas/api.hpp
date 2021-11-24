@@ -5,6 +5,7 @@
 using namespace Interpreter;
 struct OVAContext {
     std::string Name;
+    std::string Host; // current runing host
     Value Nvti;
     Value Prefs; // for global preference
     scoped_refptr<openvas::ScriptStorage> Storage;
@@ -22,6 +23,15 @@ struct OVAContext {
     void AddXref(const Value& name, const Value& value);
     void AddTag(const Value& name, const Value& value);
 };
+
+inline int GetInt(std::vector<Value>& args, int pos, int default_value) {
+    if (pos < args.size()) {
+        if (args[pos].IsInteger()) {
+            return args[pos].Integer;
+        }
+    }
+    return default_value;
+}
 
 inline OVAContext* GetOVAContext(Executor* vm) {
     return (struct OVAContext*)vm->GetUserContext();

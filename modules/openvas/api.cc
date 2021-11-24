@@ -2,8 +2,8 @@
 #include "api.hpp"
 
 #include "./api/script.cc"
+#include "./api/ovanetwork.cc"
 #include "base.cc"
-
 
 BuiltinMethod ovaMethod[] = {
         {"script_name", script_name},
@@ -30,14 +30,26 @@ BuiltinMethod ovaMethod[] = {
         {"set_kb_item", set_kb_item},
         {"get_kb_item", get_kb_item},
         {"get_kb_list", get_kb_list},
-        {"replace_kb_item",replace_kb_item},
-        {"get_preference",get_preference},
-        {"get_script_oid",get_script_oid},
-        {"security_message",security_message},
-        {"log_message",log_message},
-        {"error_message",error_message},
-        {"get_script_oid",get_script_oid},
-        };
+        {"replace_kb_item", replace_kb_item},
+        {"get_preference", get_preference},
+        {"get_script_oid", get_script_oid},
+        {"security_message", security_message},
+        {"log_message", log_message},
+        {"error_message", error_message},
+        {"get_script_oid", get_script_oid},
+        {"open_sock_tcp", open_sock_tcp},
+        {"open_sock_udp", open_sock_udp},
+        {"open_priv_sock_tcp", open_priv_sock_tcp},
+        {"open_priv_sock_udp", open_priv_sock_udp},
+        {"socket_get_error", socket_get_error},
+        {"recv", recv},
+        {"recv_line", recv_line},
+        {"send", send},
+        {"socket_negotiate_ssl", socket_negotiate_ssl},
+        {"socket_get_cert", socket_get_cert},
+        {"join_multicast_group", join_multicast_group},
+        {"leave_multicast_group", leave_multicast_group},
+        {"get_source_port", get_source_port}};
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod));
