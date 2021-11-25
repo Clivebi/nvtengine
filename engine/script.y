@@ -310,6 +310,10 @@ formal_parameter:IDENTIFIER
         {
                 $$=parser->VarDeclarationExpresion($1,NULL);
         }
+        | IDENTIFIER ASSIGN rvalue
+        {
+                $$= parser->VarDeclarationExpresion($1,$3);
+        }
         ;
 
 

@@ -104,6 +104,8 @@
         "io_context": "cpp",
         "netfwd": "cpp",
         "socket": "cpp",
-        "timer": "cpp"
+        "timer": "cpp",
+        "regex": "cpp",
+        "stack-queue.c": "cpp"
     }
 }

@@ -57,9 +57,11 @@ add_custom_command(
 set_source_files_properties(${GENSRC_DIR}/script.lex.cpp  PROPERTIES GENERATED TRUE)
 
 add_subdirectory(engine)
+add_subdirectory(thirdpart/masscan)
 
 add_executable(Interpreter
     main.cc 
+    taskmgr.cc
     modules/module.cc
 )
-target_link_libraries(Interpreter  engine ${OPENSSL_LDFLAGS} ${ZLIB_LDFLAGS} ${BROTLI_LDFLAGS} ${SQLITE_LDFLAGS})
+target_link_libraries(Interpreter  engine  masscan ${OPENSSL_LDFLAGS} ${ZLIB_LDFLAGS} ${BROTLI_LDFLAGS} ${SQLITE_LDFLAGS})

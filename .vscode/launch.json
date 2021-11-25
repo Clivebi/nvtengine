@@ -10,6 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/Interpreter",
             "args": [
+                "${workspaceFolder}/test/test1.sc"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

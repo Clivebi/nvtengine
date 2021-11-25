@@ -28,7 +28,13 @@ Value OVAContext::GetPreference(const Value& id, const Value& name) {
     }
     auto iter = ref._array().begin();
     while (iter != ref._array().end()) {
-        if ((*iter)["name"] == name && (*iter)["id"] == id) {
+        if ((*iter)["name"] == name) {
+            if (id != -1) {
+                if ((*iter)["id"] == id) {
+                    return (*iter)["value"];
+                }
+                return Value();
+            }
             return (*iter)["value"];
         }
         iter++;

@@ -2,7 +2,7 @@
 var NULL = nil;
 var TRUE = true;
 var FALSE = false;
-var description = true;
+var description = false;
 
 var IPPROTO_TCP = 6;
 var IPPROTO_UDP = 17;
@@ -97,12 +97,6 @@ func safe_checks(){
 	return false;
 }
 
-func egrep(pattern, string,icase){
-}
-
-func eregmatch(string, pattern,icase){
-}
-
 func set_kb_item(name, value){
 	return ova_set_kb_item(name,value);
 }
@@ -131,14 +125,6 @@ func error_message(port,protocol,data,uri,proto){
 func http_get(item, port){
 }
 
-func ereg(pattern, string){
-}
-
-func ereg_replace(pattern, string,replace,icase){
-}
-
-func split(buffer, sep,keep){
-}
 
 func send(socket,data){
 }
@@ -146,8 +132,6 @@ func send(socket,data){
 func recv_line(socket,length){
 }
 
-func crap(length,data){
-}
 
 func recv(socket,length,timeout){
 }
@@ -155,8 +139,6 @@ func recv(socket,length,timeout){
 func replace_kb_item(name, value){
 }
 
-func str_replace(string, find, replace){
-}
 
 #script_add_preference(name: "Prefix directory", type: "entry", value: "/etc/apache2/", id: 1)
 func script_add_preference(name,type, value, id){
@@ -175,7 +157,7 @@ func add_host_name(hostname,source){
 }
 
 #script_get_preference("Launch IT-Grundschutz (10. EL)", id: 1)
-func script_get_preference(name,id){
+func script_get_preference(name,id=-1){
 	return ova_script_get_preference(name,id);
 }
 
@@ -188,7 +170,8 @@ func open_sock_tcp(port,buffsz,timeout, transport,priority){
 }
 
 #match(string: r, pattern: "\x01rlogind: Permission denied*", icase: TRUE)
-func match(string,pattern,icase){
+func match(string,pattern,icase=false){
+	return ova_match(string,pattern,icase);
 }
 
 #pread(cmd: "nmap", argv: make_list( "nmap",open_sock_tcp(port, transport: ENCAPS_IP)
@@ -249,7 +232,8 @@ func win_cmd_exec(cmd, password, username){
 }
 
 #mktime(sec: uptime_match[6], min: uptime_match[5], hour: uptime_match[4], mday: uptime_match[3], mon: uptime_match[2], year: uptime_match[1])
-func mktime(sec, min, hour, mday, mon, year){
+func mktime(sec, min, hour, mday, mon, year,isdst=-1){
+	return ova_mktime(sec,min,hour,mday,mon,year,isdst);
 }
 
 #get_host_name_source(hostname: hostname)
@@ -315,4 +299,172 @@ func isnull(val){
 
 func defined_func(name){
 	return IsFunctionExist(name);
+}
+
+func strcat(strlist...){
+	var ret = "";
+	for v in strlist{
+		ret = append(ret,v);
+	}
+	return ret;
+}
+func ord(obj){
+	if(typeof(obj) == "string"||typeof(obj) == "bytes"){
+		return obj[0];
+	}
+	return ToInteger(obj);
+}
+
+func hex(val){
+	 var hexText = HexEncode(val);
+	 if(len(hexText)%2){
+		 return "0x0"+hexText;
+	 }
+	return "0x"+hexText;
+}
+
+func hexstr(str){
+	return HexEncode(str);
+}
+
+func strstr(str1,str2){
+	var pos = IndexString(str1,str2);
+	if(pos == -1){
+		return nil;
+	}
+	return str1[pos:];
+}
+
+func substr(str,start,end=0){
+	if(end<start){
+		return str[start:];
+	}
+	return str[start:end];
+}
+
+func insstr(str1,str2,i1,i2=-1){
+	if(len(str1) == 0 || len(str2) == 0 || len(str1) < i1){
+		error("check you parameter");
+		return nil;
+	}
+	if(i2 < 0 || i2 > len(str1)){
+		i2 = len(str1) - 1;
+	}
+	if(i1 > i2){
+		error("check you parameter");
+		return nil;
+	}
+	var result = str1[:i1];
+	result += str2;
+	result += str1[i2:];
+	return result;
+}
+
+func tolower(str){
+	return ToLowerString(str);
+}
+
+func toupper(str){
+	return ToUpperString(str);
+}
+
+func crap(length,data){
+	return RepeatString(data,length);
+}
+
+func strlen(str){
+	return len(str);
+}
+
+func eregp(pattern, string,icase=false){
+	var text_group = SplitString(string,"\n");
+	var result = "";
+	for v in text_group {
+		if(len(v)> 0 && IsMatchRegexp(v,pattern,icase)){
+			result = append(result,v);
+		}
+		if(len(result) > 0){
+			result += "\n";
+		}
+		result +=v;
+	}
+	return result;
+}
+
+func ereg(pattern, string,multiline=false,icase=false){
+	var text = string;
+	if(!multiline){
+		var lines = SplitString(string,"\n");
+		text = lines[0];
+	}
+	return IsMatchRegexp(text,pattern,icase);
+}
+
+func ereg_replace(pattern, string,replace,icase=false){
+	return RegExpReplace(string,pattern,replace,icase);
+}
+
+func eregmatch(pattern, string,icase=false){
+	return MatchRegExp(string,pattern,icase);
+}
+
+func split(buffer, sep="\n",keep = false){
+	var list = SplitString(buffer,sep);
+	if(keep){
+		var i = 0;
+		for(var i = 0; i < len(list);i++){
+			list[i]+=sep;
+		}
+	}
+	return list;
+}
+
+func chomp(str){
+	return TrimRightString(src," \t\n\r");
+}
+
+func int(other){
+	ToInteger(other);
+}
+
+func stridx(str,sub){
+	return IndexString(str,sub);
+}
+
+func str_replace(string, find, replace,count = -1){
+	return ReplaceString(string,find,replace,count);
+}
+
+func keys(obj){
+	var list = [];
+	for k,v in obj{
+		list = append(list,k);
+	}
+	return list;
+}
+
+func max_index(obj){
+	if(typeof(obj)=="array"){
+		return len(obj);
+	}
+	return 0;
+}
+
+func sort(obj){
+	if(typeof(obj)!="array"){
+		return obj;
+	}
+	var dic = {};
+	for v in obj{
+		dic[v] = 1;
+	}
+	var result = [];
+	for v in dic{
+		result = append(result,v);
+	}
+	return result;
+}
+
+func dump_ctxt(){
+	DisplayContext();
 }

@@ -2,6 +2,8 @@
 #pragma once
 #include "../../../engine/value.hpp"
 #include "sqlitedb.hpp"
+using namespace Interpreter;
+
 Value ParseJSON(std::string& str);
 namespace openvas {
 

@@ -1,8 +1,10 @@
 
 #include "api.hpp"
 
-#include "./api/script.cc"
 #include "./api/ovanetwork.cc"
+#include "./api/script.cc"
+#include "./api/time.cc"
+#include "./api/util.cc"
 #include "base.cc"
 
 BuiltinMethod ovaMethod[] = {
@@ -49,7 +51,21 @@ BuiltinMethod ovaMethod[] = {
         {"socket_get_cert", socket_get_cert},
         {"join_multicast_group", join_multicast_group},
         {"leave_multicast_group", leave_multicast_group},
-        {"get_source_port", get_source_port}};
+        {"get_source_port", get_source_port},
+        {"match", match},
+        {"unixtime", UnixTime},
+        {"gettimeofday", GetTimeOfDay},
+        {"localtime", LocalTime},
+        {"mktime", MakeTime},
+        {"isotime_now", ISOTimeNow},
+        {"isotime_is_valid", ISOTimeIsValid},
+        {"isotime_scan", ISOTimeScan},
+        {"isotime_print", ISOTimePrint},
+        {"isotime_add", ISOTimeAdd},
+        {"rand", Rand},
+        {"usleep", USleep},
+        {"sleep", Sleep},
+};
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod));

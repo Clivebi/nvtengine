@@ -144,6 +144,10 @@ int yywrap(void)
 <STRING_LITERAL_STATE>\\r        {
     parser->AppendToScanningString('\r');
 }
+<STRING_LITERAL_STATE>\\[xX][0-9a-fA-F][0-9a-fA-F]        {
+    long val = strtoll(yytext+2,NULL,16);
+    parser->AppendToScanningString((char)(val&0xFF));
+}
 <STRING_LITERAL_STATE>\\\"      parser->AppendToScanningString('"');
 <STRING_LITERAL_STATE>\\n       parser->AppendToScanningString('\n');
 <STRING_LITERAL_STATE>\\t       parser->AppendToScanningString('\t');

@@ -575,15 +575,20 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
             Value list = Value(actualValues);
             newCtx->SetVarValue(formalParamers.front()->Name, list);
         } else {
-            if (formalParamers.size() != actualValues.size()) {
-                throw RuntimeException(
-                        "actual parameters count not equal formal paramers for func:" + ins->Name);
-            }
             auto iter = formalParamers.begin();
             int i = 0;
             while (iter != formalParamers.end()) {
                 Execute(*iter, newCtx);
-                newCtx->SetVarValue((*iter)->Name, actualValues[i]);
+                if (i < actualValues.size()) {
+                    newCtx->SetVarValue((*iter)->Name, actualValues[i]);
+                } else {
+                    //没有默认值，而且没有传递这个参数
+                    if ((*iter)->Refs.size() == 0) {
+                        throw RuntimeException(
+                                "actual parameters count not equal formal paramers for func:" +
+                                ins->Name);
+                    }
+                }
                 i++;
                 iter++;
             }
@@ -890,7 +895,8 @@ Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {
     for (size_t i = 0; i < indexValues.size() - 1; i++) {
         toObject = toObject[indexValues[i]];
     }
-    return toObject[indexValues.back()];
+    const Value& last = toObject;
+    return last[indexValues.back()];
 }
 
 std::vector<Value> Executor::InstructionToValue(std::vector<const Instruction*> insList,

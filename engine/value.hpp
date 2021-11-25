@@ -50,6 +50,8 @@ std::string EncodeJSONString(const std::string& src, bool escape);
 
 bool IsSafeSet(bool html, BYTE c);
 
+bool IsMatchString(std::string word, std::string pattern);
+
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
     Resource() { Status::sResourceCount++; }
@@ -211,6 +213,7 @@ public:
     static Value make_map();
 
 public:
+    bool IsNULL() const { return Type == ValueType::kNULL; }
     bool IsInteger() const { return Type == ValueType::kInteger; }
     bool IsNumber() const { return Type == ValueType::kInteger || Type == ValueType::kFloat; }
     bool IsStringOrBytes() const { return Type == ValueType::kString || Type == ValueType::kBytes; }

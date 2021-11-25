@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <regex>
+
 #include "check.hpp"
 using namespace Interpreter;
 
@@ -225,6 +227,63 @@ Value ToLowerBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return args[0];
 }
 
+inline std::regex RegExp(const std::string& r, bool icase) {
+    if (icase) {
+        return std::regex(r, std::regex_constants::icase);
+    }
+    return std::regex(r);
+}
+
+//buffer,partten,bool icase
+Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING(1);
+    bool icase = true;
+    if (args.size() > 2) {
+        icase = args[2].ToBoolean();
+    }
+    std::regex re = RegExp(args[1].bytes, icase);
+    bool found = std::regex_search(args[0].bytes.begin(), args[0].bytes.end(), re);
+    return Value(found);
+}
+
+Value MatchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING(1);
+    bool icase = true;
+    if (args.size() > 2) {
+        icase = args[2].ToBoolean();
+    }
+    std::smatch m;
+    std::string s = args[0].bytes;
+    Value ret = Value::make_array();
+    std::regex re = RegExp(args[1].bytes, icase);
+    while (std::regex_search(s, m, re)) {
+        for (auto iter = m.begin(); iter != m.end(); iter++) {
+            ret._array().push_back(m.str());
+        }
+        s = m.suffix().str();
+    }
+    return ret;
+}
+
+Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(3);
+    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING(2);
+    bool icase = true;
+    if (args.size() > 3) {
+        icase = args[3].ToBoolean();
+    }
+    std::smatch m;
+    Value ret = Value::make_array();
+    std::regex re = RegExp(args[1].bytes, icase);
+    return std::regex_replace(args[0].bytes, re, args[2].bytes);
+}
+
 BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
                                {"HasPrefixBytes", HasPrefixBytes},
                                {"HasSuffixBytes", HasSuffixBytes},
@@ -252,7 +311,10 @@ BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
                                {"ReplaceAllString", ReplaceAllBytes},
                                {"SplitString", SplitBytes},
                                {"ToLowerString", ToLowerBytes},
-                               {"ToUpperString", ToUpperBytes}};
+                               {"ToUpperString", ToUpperBytes},
+                               {"IsMatchRegexp", IsMatchRegexp},
+                               {"MatchRegExp", MatchRegExp},
+                               {"RegExpReplace", RegExpReplace}};
 
 void RegisgerBytesBuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(bytesMethod, COUNT_OF(bytesMethod));
