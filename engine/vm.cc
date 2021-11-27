@@ -427,6 +427,16 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
     if (ins->OpCode == Instructions::kBNG) {
         return ~firstVal;
     }
+    if(ins->OpCode == Instructions::kAND){
+        if(!firstVal.ToBoolean()){
+            return Value(false);
+        }
+    }
+    if(ins->OpCode == Instructions::kOR){
+         if(firstVal.ToBoolean()){
+            return Value(true);
+        }
+    }
     const Instruction* second = GetInstruction(ins->Refs[1]);
     Value secondVal = Execute(second, ctx);
 
@@ -500,7 +510,7 @@ Value Executor::GetFunction(const std::string& name, VMContext* ctx) {
     }
     RUNTIME_FUNCTION method = GetBuiltinMethod(name);
     if (method == NULL) {
-        throw RuntimeException("function not found :" + name);
+        return Value();
     }
     return Value(method);
 }

@@ -13,6 +13,7 @@ inline std::string check_error(int i, const char* type, Interpreter::VMContext* 
 
 #define CHECK_PARAMETER_COUNT(count)                                     \
     if (args.size() < count) {                                           \
+        DEBUG_CONTEXT();                                                 \
         throw RuntimeException(std::string(__FUNCTION__) +               \
                                " : the count of parameters not enough"); \
     }

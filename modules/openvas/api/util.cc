@@ -23,8 +23,8 @@ Value match(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value Rand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    srand48((long)time(NULL));
-    return ::random();
+    srand((int)time(NULL));
+    return rand();
 }
 
 Value USleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -51,4 +51,11 @@ Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value vendor_version(std::vector<Value>& args, VMContext* ctx, Executor* vm){
     return Value("NVTEngine 0.1");
+}
+
+Value GetHostName(std::vector<Value>& args, VMContext* ctx, Executor* vm){
+    char name[260] = {0};
+    unsigned int size = 260;
+    gethostname(name,size);
+    return Value(name);
 }

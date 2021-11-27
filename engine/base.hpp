@@ -1,10 +1,23 @@
+#pragma once
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
     TypeName(const TypeName&);             \
     void operator=(const TypeName&)
 
-
 #ifndef BYTE
 #define BYTE unsigned char
+#endif
+#define _DEBUG_SCRIPT
+
+#ifdef _DEBUG_SCRIPT
+#define DEBUG_CONTEXT() Interpreter::DebugContext()
+namespace Interpreter {
+void DebugContext();
+}
+
+#else
+
+#define DEBUG_CONTEXT() //
+
 #endif
 
 class CRefCountedBase {
@@ -15,7 +28,7 @@ public:
 
 protected:
     CRefCountedBase() : ref_count_(0) {}
-    ~CRefCountedBase(){};
+    ~CRefCountedBase() {};
     void AddRef() const { ref_count_++; }
     bool Release() const {
         if (--ref_count_ == 0) {

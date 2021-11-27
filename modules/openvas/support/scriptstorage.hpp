@@ -53,7 +53,7 @@ public:
     }
 
     void SetItem(const std::string& name, const Value& val) {
-        std::cout << name << "\t" << val.ToString() << std::endl;
+        //std::cout << name << "\t" << val.ToString() << std::endl;
         if (IsExist(mValues[name], val)) {
             return;
         }

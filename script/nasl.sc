@@ -2,7 +2,6 @@
 var NULL = nil;
 var TRUE = true;
 var FALSE = false;
-var description = true;
 
 var IPPROTO_TCP = 6;
 var IPPROTO_UDP = 17;
@@ -55,6 +54,7 @@ var ETIMEDOUT = 1;
 var ECONNRESET = 2;
 var EUNREACH = 3;
 var EUNKNOWN = 99;
+var OPENVAS_VERSION = "21.4.3~dev1~git-36d09619-openvas-21.04";
 
 #nasl一些特色的函数，我们有更好的实现，这里做转接
 
@@ -196,6 +196,7 @@ func match(string,pattern,icase=false){
 
 #pread(cmd: "nmap", argv: make_list( "nmap",open_sock_tcp(port, transport: ENCAPS_IP)
 func pread(cmd,argv){
+	return "";
 }
 
 #wmi_query(wmi_handle: handle, query: query)
@@ -311,10 +312,6 @@ func gunzip(data){
 func string(x...){
 	var ret="";
 	for v in x {
-		if(typeof(v)=="integer"){
-			DisplayContext();
-			error("debug me....");
-		}
 		ret += v;
 	}
 	return ret;
@@ -336,7 +333,7 @@ func defined_func(name){
 func strcat(strlist...){
 	var ret = "";
 	for v in strlist{
-		ret = append(ret,v);
+		ret +=v;
 	}
 	return ret;
 }
@@ -412,9 +409,9 @@ func strlen(str){
 	return len(str);
 }
 
-func eregp(pattern, string,icase=false){
+func egrep(pattern, string,icase=false){
 	var text_group = SplitString(string,"\n");
-	var result = "";
+	var result = bytes();
 	for v in text_group {
 		if(len(v)> 0 && IsMatchRegexp(v,pattern,icase)){
 			result = append(result,v);
@@ -424,7 +421,7 @@ func eregp(pattern, string,icase=false){
 		}
 		result +=v;
 	}
-	return result;
+	return ToString(result);
 }
 
 func ereg(pattern, string,multiline=false,icase=false){
@@ -441,7 +438,11 @@ func ereg_replace(pattern, string,replace,icase=false){
 }
 
 func eregmatch(pattern, string,icase=false){
-	return MatchRegExp(string,pattern,icase);
+	var result = MatchRegExp(string,pattern,icase);
+	if(result != nil && len(result)==0){
+		return nil;
+	}
+	return result;
 }
 
 func split(buffer, sep="\n",keep = false){
@@ -460,7 +461,7 @@ func chomp(str){
 }
 
 func int(other){
-	ToInteger(other);
+	return ToInteger(other);
 }
 
 func stridx(str,sub){
@@ -563,4 +564,31 @@ func HMAC_SHA384(data,key){
 
 func HMAC_SHA512(data,key){
 	return HMACMethod("sha512",key,data);
+}
+
+func get_port_state(port){
+	var key = ","+port;
+	var result = HostEnv();
+	return ContainsBytes(result["opened_tcp"],key);
+}
+
+func get_tcp_port_state(port){
+	var key = ","+port;
+	var result = HostEnv();
+	return ContainsBytes(result["opened_tcp"],key);
+}
+
+func get_udp_port_state(port){
+	var key = ","+port;
+	var result = HostEnv();
+	return ContainsBytes(result["opened_udp"],key);
+}
+
+func this_host(){
+	var result = HostEnv();
+	return result["local_ip"];
+}
+
+func this_host_name(){
+	return GetHostName();
 }

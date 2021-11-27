@@ -1,5 +1,4 @@
 #include "vmcontext.hpp"
-
 #include <sstream>
 bool IsFunctionOverwriteEnabled(const std::string& name);
 namespace Interpreter {
@@ -17,6 +16,16 @@ BuiltinValue g_builtinVar[] = {
 
 #define COUNT_OF(a) (sizeof(a) / sizeof(a[0]))
 
+#ifdef _DEBUG_SCRIPT
+VMContext* VMContext::sLastContext = NULL;
+
+void DebugContext() {
+    if (VMContext::sLastContext != NULL) {
+        LOG(VMContext::sLastContext->DumpContext(true));
+    }
+}
+#endif
+
 VMContext::VMContext(Type type, VMContext* Parent, std::string Name)
         : mFlags(0), mIsEnableWarning(false) {
     mParent = Parent;
@@ -29,9 +38,15 @@ VMContext::VMContext(Type type, VMContext* Parent, std::string Name)
     }
     Status::sVMContextCount++;
     LoadBuiltinVar();
+#ifdef _DEBUG_SCRIPT
+    VMContext::sLastContext = this;
+#endif
 }
 VMContext::~VMContext() {
     Status::sVMContextCount--;
+#ifdef _DEBUG_SCRIPT
+    VMContext::sLastContext = mParent;
+#endif
 }
 
 bool VMContext::IsBuiltinVarName(const std::string& name) {
@@ -235,8 +250,9 @@ std::string VMContext::DumpContext(bool var) {
         default:
             break;
         }
+        o << "\n";
         if (var || ctx->mType == Function) {
-            o << "\n" << prefix << "Vars:\n";
+            o << prefix << "Vars:\n";
             auto iter2 = ctx->mVars.begin();
             while (iter2 != ctx->mVars.end()) {
                 o << prefix << iter2->first << ":" << iter2->second.ToString() << "\n";

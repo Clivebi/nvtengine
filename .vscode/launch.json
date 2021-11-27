@@ -8,9 +8,8 @@
             "name": "clang++ - 生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Interpreter",
+            "program": "${workspaceFolder}/build/NVTEngine",
             "args": [
-                "/Volumes/work/convert/secpod_ssl_ciphers_setting.sc"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",

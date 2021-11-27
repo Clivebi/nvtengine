@@ -900,6 +900,10 @@ static void arp_test() {
     free(list);
 }
 
+void masscan_init() {
+    pcap_init();
+    x509_init();
+}
 /*
 int main(int argc, char* argv[]) {
     struct HostScanResult* seek = NULL;

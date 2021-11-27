@@ -68,6 +68,7 @@ BuiltinMethod ovaMethod[] = {
         {"sleep", Sleep},
         {"get_host_ip", get_host_ip},
         {"HostEnv", HostEnv},
+        {"GetHostName",GetHostName},
         {"vendor_version", vendor_version},
         {"MD5", Md5Buffer},
         {"SHA1", SHA1Buffer},

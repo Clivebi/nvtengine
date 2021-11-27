@@ -38,7 +38,9 @@ char* read_file_content(const char* path, int* file_size) {
 }
 
 HostsTask::HostsTask(std::string host, std::string ports, Value& prefs)
-        : mScriptCount(0), mHosts(host), mPorts(ports), mPrefs(prefs) {}
+        : mScriptCount(0), mHosts(host), mPorts(ports), mPrefs(prefs), mMainThread(0) {
+    masscan_init();
+}
 
 bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     if (IsRuning()) {
@@ -50,6 +52,10 @@ bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
     mTaskID = TaskID;
     return true;
+}
+
+void HostsTask::Join() {
+    pixie_thread_join(mMainThread);
 }
 
 void HostsTask::Execute() {
@@ -79,6 +85,7 @@ void HostsTask::Execute() {
         LOG("init_host_scan_task failed");
         return;
     }
+    start_host_scan_task(task);
     while (!task->send_done) {
         pixie_mssleep(1000);
     }
@@ -95,15 +102,13 @@ void HostsTask::Execute() {
                 tcb->Storage->SetItem("Host/mac_address", mac.string);
             }
         }
-        std::string tcps, udps;
+        std::string tcps = ",", udps = ",";
         for (unsigned int i = 0; i < seek->size; i++) {
             if (TCP_UNKNOWN == seek->list[i].type) {
                 std::string name = "Ports/tcp/" + ToString(seek->list[i].port);
                 tcb->Storage->SetItem(name, Value(1));
-                if (tcps.size()) {
-                    tcps += ",";
-                }
                 tcps += ToString(seek->list[i].port);
+                tcps += ",";
                 continue;
             }
             if (UDP_UNKNOWN == seek->list[i].type) {
@@ -111,10 +116,8 @@ void HostsTask::Execute() {
                 tcb->Storage->SetItem(name, Value(1));
             }
             if (UDP_CLOSED != seek->list[i].type) {
-                if (udps.size()) {
-                    udps += ",";
-                }
                 udps += ToString(seek->list[i].port);
+                udps += ",";
                 continue;
             }
         }
@@ -131,11 +134,15 @@ void HostsTask::Execute() {
             tcb->Env["scanner_scanned"] = Value(true);
             tcb->Env["opened_tcp"] = tcps;
             tcb->Env["opened_udp"] = udps;
+            for (auto v : mPrefs._map()) {
+                tcb->Env[v.first] = v.second;
+            }
         }
         tcb->Task = this;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
         //TODO check we can start more task??
+        seek = seek->next;
     }
     //wait_all_thread_exit
     destory_host_scan_task(task);
@@ -165,6 +172,9 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
         Value root = mGroupedScripts[i];
         for (auto v : root._map()) {
             ctx.Name = v.second["filename"].bytes;
+            ctx.Nvti = v.second;
+            ctx.Env = tcb->Env;
+            ctx.Prefs = mPrefs;
             //TODO check require keys
             Engine.Execute(ctx.Name.c_str(), false);
             if (tcb->Exit) {
@@ -188,11 +198,17 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
         Value nvti = nvtiDB.Get(v);
         if (nvti.IsNULL()) {
             LOG("load " + v + " failed");
-            return false;
+            //return false;
+            continue;
         }
+        loaded[nvti["filename"].bytes] = 1;
         mGroupedScripts[nvti["category"].ToInteger()][v] = nvti;
         std::list<std::string> deps;
-        for (auto x : nvti["dependencies"]._array()) {
+        Value dp = nvti["dependencies"];
+        if (dp.IsNULL()) {
+            continue;
+        }
+        for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
         if (!InitScripts(nvtiDB, deps, loaded)) {
@@ -209,7 +225,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
 bool HostsTask::InitScripts(openvas::NVTIDataBase& db, std::list<std::string>& scripts,
                             std::map<std::string, int>& loaded) {
     for (auto v : scripts) {
-        if (loaded.find("v") != loaded.end()) {
+        if (loaded.find(v) != loaded.end()) {
             continue;
         }
         Value nvti = db.GetFromFileName(v);
@@ -220,7 +236,11 @@ bool HostsTask::InitScripts(openvas::NVTIDataBase& db, std::list<std::string>& s
         loaded[v] = 1;
         mGroupedScripts[nvti["category"].ToInteger()][v] = nvti;
         std::list<std::string> deps;
-        for (auto x : nvti["dependencies"]._array()) {
+        Value dp = nvti["dependencies"];
+        if (dp.IsNULL()) {
+            continue;
+        }
+        for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
         if (!InitScripts(db, deps, loaded)) {

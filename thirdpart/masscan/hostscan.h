@@ -114,4 +114,6 @@ unsigned lookup_arp_table(struct HostScanTask* task, ipaddress address, macaddre
 
 struct ARPItem* resolve_mac_address(const char* host, unsigned* item, unsigned timeout_second);
 
+void masscan_init();
+
 #endif /* hostscan_h */

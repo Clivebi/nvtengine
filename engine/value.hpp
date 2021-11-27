@@ -251,6 +251,7 @@ public:
     Value& operator+=(const Value& right);
     Value& operator-=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("-= must used on integer or float");
         }
         if (Type == ValueType::kFloat) {
@@ -262,6 +263,7 @@ public:
     }
     Value& operator*=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("*= must used on integer or float");
         }
         if (Type == ValueType::kFloat) {
@@ -273,6 +275,7 @@ public:
     }
     Value& operator/=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("/= must used on integer or float");
         }
         if (Type == ValueType::kFloat) {
@@ -284,6 +287,7 @@ public:
     }
     Value& operator%=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("%= must used on integer");
         }
         Integer %= right.ToInteger();
@@ -292,6 +296,7 @@ public:
 
     Value& operator>>=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException(">>= must used on integer");
         }
         Integer >>= right.ToInteger();
@@ -299,6 +304,7 @@ public:
     }
     Value& operator<<=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException(">>= must used on integer");
         }
         Integer <<= right.ToInteger();
@@ -306,6 +312,7 @@ public:
     }
     Value& operator|=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("|= must used on integer");
         }
         Integer |= right.ToInteger();
@@ -313,6 +320,7 @@ public:
     }
     Value& operator&=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("&= must used on integer");
         }
         Integer &= right.ToInteger();
@@ -320,6 +328,7 @@ public:
     }
     Value& operator^=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("^= must used on integer");
         }
         Integer ^= right.ToInteger();
@@ -327,6 +336,7 @@ public:
     }
     Value operator~() {
         if (!IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("~ must used on integer");
         }
         return Value(~Integer);

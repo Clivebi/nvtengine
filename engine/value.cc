@@ -628,6 +628,7 @@ size_t Value::Length() const {
     if (Type == ValueType::kMap) {
         return Map()->_map.size();
     }
+    DEBUG_CONTEXT();
     throw Interpreter::RuntimeException("this value type not have length ");
 }
 bool Value::ToBoolean() const {
@@ -646,26 +647,31 @@ bool Value::ToBoolean() const {
 const Value Value::operator[](const Value& key) const {
     if (IsStringOrBytes()) {
         if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= bytes.size()) {
-            LOG(ToString() + "[" + key.ToString() + "]");
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("index of string(bytes) out of range");
         }
         return Value(bytes[key.Integer]);
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            throw Interpreter::RuntimeException("index of array out of range");
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("index of array out of range ( " + ToString() +
+                                                "," + key.ToString() + " )");
         }
         return Array()->_array[key.Integer];
     }
     if (Type == ValueType::kMap) {
         return Map()->_map[key.MapKey()];
     }
+    DEBUG_CONTEXT();
     throw Interpreter::RuntimeException("value type <" + ValueType::ToString(Type) + " :" +
                                         ToString() + "> not support index operation");
 }
@@ -673,6 +679,7 @@ const Value Value::operator[](const Value& key) const {
 Value Value::Slice(const Value& f, const Value& t) const {
     size_t from = 0, to = 0;
     if (!IsStringOrBytes() && Type != ValueType::kArray) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("the value type must slice able");
     }
     if (f.Type == ValueType::kNULL) {
@@ -680,6 +687,7 @@ Value Value::Slice(const Value& f, const Value& t) const {
     } else if (f.Type == ValueType::kInteger) {
         from = f.Integer;
     } else {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");
     }
     if (t.Type == ValueType::kNULL) {
@@ -687,9 +695,11 @@ Value Value::Slice(const Value& f, const Value& t) const {
     } else if (t.Type == ValueType::kInteger) {
         to = t.Integer;
     } else {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");
     }
     if (to > Length() || from > Length()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("index out of range");
     }
 
@@ -712,16 +722,20 @@ Value Value::Slice(const Value& f, const Value& t) const {
 Value& Value::operator[](const Value& key) {
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            throw Interpreter::RuntimeException("index of array out of range");
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("index of array out of range ( " + ToString() +
+                                                "," + key.ToString() + " )");
         }
         return _array()[key.Integer];
     }
     if (Type == ValueType::kMap) {
         return _map()[key.MapKey()];
     }
+    DEBUG_CONTEXT();
     throw RuntimeException("the value type <" + ValueType::ToString(Type) + " :" + ToString() +
                            "> not have value[index]= val operation");
 }
@@ -729,12 +743,15 @@ Value& Value::operator[](const Value& key) {
 void Value::SetValue(const Value& key, const Value& val) {
     if (IsStringOrBytes()) {
         if (!val.IsInteger()) {
+            DEBUG_CONTEXT();
             Interpreter::RuntimeException("set the value must a integer");
         }
         if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= bytes.size()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
         bytes[key.Integer] = val.ToInteger() & 0xFF;
@@ -742,10 +759,13 @@ void Value::SetValue(const Value& key, const Value& val) {
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            throw Interpreter::RuntimeException("set index of array out of range");
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("set index of array out of range ( " + ToString() +
+                                                "," + key.ToString() + " )");
         }
         Array()->_array[key.Integer] = val;
         return;
@@ -754,19 +774,42 @@ void Value::SetValue(const Value& key, const Value& val) {
         Map()->_map[key.MapKey()] = val;
         return;
     }
+    DEBUG_CONTEXT();
     throw RuntimeException("set the value type <" + ValueType::ToString(Type) + " :" + ToString() +
                            "> not have value[index]= val operation");
 }
 
 Value operator+(const Value& left, const Value& right) {
-    if (left.IsSameType(right) &&
-        (ValueType::kString == left.Type || ValueType::kBytes == left.Type)) {
-        Value ret = Value::make_bytes(left.bytes + right.bytes);
-        ret.Type = left.Type;
-        return ret;
+    if (left.IsStringOrBytes()) {
+        switch (right.Type) {
+        case ValueType::kByte: {
+            Value ret(left.bytes + (char)right.Byte);
+            ret.Type = left.Type;
+            return ret;
+        }
+        case ValueType::kBytes:
+        case ValueType::kInteger:
+        case ValueType::kString:
+        case ValueType::kFloat: {
+            Value ret(left.ToString() + right.ToString());
+            ret.Type = left.Type;
+            return ret;
+        }
+        case ValueType::kNULL:
+            //DEBUG_CONTEXT();
+            LOG("nil warning!!!!" + left.ToString());
+            return left;
+
+        default:
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("+ operation not avaliable for this value ( " +
+                                                left.ToString() + "," + right.ToString() + " )");
+        }
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("arithmetic operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("+ operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     if (left.Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
         return Value(left.ToFloat() + right.ToFloat());
@@ -776,7 +819,9 @@ Value operator+(const Value& left, const Value& right) {
 
 Value operator-(const Value& left, const Value& right) {
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("arithmetic operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("- operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     if (left.Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
         return Value(left.ToFloat() - right.ToFloat());
@@ -785,7 +830,9 @@ Value operator-(const Value& left, const Value& right) {
 }
 Value operator*(const Value& left, const Value& right) {
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("arithmetic operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("* operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     if (left.Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
         return Value(left.ToFloat() * right.ToFloat());
@@ -794,7 +841,9 @@ Value operator*(const Value& left, const Value& right) {
 }
 Value operator/(const Value& left, const Value& right) {
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("arithmetic operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("/ operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     if (left.Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
         return Value(left.ToFloat() / right.ToFloat());
@@ -804,7 +853,9 @@ Value operator/(const Value& left, const Value& right) {
 
 Value operator%(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        throw Interpreter::RuntimeException("% operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("% operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     return Value(left.ToInteger() % right.ToInteger());
 }
@@ -814,7 +865,9 @@ bool operator<(const Value& left, const Value& right) {
         return left.bytes < right.bytes;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("< operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("< operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     return left.ToFloat() < right.ToFloat();
 }
@@ -823,7 +876,9 @@ bool operator<=(const Value& left, const Value& right) {
         return left.bytes <= right.bytes;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("<= operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("<= operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     return left.ToFloat() < right.ToFloat();
 }
@@ -832,7 +887,9 @@ bool operator>(const Value& left, const Value& right) {
         return left.bytes > right.bytes;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException("> operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("> operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     return left.ToFloat() > right.ToFloat();
 }
@@ -841,7 +898,9 @@ bool operator>=(const Value& left, const Value& right) {
         return left.bytes >= right.bytes;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        throw Interpreter::RuntimeException(">= operation not avaliable for this value ");
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException(">= operation not avaliable for this value ( " +
+                                            left.ToString() + "," + right.ToString() + " )");
     }
     return left.ToFloat() >= right.ToFloat();
 }
@@ -888,6 +947,7 @@ bool operator!=(const Value& left, const Value& right) {
 
 Value operator|(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("| operation only can used on Integer ");
     }
     return Value(left.Integer | right.Integer);
@@ -895,24 +955,28 @@ Value operator|(const Value& left, const Value& right) {
 
 Value operator&(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("& operation only can used on Integer ");
     }
     return Value(left.Integer & right.Integer);
 }
 Value operator^(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("^ operation only can used on Integer ");
     }
     return Value(left.Integer ^ right.Integer);
 }
 Value operator<<(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("<< operation only can used on Integer ");
     }
     return Value(left.Integer << right.Integer);
 }
 Value operator>>(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
+        DEBUG_CONTEXT();
         throw Interpreter::RuntimeException(">> operation only can used on Integer ");
     }
     return Value(left.Integer >> right.Integer);

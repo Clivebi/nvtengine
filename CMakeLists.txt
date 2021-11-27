@@ -69,12 +69,12 @@ set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
 set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
 set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
 
-add_executable(Interpreter
-    main.cc 
+add_executable(NVTEngine
+    nvtengine.cc 
     taskmgr.cc
     modules/module.cc
 )
-target_link_libraries(  Interpreter  
+target_link_libraries(  NVTEngine  
                         engine  
                         masscan 
                         "-L${CMAKE_BINARY_DIR}"

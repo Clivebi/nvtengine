@@ -8,6 +8,11 @@
 
 namespace Interpreter {
 
+#ifdef _DEBUG_SCRIPT
+void DebugContext();
+
+#endif
+
 class VMContext : public CRefCountedThreadSafe<VMContext> {
 public:
     enum Type {
@@ -16,6 +21,11 @@ public:
         For,
         Switch,
     };
+#ifdef _DEBUG_SCRIPT
+    void DebugContext();
+    static VMContext* sLastContext;
+
+#endif
 
 protected:
     enum {
@@ -37,7 +47,7 @@ protected:
     VMContext& operator=(const VMContext&);
 
 public:
-    VMContext(Type type, VMContext* Parent, std::string Name);
+    explicit VMContext(Type type, VMContext* Parent, std::string Name);
     ~VMContext();
 
     void SetEnableWarning(bool val) { mIsEnableWarning = val; }

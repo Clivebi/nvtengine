@@ -8,6 +8,7 @@ using namespace Interpreter;
 
 #define CHECK_PARAMETER_COUNT(args, count)                              \
     if (args.size() < count) {                                          \
+        DEBUG_CONTEXT();                                                \
         throw RuntimeException(std::string(__FUNCTION__) +              \
                                ": the count of parameters not enough"); \
     }
@@ -43,6 +44,7 @@ Value ToByte(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(values, 1);
     Value& arg = values.front();
     if (!arg.IsNumber()) {
+        DEBUG_CONTEXT();
         throw RuntimeException("only integer can convert to byte");
     }
     return Value((BYTE)arg.Integer);
@@ -107,17 +109,20 @@ Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
                 break;
             case ValueType::kArray:
                 if (!IsByteArray(iter->_array())) {
+                    DEBUG_CONTEXT();
                     throw RuntimeException("only integer array (0~255) can append to bytes");
                 }
                 AppendIntegerArrayToBytes(to, iter->_array());
                 break;
             default:
+                DEBUG_CONTEXT();
                 throw RuntimeException(iter->ToString() + " can't append to bytes");
             }
             iter++;
         }
         return to;
     }
+    DEBUG_CONTEXT();
     throw RuntimeException("first append value must an array or bytes");
 }
 
@@ -175,6 +180,7 @@ Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
         }
         if (arg.Type == ValueType::kArray) {
             if (!IsByteArray(arg._array())) {
+                DEBUG_CONTEXT();
                 throw RuntimeException("convert to bytes must use integer array(0~255");
             }
             AppendIntegerArrayToBytes(ret, arg._array());
@@ -206,6 +212,7 @@ Value MakeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
         }
         if (arg.Type == ValueType::kArray) {
             if (!IsByteArray(arg._array())) {
+                DEBUG_CONTEXT();
                 throw RuntimeException("convert to string must use integer array (0~255)");
             }
             AppendIntegerArrayToBytes(ret, arg._array());
@@ -232,9 +239,11 @@ Value HexDecodeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) 
     CHECK_PARAMETER_COUNT(values, 1);
     Value& arg = values.front();
     if (arg.Type != ValueType::kString) {
+        DEBUG_CONTEXT();
         throw RuntimeException("HexDecodeString parameter must a string");
     }
     if (arg.Length() % 2 || arg.Length() == 0) {
+        DEBUG_CONTEXT();
         throw RuntimeException("HexDecodeString string length must be a multiple of 2");
     }
     size_t i = 0;
@@ -244,6 +253,7 @@ Value HexDecodeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) 
         buf[0] = arg.bytes[i];
         buf[1] = arg.bytes[i + 1];
         if (!IsHexChar(buf[0]) || !IsHexChar(buf[1])) {
+            DEBUG_CONTEXT();
             throw RuntimeException("HexDecodeString parameter string is not a valid hex string");
         }
         unsigned char val = strtol(buf, NULL, 16);
