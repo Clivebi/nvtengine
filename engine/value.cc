@@ -180,6 +180,30 @@ std::string ToString(double val) {
     snprintf(buffer, 16, "%f", val);
     return buffer;
 }
+std::string ToString(int val) {
+    char buffer[16] = {0};
+    snprintf(buffer, 16, "%d", val);
+    return buffer;
+}
+
+std::string ToString(unsigned long val) {
+    char buffer[16] = {0};
+    snprintf(buffer, 16, "%ld", val);
+    return buffer;
+}
+
+std::string ToString(long val) {
+    char buffer[16] = {0};
+    snprintf(buffer, 16, "%ld", val);
+    return buffer;
+}
+
+std::string ToString(unsigned int val) {
+    char buffer[16] = {0};
+    snprintf(buffer, 16, "%d", val);
+    return buffer;
+}
+
 std::string ToString(int64_t val) {
     char buffer[16] = {0};
     snprintf(buffer, 16, "%lld", val);
@@ -318,6 +342,16 @@ std::string MapObject::ToString() const {
     return o.str();
 }
 
+Value::Value(char val) : Type(ValueType::kByte), Byte(val), bytes(), resource(NULL), object(NULL) {
+    Integer = 0;
+    Byte = val;
+}
+Value::Value(unsigned char val)
+        : Type(ValueType::kByte), Byte(val), bytes(), resource(NULL), object(NULL) {
+    Integer = 0;
+    Byte = val;
+}
+
 Value::Value() : Type(ValueType::kNULL), Integer(0), bytes(), resource(NULL), object(NULL) {}
 
 Value::Value(bool val)
@@ -360,6 +394,7 @@ Value::Value(const Value& val) {
         resource = val.resource;
         break;
     case ValueType::kInteger:
+    case ValueType::kByte:
         Integer = val.Integer;
         break;
     case ValueType::kArray:
@@ -397,6 +432,7 @@ Value& Value::operator=(const Value& val) {
         resource = val.resource;
         break;
     case ValueType::kInteger:
+    case ValueType::kByte:
         Integer = val.Integer;
         break;
     case ValueType::kArray:
@@ -475,6 +511,9 @@ Value& Value::operator+=(const Value& right) {
         case ValueType::kInteger:
             this->bytes += right.ToString();
             return *this;
+        case ValueType::kByte:
+            this->bytes += (char)right.Byte;
+            return *this;
         default:
             throw RuntimeException("+= operation not avaliable for right value ");
         }
@@ -487,6 +526,9 @@ Value& Value::operator+=(const Value& right) {
         case ValueType::kFloat:
         case ValueType::kInteger:
             this->bytes += (unsigned char)right.ToInteger();
+            return *this;
+        case ValueType::kByte:
+            this->bytes += (char)right.Byte;
             return *this;
         default:
             throw RuntimeException("+= operation not avaliable for right value ");
@@ -502,12 +544,12 @@ std::string Value::ToString() const {
     case ValueType::kObject:
         return object->ToString();
     case ValueType::kBytes:
-        return HexEncode(bytes.c_str(), bytes.size());
     case ValueType::kString:
         return bytes;
     case ValueType::kNULL:
         return "nil";
     case ValueType::kInteger:
+    case ValueType::kByte:
         return Interpreter::ToString(Integer);
     case ValueType::kFloat:
         return Interpreter::ToString(Float);
@@ -528,6 +570,7 @@ std::string Value::ToJSONString(bool escape) const {
     case ValueType::kString:
         return "\"" + EncodeJSONString(bytes, escape) + "\"";
     case ValueType::kInteger:
+    case ValueType::kByte:
     case ValueType::kFloat:
         return ToString();
     default:
@@ -539,7 +582,7 @@ double Value::ToFloat() const {
     if (Type == ValueType::kFloat) {
         return Float;
     }
-    if (Type == ValueType::kInteger) {
+    if (IsInteger()) {
         return (double)Integer;
     }
     return 0;
@@ -548,7 +591,7 @@ Value::INTVAR Value::ToInteger() const {
     if (Type == ValueType::kFloat) {
         return (INTVAR)Float;
     }
-    if (Type == ValueType::kInteger) {
+    if (IsInteger()) {
         return Integer;
     }
     return 0;
@@ -565,6 +608,7 @@ std::string Value::MapKey() const {
     case ValueType::kNULL:
         return "nil@nil";
     case ValueType::kInteger:
+    case ValueType::kByte:
         return "integer@" + Interpreter::ToString(Integer);
     case ValueType::kFloat:
         return "float@" + Interpreter::ToString(Float);
@@ -593,7 +637,7 @@ bool Value::ToBoolean() const {
     if (Type == ValueType::kFloat) {
         return ToFloat() != 0.0;
     }
-    if (Type == ValueType::kInteger) {
+    if (IsInteger()) {
         return ToInteger() != 0;
     }
     return true;
@@ -605,9 +649,10 @@ const Value Value::operator[](const Value& key) const {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= bytes.size()) {
+            LOG(ToString() + "[" + key.ToString() + "]");
             throw Interpreter::RuntimeException("index of string(bytes) out of range");
         }
-        return Value((long)(bytes[key.Integer]) & 0xFF);
+        return Value(bytes[key.Integer]);
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
@@ -621,7 +666,8 @@ const Value Value::operator[](const Value& key) const {
     if (Type == ValueType::kMap) {
         return Map()->_map[key.MapKey()];
     }
-    throw Interpreter::RuntimeException("value not support index operation");
+    throw Interpreter::RuntimeException("value type <" + ValueType::ToString(Type) + " :" +
+                                        ToString() + "> not support index operation");
 }
 
 Value Value::Slice(const Value& f, const Value& t) const {
@@ -676,29 +722,30 @@ Value& Value::operator[](const Value& key) {
     if (Type == ValueType::kMap) {
         return _map()[key.MapKey()];
     }
-    throw RuntimeException("the value type not have value[index]= val operation");
+    throw RuntimeException("the value type <" + ValueType::ToString(Type) + " :" + ToString() +
+                           "> not have value[index]= val operation");
 }
 
 void Value::SetValue(const Value& key, const Value& val) {
     if (IsStringOrBytes()) {
         if (!val.IsInteger()) {
-            Interpreter::RuntimeException("the value must a integer");
+            Interpreter::RuntimeException("set the value must a integer");
         }
         if (!key.IsInteger()) {
-            throw Interpreter::RuntimeException("the index key type must a Integer");
+            throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= bytes.size()) {
-            throw Interpreter::RuntimeException("index of string(bytes) out of range");
+            throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
         bytes[key.Integer] = val.ToInteger() & 0xFF;
         return;
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
-            throw Interpreter::RuntimeException("the index key type must a Integer");
+            throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            throw Interpreter::RuntimeException("index of array out of range");
+            throw Interpreter::RuntimeException("set index of array out of range");
         }
         Array()->_array[key.Integer] = val;
         return;
@@ -707,7 +754,8 @@ void Value::SetValue(const Value& key, const Value& val) {
         Map()->_map[key.MapKey()] = val;
         return;
     }
-    throw RuntimeException("the value type not have value[index]= val operation");
+    throw RuntimeException("set the value type <" + ValueType::ToString(Type) + " :" + ToString() +
+                           "> not have value[index]= val operation");
 }
 
 Value operator+(const Value& left, const Value& right) {
@@ -839,32 +887,32 @@ bool operator!=(const Value& left, const Value& right) {
 }
 
 Value operator|(const Value& left, const Value& right) {
-    if (left.Type != ValueType::kInteger || right.Type != ValueType::kInteger) {
+    if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException("| operation only can used on Integer ");
     }
     return Value(left.Integer | right.Integer);
 }
 
 Value operator&(const Value& left, const Value& right) {
-    if (left.Type != ValueType::kInteger || right.Type != ValueType::kInteger) {
+    if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException("& operation only can used on Integer ");
     }
     return Value(left.Integer & right.Integer);
 }
 Value operator^(const Value& left, const Value& right) {
-    if (left.Type != ValueType::kInteger || right.Type != ValueType::kInteger) {
+    if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException("^ operation only can used on Integer ");
     }
     return Value(left.Integer ^ right.Integer);
 }
 Value operator<<(const Value& left, const Value& right) {
-    if (left.Type != ValueType::kInteger || right.Type != ValueType::kInteger) {
+    if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException("<< operation only can used on Integer ");
     }
     return Value(left.Integer << right.Integer);
 }
 Value operator>>(const Value& left, const Value& right) {
-    if (left.Type != ValueType::kInteger || right.Type != ValueType::kInteger) {
+    if (!left.IsInteger() || !right.IsInteger()) {
         throw Interpreter::RuntimeException(">> operation only can used on Integer ");
     }
     return Value(left.Integer >> right.Integer);

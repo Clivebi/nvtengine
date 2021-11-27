@@ -4,8 +4,9 @@
 
 #ifndef _CHECK_HPP_
 #define _CHECK_HPP_
-inline std::string check_error(int i, const char* type) {
+inline std::string check_error(int i, const char* type, Interpreter::VMContext* ctx) {
     std::stringstream s;
+    LOG(ctx->DumpContext(true));
     s << " : the #" << i << " argument must be an " << type << std::endl;
     return s.str();
 }
@@ -16,36 +17,38 @@ inline std::string check_error(int i, const char* type) {
                                " : the count of parameters not enough"); \
     }
 
-#define CHECK_PARAMETER_STRING(i)                                                              \
-    if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {             \
-        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "string or bytes")); \
+#define CHECK_PARAMETER_STRING(i)                                                  \
+    if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) { \
+        throw RuntimeException(std::string(__FUNCTION__) +                         \
+                               check_error(i, "string or bytes", ctx));            \
     }
 
-#define CHECK_PARAMETER_STRINGS()                                                                  \
-    for (size_t i = 0; i < args.size(); i++) {                                                     \
-        if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {             \
-            throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "string or bytes")); \
-        }                                                                                          \
+#define CHECK_PARAMETER_STRINGS()                                                      \
+    for (size_t i = 0; i < args.size(); i++) {                                         \
+        if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) { \
+            throw RuntimeException(std::string(__FUNCTION__) +                         \
+                                   check_error(i, "string or bytes", ctx));            \
+        }                                                                              \
     }
 
-#define CHECK_PARAMETER_INTEGER(i)                                                     \
-    if (args[i].Type != ValueType::kInteger) {                                         \
-        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "integer")); \
+#define CHECK_PARAMETER_INTEGER(i)                                                          \
+    if (!args[i].IsInteger()) {                                                             \
+        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "integer", ctx)); \
     }
 
-#define CHECK_PARAMETER_RESOURCE(i)                                                     \
-    if (args[i].Type != ValueType::kResource) {                                         \
-        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "resource")); \
+#define CHECK_PARAMETER_RESOURCE(i)                                                          \
+    if (args[i].Type != ValueType::kResource) {                                              \
+        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "resource", ctx)); \
     }
 
-#define CHECK_PARAMETER_MAP(i)                                                     \
-    if (args[i].Type != ValueType::kMap) {                                         \
-        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "map")); \
+#define CHECK_PARAMETER_MAP(i)                                                          \
+    if (args[i].Type != ValueType::kMap) {                                              \
+        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "map", ctx)); \
     }
 
-#define CHECK_PARAMETER_ARRAY(i)                                                     \
-    if (args[i].Type != ValueType::kArray) {                                         \
-        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "array")); \
+#define CHECK_PARAMETER_ARRAY(i)                                                          \
+    if (args[i].Type != ValueType::kArray) {                                              \
+        throw RuntimeException(std::string(__FUNCTION__) + check_error(i, "array", ctx)); \
     }
 #endif
 

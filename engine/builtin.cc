@@ -39,10 +39,33 @@ Value ToString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return Value(arg.ToString());
 }
 
-bool IsIntegerArray(const std::vector<Value>& values) {
+Value ToByte(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(values, 1);
+    Value& arg = values.front();
+    if (!arg.IsNumber()) {
+        throw RuntimeException("only integer can convert to byte");
+    }
+    return Value((BYTE)arg.Integer);
+}
+
+bool IsByteArray(const std::vector<Value>& values) {
     std::vector<Value>::const_iterator iter = values.begin();
     while (iter != values.end()) {
-        if (iter->Type != ValueType::kInteger) {
+        if (!iter->IsNumber()) {
+            return false;
+        }
+        if (iter->Integer > 255 || iter->Integer < 0) {
+            return false;
+        }
+        iter++;
+    }
+    return true;
+}
+
+bool IsStringArray(const std::vector<Value>& values) {
+    std::vector<Value>::const_iterator iter = values.begin();
+    while (iter != values.end()) {
+        if (!iter->IsStringOrBytes()) {
             return false;
         }
         iter++;
@@ -79,11 +102,12 @@ Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
                 to.bytes += iter->bytes;
                 break;
             case ValueType::kInteger:
+            case ValueType::kByte:
                 to.bytes.append(1, (unsigned char)iter->Integer);
                 break;
             case ValueType::kArray:
-                if (!IsIntegerArray(iter->_array())) {
-                    throw RuntimeException("only integer array can append to bytes");
+                if (!IsByteArray(iter->_array())) {
+                    throw RuntimeException("only integer array (0~255) can append to bytes");
                 }
                 AppendIntegerArrayToBytes(to, iter->_array());
                 break;
@@ -110,7 +134,7 @@ Value close(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
 Value Exit(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(values, 1);
     Value exitCode = values.front();
-    if (exitCode.Type != ValueType::kInteger) {
+    if (!exitCode.IsInteger()) {
         throw RuntimeException("exit parameter must a integer");
     }
     ctx->ExitExecuted(exitCode);
@@ -134,24 +158,29 @@ Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     if (values.size() == 0) {
         return Value::make_bytes("");
     }
-    if (values.size() == 1) {
-        if (values[0].Type == ValueType::kString || values[0].Type == ValueType::kBytes) {
-            return Value::make_bytes(values[0].bytes);
-        }
-        if (values[0].Type == ValueType::kArray) {
-            if (!IsIntegerArray(values[0]._array())) {
-                throw RuntimeException("make bytes must use integer array");
-            }
-            Value ret = Value::make_bytes("");
-            AppendIntegerArrayToBytes(ret, values[0]._array());
-            return ret;
-        }
-    }
-    if (!IsIntegerArray(values)) {
-        throw RuntimeException("make bytes must use integer array");
-    }
     Value ret = Value::make_bytes("");
-    AppendIntegerArrayToBytes(ret, values);
+
+    for (auto arg : values) {
+        if (arg.IsStringOrBytes()) {
+            ret.bytes += arg.bytes;
+            continue;
+        }
+        if (arg.Type == ValueType::kInteger) {
+            ret.bytes += (char)arg.Integer;
+            continue;
+        }
+        if (arg.Type == ValueType::kByte) {
+            ret.bytes += (char)arg.Byte;
+            continue;
+        }
+        if (arg.Type == ValueType::kArray) {
+            if (!IsByteArray(arg._array())) {
+                throw RuntimeException("convert to bytes must use integer array(0~255");
+            }
+            AppendIntegerArrayToBytes(ret, arg._array());
+            continue;
+        }
+    }
     return ret;
 }
 
@@ -159,29 +188,30 @@ Value MakeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     if (values.size() == 0) {
         return Value("");
     }
-    if (values.size() == 1) {
-        if (values[0].Type == ValueType::kString || values[0].Type == ValueType::kBytes) {
-            return Value(values[0].bytes);
-        }
-        if (values[0].Type == ValueType::kFloat || values[0].Type == ValueType::kInteger) {
-            return Value(values[0].ToString());
-        }
-        if (values[0].Type == ValueType::kArray) {
-            if (!IsIntegerArray(values[0]._array())) {
-                throw RuntimeException("convert to string must use integer array");
-            }
-            Value ret = Value::make_bytes("");
-            AppendIntegerArrayToBytes(ret, values[0]._array());
-            ret.Type = ValueType::kString;
-            return ret;
-        }
-    }
-    if (!IsIntegerArray(values)) {
-        throw RuntimeException("convert to string must use integer array");
-    }
     Value ret = Value::make_bytes("");
-    AppendIntegerArrayToBytes(ret, values);
     ret.Type = ValueType::kString;
+
+    for (auto arg : values) {
+        if (arg.IsStringOrBytes()) {
+            ret.bytes += arg.bytes;
+            continue;
+        }
+        if (arg.Type == ValueType::kInteger) {
+            ret.bytes += arg.ToString();
+            continue;
+        }
+        if (arg.Type == ValueType::kByte) {
+            ret.bytes += (char)arg.Byte;
+            continue;
+        }
+        if (arg.Type == ValueType::kArray) {
+            if (!IsByteArray(arg._array())) {
+                throw RuntimeException("convert to string must use integer array (0~255)");
+            }
+            AppendIntegerArrayToBytes(ret, arg._array());
+            continue;
+        }
+    }
     return ret;
 }
 
@@ -244,6 +274,7 @@ Value ToInteger(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     Value& arg = values.front();
     switch (arg.Type) {
     case ValueType::kInteger:
+    case ValueType::kByte:
         return arg;
     case ValueType::kFloat:
         return Value((Value::INTVAR)arg.Float);
@@ -262,6 +293,7 @@ Value ToFloat(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     Value& arg = values.front();
     switch (arg.Type) {
     case ValueType::kInteger:
+    case ValueType::kByte:
         return Value((double)arg.Integer);
     case ValueType::kFloat:
         return arg;
@@ -332,17 +364,21 @@ Value Error(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
 }
 
 Value DisplayContext(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    std::cout << ctx->DumpContext() << std::endl;
+    if (values.size()) {
+        std::cout << ctx->DumpContext(values.front().ToBoolean()) << std::endl;
+    } else {
+        std::cout << ctx->DumpContext(false) << std::endl;
+    }
     return Value();
 }
 
 BuiltinMethod builtinFunction[] = {
+        {"byte", ToByte},
         {"exit", Exit},
         {"len", len},
         {"append", append},
         {"require", Require},
         {"bytes", MakeBytes},
-        {"string", MakeString},
         {"close", close},
         {"typeof", TypeOf},
         {"error", Error},

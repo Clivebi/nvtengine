@@ -16,6 +16,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
     const char* identifier;
     long        value_integer;
     double      value_double; 
+    unsigned char   value_byte;
     Instruction* object;
 };
 
@@ -28,6 +29,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
+%token <value_byte>    INT8_LITERAL
 
 %left  COMMA
 %right ASSIGN ADDASSIGN SUBASSIGN DIVASSIGN MULASSIGN MODASSIGN
@@ -241,6 +243,10 @@ const_value:INT_LITERAL
                 $$= parser->CreateConst($1);
         }
         |STRING_LITERAL
+        {
+                $$= parser->CreateConst($1);
+        }
+        |INT8_LITERAL
         {
                 $$= parser->CreateConst($1);
         }

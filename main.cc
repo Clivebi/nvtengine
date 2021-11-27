@@ -61,6 +61,7 @@ void UpdateNVTI() {
 void TryLoadNVTI(std::string& name, Value& value) {
     openvas::NVTIDataBase db("attributes.db");
     value = db.GetFromFileName(name);
+    std::cout << name << " : " << value.ToJSONString(false) << std::endl;
 }
 
 bool ExecuteFile(std::string path, std::string name) {

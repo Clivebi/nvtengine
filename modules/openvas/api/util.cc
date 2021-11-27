@@ -48,3 +48,7 @@ Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 #endif
     return Value();
 }
+
+Value vendor_version(std::vector<Value>& args, VMContext* ctx, Executor* vm){
+    return Value("NVTEngine 0.1");
+}

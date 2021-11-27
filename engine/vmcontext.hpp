@@ -65,7 +65,7 @@ public:
 
     Value GetTotalFunction();
 
-    std::string DumpContext();
+    std::string DumpContext(bool global_var = false);
 
 protected:
     void LoadBuiltinVar();

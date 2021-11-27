@@ -8,20 +8,24 @@ struct OVAContext {
     std::string Host; // current runing host
     Value Nvti;
     Value Prefs; // for global preference
+    Value Env;
     scoped_refptr<openvas::ScriptStorage> Storage;
     explicit OVAContext(std::string name) : Name(name) {
         Nvti = Value::make_map();
         Nvti["filename"] = name;
         Storage = new openvas::ScriptStorage();
         Prefs = Value::make_map();
+        Env = Value::make_map();
+        InitEnv();
     }
-    std::string NvtiString() { return Nvti.ToJSONString(); }
+    std::string NvtiString() { return Nvti.ToJSONString(false); }
     //for script preference
     void AddPreference(const Value& id, const Value& name, const Value& type, const Value& value);
     Value GetPreference(const Value& id, const Value& name);
     void GetPreferenceFile(const Value& id, const Value& name, std::string& content);
     void AddXref(const Value& name, const Value& value);
     void AddTag(const Value& name, const Value& value);
+    void InitEnv();
 };
 
 inline int GetInt(std::vector<Value>& args, int pos, int default_value) {

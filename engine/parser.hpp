@@ -75,6 +75,7 @@ public:
     Instruction* CreateConst(const std::string& value);
     Instruction* CreateConst(long value);
     Instruction* CreateConst(double value);
+    Instruction* CreateConst(BYTE value);
 
     //function define & call function
     Instruction* CreateFunction(const std::string& name, Instruction* formalParameters,

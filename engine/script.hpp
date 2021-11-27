@@ -364,6 +364,16 @@ public:
         ins->Refs.push_back(key);
         return ins;
     }
+    Instruction* NewConst(BYTE value) {
+        Value val = Value(value);
+        Instruction::keyType key = mConstKey;
+        mConstKey++;
+        mConstTable[key] = val;
+        Instruction* ins = NewInstruction();
+        ins->OpCode = Instructions::kConst;
+        ins->Refs.push_back(key);
+        return ins;
+    }
 
     Value GetConstValue(Instruction::keyType key) { return mConstTable[key - mConstBase]; }
 

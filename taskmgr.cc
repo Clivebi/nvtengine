@@ -68,6 +68,8 @@ void HostsTask::Execute() {
             bIsNeedARP = true;
         }
     }
+    massip_destory(&target);
+
     if (bIsNeedARP) {
         arpItem = resolve_mac_address(mHosts.c_str(), &arpItemSize, 15);
     }
@@ -88,15 +90,50 @@ void HostsTask::Execute() {
         TCB* tcb = new TCB(host.string);
         tcb->Exit = false;
         for (unsigned int i = 0; i < arpItemSize; i++) {
-            if(ipaddress_is_equal(seek->address,arpItem[i].ip)){
+            if (ipaddress_is_equal(seek->address, arpItem[i].ip)) {
                 ipaddress_formatted_t mac = macaddress_fmt(arpItem[i].mac);
                 tcb->Storage->SetItem("Host/mac_address", mac.string);
             }
         }
-        //TODO add opened port info
-
+        std::string tcps, udps;
+        for (unsigned int i = 0; i < seek->size; i++) {
+            if (TCP_UNKNOWN == seek->list[i].type) {
+                std::string name = "Ports/tcp/" + ToString(seek->list[i].port);
+                tcb->Storage->SetItem(name, Value(1));
+                if (tcps.size()) {
+                    tcps += ",";
+                }
+                tcps += ToString(seek->list[i].port);
+                continue;
+            }
+            if (UDP_UNKNOWN == seek->list[i].type) {
+                std::string name = "Ports/udp/" + ToString(seek->list[i].port);
+                tcb->Storage->SetItem(name, Value(1));
+            }
+            if (UDP_CLOSED != seek->list[i].type) {
+                if (udps.size()) {
+                    udps += ",";
+                }
+                udps += ToString(seek->list[i].port);
+                continue;
+            }
+        }
+        {
+            ipaddress addr = {0};
+            addr.ipv4 = task->src_ipv4;
+            addr.version = 4;
+            ipaddress_formatted_t fmtIP = ipaddress_fmt(addr);
+            tcb->Env["local_ip"] = fmtIP.string;
+            tcb->Env["ifname"] = task->nic.ifname;
+            addr.ipv4 = task->nic.router_ip;
+            fmtIP = ipaddress_fmt(addr);
+            tcb->Env["route_ip"] = fmtIP.string;
+            tcb->Env["scanner_scanned"] = Value(true);
+            tcb->Env["opened_tcp"] = tcps;
+            tcb->Env["opened_udp"] = udps;
+        }
         tcb->Task = this;
-        tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteScriptOnHostThreadProxy, 0, tcb);
+        tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
         //TODO check we can start more task??
     }
@@ -105,6 +142,16 @@ void HostsTask::Execute() {
     if (arpItem != NULL) {
         free(arpItem);
     }
+    for (auto iter : mTCBGroup) {
+        pixie_thread_join(iter->ThreadHandle);
+        //TODO copy result
+        free(iter);
+    }
+}
+
+void HostsTask::ExecuteOneHost(TCB* tcb) {
+    //TODO find service
+    ExecuteScriptOnHost(tcb);
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
@@ -118,6 +165,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
         Value root = mGroupedScripts[i];
         for (auto v : root._map()) {
             ctx.Name = v.second["filename"].bytes;
+            //TODO check require keys
             Engine.Execute(ctx.Name.c_str(), false);
             if (tcb->Exit) {
                 break;

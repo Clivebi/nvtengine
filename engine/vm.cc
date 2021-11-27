@@ -333,19 +333,19 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         oldVal >>= val;
         break;
     case Instructions::kuINC:
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("++ operation only can used on Integer ");
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("-- operation only can used on Integer ");
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("++ operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -355,7 +355,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
     }
 
     case Instructions::kuDECReturnOld: {
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("-- operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -620,11 +620,11 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
     }
 
     for (auto iter = formalParamers.begin(); iter != formalParamers.end(); iter++) {
-        Execute(*iter, ctx);
+        Execute(*iter, newCtx);
     }
 
     for (auto iter = actual.begin(); iter != actual.end(); iter++) {
-        Execute(*iter, ctx);
+        Execute(*iter, newCtx);
     }
     Execute(GetInstruction(func->Refs[0]), newCtx);
     Value val = newCtx->GetReturnValue();
@@ -817,19 +817,19 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         oldVal >>= val;
         break;
     case Instructions::kuINC:
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("++ operation only can used on Integer ");
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("-- operation only can used on Integer ");
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("++ operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -839,7 +839,7 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
     }
 
     case Instructions::kuDECReturnOld: {
-        if (oldVal.Type != ValueType::kInteger) {
+        if (!oldVal.IsInteger()) {
             throw RuntimeException("-- operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -867,6 +867,8 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
     return oldVal;
 }
 
+#define CHECK_INDEX_NULL() \
+    if (toObject.IsNULL()) LOG(ctx->DumpContext(true))
 // Instruction* CreateReference(const std::string& root,Instruction* path);
 // Instruction* VarUpdateExpression(Instruction* ref, Instruction* value, int opcode);
 Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
@@ -880,10 +882,28 @@ Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
     }
     Value root = ctx->GetVarValue(ref->Name);
     std::vector<Value> indexValues = ObjectPathToIndexer(GetInstruction(ref->Refs.front()), ctx);
+    if (root.IsNULL()) {
+        std::string logMsg =
+                "try " + ins->Name + "[index] = val on nil object,so convert to map or array";
+        LOG(logMsg);
+        if (indexValues.size() > 1) {
+            root = Value::make_map();
+        } else {
+            if (indexValues.front().IsInteger() && indexValues.front().Integer < 4096) {
+                root = Value::make_array();
+                root._array().resize(indexValues.front().Integer + 1);
+            } else {
+                root = Value::make_map();
+            }
+        }
+        ctx->SetVarValue(ref->Name,root);
+    }
     Value& toObject = root;
     for (size_t i = 0; i < indexValues.size() - 1; i++) {
+        CHECK_INDEX_NULL();
         toObject = toObject[indexValues[i]];
     }
+    CHECK_INDEX_NULL();
     return UpdateValueAt(toObject, indexValues.back(), val, ins->OpCode);
 }
 // name ,indexer
@@ -893,8 +913,10 @@ Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {
     Value root = ctx->GetVarValue(ins->Name);
     Value& toObject = root;
     for (size_t i = 0; i < indexValues.size() - 1; i++) {
+        CHECK_INDEX_NULL();
         toObject = toObject[indexValues[i]];
     }
+    CHECK_INDEX_NULL();
     const Value& last = toObject;
     return last[indexValues.back()];
 }

@@ -8,7 +8,7 @@ Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
     CHECK_PARAMETER_STRING(0);
     std::string host = args[0].bytes, port;
-    if (args[1].Type == ValueType::kInteger) {
+    if (args[1].IsInteger()) {
         port = args[1].ToString();
     } else {
         CHECK_PARAMETER_STRING(1);

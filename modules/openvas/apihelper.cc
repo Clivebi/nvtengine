@@ -67,3 +67,7 @@ void OVAContext::AddTag(const Value& name, const Value& value) {
     }
     pref[name] = value;
 }
+
+void OVAContext::InitEnv(){
+    
+}

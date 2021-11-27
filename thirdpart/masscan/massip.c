@@ -69,6 +69,13 @@ int massip_has_ipv6_targets(const struct MassIP *massip)
 }
 
 
+void massip_destory(struct MassIP*massip){
+    range6list_remove_all(&massip->ipv6);
+    rangelist_remove_all(&massip->ipv4);
+    rangelist_remove_all(&massip->ports);
+}
+
+
 int massip_add_target_string(struct MassIP *massip, const char *string)
 {
     const char *ranges = string;

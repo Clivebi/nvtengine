@@ -41,6 +41,7 @@ public:
     void* GetUserContext() { return mContext; }
 
     Value GetFunction(const std::string& name, VMContext* ctx);
+
 protected:
     scoped_refptr<Script> LoadScript(const char* name, std::string& error);
     Value Execute(const Instruction* ins, VMContext* ctx);
@@ -61,7 +62,7 @@ protected:
     Value ExecuteCreateArray(const Instruction* ins, VMContext* ctx);
     Value ExecuteSlice(const Instruction* ins, VMContext* ctx);
     Value ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx);
-    
+
     Value UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                         Instructions::Type opCode);
     RUNTIME_FUNCTION GetBuiltinMethod(const std::string& name);

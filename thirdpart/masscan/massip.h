@@ -28,6 +28,7 @@ struct MassIP {
     uint64_t count_ipv6s;
 };
 
+void massip_destory(struct MassIP*massip);
 /**
  * Count the total number of targets in a scan. This is calculated
  * the (IPv6 addresses * IPv4 addresses * ports). This can produce

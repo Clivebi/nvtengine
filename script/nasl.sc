@@ -2,7 +2,7 @@
 var NULL = nil;
 var TRUE = true;
 var FALSE = false;
-var description = false;
+var description = true;
 
 var IPPROTO_TCP = 6;
 var IPPROTO_UDP = 17;
@@ -58,8 +58,28 @@ var EUNKNOWN = 99;
 
 #nasl一些特色的函数，我们有更好的实现，这里做转接
 
+
+func add_to_array(array,val){
+	var type = typeof(val);
+	switch(type){
+		case "array","map":{
+			for v in val{
+				array = add_to_array(array,v);
+			}	
+		}
+		default:{
+			array = append(array,val);
+		}
+	}
+	return array;
+}
+
 func make_list(list...){
-	return list;
+	var ret = [];
+	for v in list{
+		ret = add_to_array(ret,v);
+	}
+	return ret;
 }
 
 func power(x,y){
@@ -263,11 +283,6 @@ func get_icmp_element(icmp, element){
 
 }
 
-#HMAC_SHA1(data: salt, key: password)
-func HMAC_SHA1(data,key){
-
-}
-
 #forge_udp_packet(ip: ip_pkt, uh_sport: srcport, uh_dport: dstport, uh_ulen: req_len, data: req)
 func forge_udp_packet(ip, uh_sport,uh_dport, uh_ulen, data){
 
@@ -293,8 +308,25 @@ func gunzip(data){
 
 }
 
+func string(x...){
+	var ret="";
+	for v in x {
+		if(typeof(v)=="integer"){
+			DisplayContext();
+			error("debug me....");
+		}
+		ret += v;
+	}
+	return ret;
+}
+
+func raw_string(x...){
+	var ret = bytes();
+	return append(ret,x);
+}
+
 func isnull(val){
-	return val==nil;
+	return (val==nil);
 }
 
 func defined_func(name){
@@ -309,10 +341,11 @@ func strcat(strlist...){
 	return ret;
 }
 func ord(obj){
-	if(typeof(obj) == "string"||typeof(obj) == "bytes"){
-		return obj[0];
+	if(obj > 255){
+		DisplayContext();
+		error("debug me");
 	}
-	return ToInteger(obj);
+	return obj;
 }
 
 func hex(val){
@@ -336,6 +369,9 @@ func strstr(str1,str2){
 }
 
 func substr(str,start,end=0){
+	if(end == start){
+		return str[start:start+1];
+	}
 	if(end<start){
 		return str[start:];
 	}
@@ -467,4 +503,64 @@ func sort(obj){
 
 func dump_ctxt(){
 	DisplayContext();
+}
+
+func TARGET_IS_IPV6(){
+	return ContainsBytes(get_host_ip(),":");
+}
+
+func islocalhost(){
+	var env = HostEnv();
+	return get_host_ip()=="127.0.0.1" || env["local_ip"] == get_host_ip();
+}
+
+func islocalnet(){
+	var ip = get_host_ip();
+	if(ContainsBytes(get_host_ip(),":")){
+		error("not implement");
+	}
+	var list = SplitString(ip,".");
+	var one = ToInteger(list[0]) & 0xFF;
+	var tow = ToInteger(list[0]) & 0xFF;
+	if(one == 172 && ((tow &0xfe)==16)){
+		return true;
+	}
+	if(one == 192 && tow == 168){
+		return true;
+	}
+	return false;
+}
+
+#crypto
+
+func prf_sha256(secret,seed,label,outlen){
+	return TLSRPF(secret,label+seed,"sha256",outlen);
+}
+
+func prf_sha384(secret,seed,label,outlen){
+	return TLSRPF(secret,label+seed,"sha384",outlen);
+}
+
+func tls1_prf(secret,seed,label,outlen){
+	return TLS1PRF(secret,label+seed,outlen);
+}
+
+func HMAC_MD5(data,key){
+	return HMACMethod("md5",key,data);
+}
+
+func HMAC_SHA1(data,key){
+	return HMACMethod("sha1",key,data);
+}
+
+func HMAC_SHA256(data,key){
+	return HMACMethod("sha256",key,data);
+}
+
+func HMAC_SHA384(data,key){
+	return HMACMethod("sha384",key,data);
+}
+
+func HMAC_SHA512(data,key){
+	return HMACMethod("sha512",key,data);
 }

@@ -12,7 +12,7 @@ if (NOT PKG_CONFIG_FOUND)
 endif (NOT PKG_CONFIG_FOUND)
 
 pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
-pkg_check_modules (ZLIB REQUIRED zlib>=1.1.0)
+pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 
 #https://github.com/google/brotli
@@ -30,13 +30,18 @@ if(NOT ZLIB_FOUND)
     message(FATAL_ERROR "zlib>=1.1.0 not found")
 endif(NOT ZLIB_FOUND)
 
+message("${OPENSSL_LINK_LIBRARIES}")
+message("${BROTLI_LINK_LIBRARIES}")
+message("${ZLIB_LINK_LIBRARIES}")
+message("${SQLITE_LINK_LIBRARIES}")
+
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${ZLIB_INCLUDE_DIRS} 
                      ${BROTLI_INCLUDE_DIRS}
                      ${OPENSSL_INCLUDE_DIRS})
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++11 -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
 
 #set(CXX_FLAGS_DEBUG "${CXX_GCC_FLAGS} -Werror -ggdb3 -O0 -gdwarf-2")
 #set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} ${CXX_GCC_FLAGS} -O2 -fPIC -gdwarf-2 -DNDEBUG -Wall")
@@ -59,9 +64,21 @@ set_source_files_properties(${GENSRC_DIR}/script.lex.cpp  PROPERTIES GENERATED T
 add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
 
+set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
+set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
+set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
+set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
+
 add_executable(Interpreter
     main.cc 
     taskmgr.cc
     modules/module.cc
 )
-target_link_libraries(Interpreter  engine  masscan ${OPENSSL_LDFLAGS} ${ZLIB_LDFLAGS} ${BROTLI_LDFLAGS} ${SQLITE_LDFLAGS})
+target_link_libraries(  Interpreter  
+                        engine  
+                        masscan 
+                        "-L${CMAKE_BINARY_DIR}"
+                        ${OPENSSL_LDFLAGS} 
+                        ${ZLIB_LDFLAGS}
+                        ${BROTLI_LDFLAGS}
+                        ${SQLITE_LDFLAGS} )

@@ -1,11 +1,12 @@
 
 #include "api.hpp"
 
+#include "./api/crypto.cc"
 #include "./api/ovanetwork.cc"
 #include "./api/script.cc"
 #include "./api/time.cc"
 #include "./api/util.cc"
-#include "base.cc"
+#include "apihelper.cc"
 
 BuiltinMethod ovaMethod[] = {
         {"script_name", script_name},
@@ -65,6 +66,15 @@ BuiltinMethod ovaMethod[] = {
         {"rand", Rand},
         {"usleep", USleep},
         {"sleep", Sleep},
+        {"get_host_ip", get_host_ip},
+        {"HostEnv", HostEnv},
+        {"vendor_version", vendor_version},
+        {"MD5", Md5Buffer},
+        {"SHA1", SHA1Buffer},
+        {"SHA256", SHA256Buffer},
+        {"HMACMethod",HMACMethod},
+        {"TLSPRF",TLSPRF},
+        {"TLS1PRF",TLS1PRF},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

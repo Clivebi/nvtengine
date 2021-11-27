@@ -102,6 +102,9 @@ Instruction* Parser::CreateConst(long value) {
 Instruction* Parser::CreateConst(double value) {
     return mScript->NewConst(value);
 }
+Instruction* Parser::CreateConst(BYTE value) {
+    return mScript->NewConst(value);
+}
 
 Instruction* Parser::CreateFunction(const std::string& name, Instruction* formalParameters,
                                     Instruction* body) {

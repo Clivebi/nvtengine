@@ -42,6 +42,14 @@ std::string ToString(double val);
 
 std::string ToString(int64_t val);
 
+std::string ToString(int val);
+
+std::string ToString(unsigned long val);
+
+std::string ToString(long val);
+
+std::string ToString(unsigned int val);
+
 std::string HexEncode(const char* buf, int count);
 
 std::string DecodeJSONString(const std::string& src);
@@ -83,16 +91,17 @@ public:
 
 namespace ValueType {
 const int kNULL = 0;
-const int kInteger = 1;
-const int kFloat = 2;
-const int kString = 3;
-const int kBytes = 4;
-const int kArray = 5;
-const int kMap = 6;
-const int kObject = 7;
-const int kFunction = 8;
-const int kRuntimeFunction = 9;
-const int kResource = 10;
+const int kByte = 1;
+const int kInteger = 2;
+const int kFloat = 3;
+const int kString = 4;
+const int kBytes = 5;
+const int kArray = 6;
+const int kMap = 7;
+const int kObject = 8;
+const int kFunction = 9;
+const int kRuntimeFunction = 10;
+const int kResource = 11;
 
 inline std::string ToString(int Type) {
     switch (Type) {
@@ -116,6 +125,8 @@ inline std::string ToString(int Type) {
         return "function";
     case ValueType::kRuntimeFunction:
         return "function";
+    case ValueType::kByte:
+        return "byte";
     default:
         return "Unknown";
     }
@@ -181,6 +192,7 @@ public:
     typedef int64_t INTVAR;
     unsigned char Type;
     union {
+        uint8_t Byte;
         INTVAR Integer;
         double Float;
         const Instruction* Function;
@@ -192,6 +204,8 @@ public:
 
 public:
     Value();
+    Value(char);
+    Value(unsigned char);
     Value(bool val);
     Value(long val);
     Value(INTVAR val);
@@ -214,8 +228,10 @@ public:
 
 public:
     bool IsNULL() const { return Type == ValueType::kNULL; }
-    bool IsInteger() const { return Type == ValueType::kInteger; }
-    bool IsNumber() const { return Type == ValueType::kInteger || Type == ValueType::kFloat; }
+    bool IsInteger() const { return Type == ValueType::kInteger || Type == ValueType::kByte; }
+    bool IsNumber() const {
+        return Type == ValueType::kInteger || Type == ValueType::kFloat || Type == ValueType::kByte;
+    }
     bool IsStringOrBytes() const { return Type == ValueType::kString || Type == ValueType::kBytes; }
     bool IsSameType(const Value& right) const { return Type == right.Type; }
     bool IsObject() const {

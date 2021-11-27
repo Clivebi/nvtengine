@@ -204,7 +204,7 @@ Value VMContext::GetTotalFunction() {
     }
     return Value(functions);
 }
-std::string VMContext::DumpContext() {
+std::string VMContext::DumpContext(bool var) {
     std::list<VMContext*> list;
     std::stringstream o;
     VMContext* ctx = this;
@@ -235,11 +235,13 @@ std::string VMContext::DumpContext() {
         default:
             break;
         }
-        o << "\n" << prefix << "Vars:\n";
-        auto iter2 = ctx->mVars.begin();
-        while (iter2 != ctx->mVars.end()) {
-            o << prefix << iter2->first << ":" << iter2->second.ToString() << "\n";
-            iter2++;
+        if (var || ctx->mType == Function) {
+            o << "\n" << prefix << "Vars:\n";
+            auto iter2 = ctx->mVars.begin();
+            while (iter2 != ctx->mVars.end()) {
+                o << prefix << iter2->first << ":" << iter2->second.ToString() << "\n";
+                iter2++;
+            }
         }
 
         prefix += "\t";

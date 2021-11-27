@@ -103,8 +103,22 @@ int yywrap(void)
     return DOUBLE_LITERAL;
 }
 <INITIAL>'[a-zA-Z]' {
-    yylval.value_integer = yytext[1];
-    return INT_LITERAL;
+    yylval.value_byte = yytext[1];
+    return INT8_LITERAL;
+}
+
+<INITIAL>'\\t' {
+    yylval.value_integer = '\t';
+    return INT8_LITERAL;
+}
+
+<INITIAL>'\\r' {
+    yylval.value_integer = '\r';
+    return INT8_LITERAL;
+}
+<INITIAL>'\\n' {
+    yylval.value_integer = '\n';
+    return INT8_LITERAL;
 }
 
 <INITIAL>\" {

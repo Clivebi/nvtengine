@@ -7,6 +7,7 @@ var _is_test_passed = true;
 func assertEqual(a,b){
     if(a != b){
         Println("error here a=",a,"b=",b);
+        DisplayContext();
         _is_test_passed = false;
     }
 }
@@ -14,6 +15,7 @@ func assertEqual(a,b){
 func assertNotEqual(a,b){
     if(a == b){
         Println("error here a=",a,"b=",b);
+        DisplayContext();
         _is_test_passed = false;
     } 
 }
@@ -67,17 +69,10 @@ func test_basic_convert(){
     Println(buf6);
 
     #convert bytes to string 
-    var strTemp = string(buf5);
+    var strTemp = ToString(buf5);
     assertEqual(typeof(strTemp),"string");
+    assertEqual(strTemp,"hello world");
 
-    var str1 = string(0x68,0x65,0x6C,0x6C,0x6F);
-    assertEqual(typeof(str1),"string");
-    var str2 = string([0x77,0x6F,0x72,0x6C,0x64]);
-    assertEqual(typeof(str2),"string");
-    var str3 = str1 + " " +str2;
-    assertEqual(str3,string(buf5));
-    assertEqual(str1[0],'h');
-    
     #convert string to integer & float
     assertEqual(ToInteger("0xEEFFFF"),0xEEFFFF);
     assertEqual(ToInteger("8000"),8000);
@@ -93,7 +88,7 @@ test_basic_convert();
 func asciiCodeToChar(code){
     var test = bytes();
     test = append(test,code);
-    return string(test);
+    return ToString(test);
 }
 
 assertEqual(asciiCodeToChar('A'),"A");

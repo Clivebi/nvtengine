@@ -235,3 +235,13 @@ Value error_message(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::cout << std::endl;
     return Value();
 }
+
+Value get_host_ip(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    OVAContext* script = GetOVAContext(vm);
+    return script->Host;
+}
+
+Value HostEnv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    OVAContext* script = GetOVAContext(vm);
+    return script->Env;
+}

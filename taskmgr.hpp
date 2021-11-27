@@ -54,6 +54,7 @@ protected:
         bool Exit;
         HostsTask* Task;
         int ScriptCount;
+        Value Env;
         int ExecutedScriptCount;
         scoped_refptr<openvas::ScriptStorage> Storage;
         TCB(std::string host) {
@@ -83,18 +84,19 @@ public:
 
     void Stop();
 
-    bool IsRuning(){return mMainThread != 0;}
+    bool IsRuning() { return mMainThread != 0; }
 
 protected:
     void Execute();
+    void ExecuteOneHost(TCB* tcb);
     void ExecuteScriptOnHost(TCB* tcb);
-    static void ExecuteThreadProxy(void* p){
+    static void ExecuteOneHostThreadProxy(void* p) {
+        TCB* tcb = (TCB*)p;
+        tcb->Task->ExecuteOneHost(tcb);
+    }
+    static void ExecuteThreadProxy(void* p) {
         HostsTask* ptr = (HostsTask*)p;
         ptr->Execute();
-    }
-    static void ExecuteScriptOnHostThreadProxy(void* tcb){
-        TCB* ptr = (TCB*)tcb;
-        ptr->Task->ExecuteScriptOnHost(ptr);
     }
     bool InitScripts(std::list<std::string>& scripts);
     bool InitScripts(openvas::NVTIDataBase& db, std::list<std::string>& scripts,
