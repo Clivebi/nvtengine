@@ -4,65 +4,10 @@
 
 #include "engine/logger.hpp"
 #include "engine/vm.hpp"
+#include "fileio.hpp"
+#include "filepath.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
-
-class FilePath {
-protected:
-    std::string _full;
-#ifdef WIN32
-    static const char s_separator = '\\';
-#else
-    static const char s_separator = '/';
-#endif
-public:
-    FilePath(const char* src) : _full(src) {}
-    FilePath(std::string src) : _full(src) {}
-
-    FilePath& operator+=(const FilePath& part) {
-        if (part._full.size() == 0) {
-            return *this;
-        }
-        if (_full.size() && _full.back() != s_separator && part._full[0] != s_separator) {
-            _full += s_separator;
-        }
-        _full += part._full;
-        return *this;
-    }
-    FilePath operator+(const FilePath& right) {
-        FilePath ret = *this;
-        ret += right;
-        return ret;
-    }
-
-    FilePath& operator+=(const char* part) {
-        std::string right(part);
-        return this->operator+=(right);
-    }
-
-    operator std::string() { return _full; }
-    std::string base_name() {
-        std::string part = _full;
-        if (part.size() && part.back() == s_separator) {
-            part = _full.substr(0, part.size() - 1);
-        }
-        size_t i = part.rfind(s_separator);
-        if (i == part.npos) {
-            return part;
-        }
-        return part.substr(i);
-    }
-
-    std::string extension_name() {
-        size_t i = _full.rfind('.');
-        if (i == _full.npos || i >= _full.size()) {
-            return "";
-        }
-        return _full.substr(i + 1);
-    }
-};
-
-char* read_file_content(const char* path, int* file_size);
 
 using namespace Interpreter;
 
@@ -73,25 +18,29 @@ public:
 
 protected:
     FilePath mFolder;
+    FileIO* mIO;
 
 public:
-    DefaultExecutorCallback(FilePath folder) : mFolder(folder),mDescription(0) {}
+    DefaultExecutorCallback(FilePath folder, FileIO* IO)
+            : mFolder(folder), mDescription(0), mIO(IO) {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {
-        ctx->SetVarValue("description",Value(mDescription));
+        ctx->SetVarValue("description", Value(mDescription));
         vm->RequireScript("nasl.sc", ctx);
     }
     void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
-        std::string path = (mFolder+FilePath(name));
+        std::string path = (mFolder + FilePath(name));
         if (std::string(name) == "nasl.sc") {
             path = "../script/nasl.sc";
         }
-        int iSize = 0;
-        void* ptr = read_file_content(path.c_str(), &iSize);
-        size = iSize;
+        FileIO io;
+        void* ptr = io.Read(path, size, 2);
+        if (ptr) {
+            size += 2;
+        }
         return ptr;
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
@@ -123,18 +72,19 @@ protected:
             Host = host;
         }
     };
+
+    FileIO* mIO;
+    Value mPrefs;
+    Value mGroupedScripts[11];
     int mScriptCount;
     std::string mHosts;
     std::string mPorts;
-    Value mPrefs;
-    Value mGroupedScripts[11];
-
     std::list<TCB*> mTCBGroup;
     std::string mTaskID;
     size_t mMainThread;
 
 public:
-    HostsTask(std::string host, std::string ports, Value& prefs);
+    HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO);
 
 public:
     bool BeginTask(std::list<std::string>& scripts, std::string TaskID);

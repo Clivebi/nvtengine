@@ -128,11 +128,12 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
 
 void UpdateNVTI(std::string script_path, std::string home) {
     std::list<std::string> result;
+    FileIO IO;
     CollectAllScript(script_path, "", result);
     Value ret = Value::make_array();
     for (auto iter : result) {
         OVAContext context(iter);
-        DefaultExecutorCallback callback(script_path);
+        DefaultExecutorCallback callback(script_path,&IO);
         callback.mDescription = true;
         Interpreter::Executor exe(&callback, &context);
         RegisgerModulesBuiltinMethod(&exe);
@@ -158,17 +159,18 @@ void UpdateNVTI(std::string script_path, std::string home) {
 
 void NVTEngineTest() {
     Value pref = Value::make_map();
+    FileIO IO;
     pref["scripts_folder"] = "/Volumes/work/convert";
-    HostsTask task("192.168.0.100", "80,443", pref);
+    HostsTask task("192.168.0.100", "80,443", pref,&IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     task.BeginTask(result, "10000");
     task.Join();
 }
 
 int main(int argc, char* argv[]) {
-    if(argc >= 2){
-         UpdateNVTI(argv[1], "");
-         return 0;
+    if (argc >= 2) {
+        UpdateNVTI(argv[1], "");
+        return 0;
     }
     NVTEngineTest();
     return 0;

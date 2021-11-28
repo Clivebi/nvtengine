@@ -74,7 +74,12 @@ func add_to_array(array,val){
 	return array;
 }
 
+#
+#由于新版数组不能使用下标来索引，为保持兼容性，返回一个map
 func make_list(list...){
+	if(len(list)==0){
+		return {};
+	}
 	var ret = [];
 	for v in list{
 		ret = add_to_array(ret,v);
@@ -99,6 +104,14 @@ func make_array(list...){
 		for(i=0;i<size-1;i+=2){
 			result[list[i]] = list[i+1];
 		}
+	}
+	return result;
+}
+
+func hooktypeof(name){
+	var result = typeof(name);
+	if (result == "map"){
+		return "array";
 	}
 	return result;
 }

@@ -74,7 +74,23 @@ add_executable(NVTEngine
     taskmgr.cc
     modules/module.cc
 )
+
+add_executable(Interpreter
+    Interpreter.cc 
+    modules/module.cc
+)
+
+
 target_link_libraries(  NVTEngine  
+                        engine  
+                        masscan 
+                        "-L${CMAKE_BINARY_DIR}"
+                        ${OPENSSL_LDFLAGS} 
+                        ${ZLIB_LDFLAGS}
+                        ${BROTLI_LDFLAGS}
+                        ${SQLITE_LDFLAGS} )
+
+target_link_libraries(  Interpreter  
                         engine  
                         masscan 
                         "-L${CMAKE_BINARY_DIR}"

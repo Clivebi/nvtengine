@@ -5,89 +5,51 @@
 
 #include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
+#include "fileio.hpp"
+#include "filepath.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/support/nvtidb.hpp"
-#include "taskmgr.hpp"
 
-void ReadDir(std::string path, std::list<std::string>& result) {
-    struct dirent* entry = NULL;
-    DIR* dir = opendir(path.c_str());
-    if (dir == NULL) {
-        return;
-    }
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type & DT_DIR) {
-            continue;
+class InterpreterExecutorCallback : public Interpreter::ExecutorCallback {
+protected:
+    FilePath mFolder;
+
+public:
+    InterpreterExecutorCallback(FilePath folder) : mFolder(folder) {}
+
+    void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+                             Interpreter::VMContext* ctx) {}
+    void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+                          Interpreter::VMContext* ctx) {}
+    void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
+        std::string path = (mFolder + FilePath(name));
+        FileIO io;
+        void* ptr = io.Read(path, size, 2);
+        if (ptr) {
+            size += 2;
         }
-        if (entry->d_namlen > 0) {
-            std::string full = "";
-            full.append(entry->d_name, entry->d_namlen);
-            if (full.find(".sc") != std::string::npos && full.find(".inc.") == std::string::npos) {
-                result.push_back(full);
-            }
-        }
+        return ptr;
     }
-    closedir(dir);
-}
-
-void UpdateNVTI() {
-    std::list<std::string> result;
-    ReadDir("/Volumes/work/convert", result);
-    Value ret = Value::make_array();
-    auto iter = result.begin();
-    while (iter != result.end()) {
-        OVAContext context(*iter);
-        DefaultExecutorCallback callback("/Volumes/work/convert/");
-        Interpreter::Executor exe(&callback, &context);
-        RegisgerModulesBuiltinMethod(&exe);
-        bool error = exe.Execute(iter->c_str(), false);
-        if (error) {
-            ret._array().push_back(context.Nvti);
-            if (ret.Length() > 5000) {
-                openvas::NVTIDataBase db("attributes.db");
-                db.UpdateAll(ret);
-                ret._array().clear();
-            }
-        }
-        iter++;
+    void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
+        std::string error = msg;
+        LOG(std::string(name) + " " + msg);
     }
-    {
-        openvas::NVTIDataBase db("attributes.db");
-        db.UpdateAll(ret);
-        ret._array().clear();
-    }
-}
+};
 
-void TryLoadNVTI(std::string& name, Value& value) {
-    openvas::NVTIDataBase db("attributes.db");
-    value = db.GetFromFileName(name);
-    std::cout << name << " : " << value.ToJSONString(false) << std::endl;
-}
-
-bool ExecuteFile(std::string path, std::string name) {
+bool ExecuteScript(std::string path) {
+    size_t i = path.rfind('/');
+    std::string dir = path.substr(0, i + 1);
+    std::string name = path.substr(i + 1);
     OVAContext context(name);
-    TryLoadNVTI(name, context.Nvti);
-    DefaultExecutorCallback callback(path);
-    Interpreter::Executor exe(&callback, &context);
-    RegisgerModulesBuiltinMethod(&exe);
-    bool ret = exe.Execute(name.c_str(), false);
-    //std::cout << context.NvtiString() << std::endl;
-    return ret;
+    InterpreterExecutorCallback callback(dir);
+    Interpreter::Executor Engine(&callback, &context);
+    RegisgerModulesBuiltinMethod(&Engine);
+    return Engine.Execute(name.c_str(), true);
 }
 
 int main(int argc, char* argv[]) {
-    Value pref = Value::make_map();
-    HostsTask host("", "", pref);
-    if (argc == 2) {
-        std::string folder = argv[1];
-        size_t i = folder.rfind('/');
-        std::string dir = folder.substr(0, i + 1);
-        std::string name = folder.substr(i + 1);
-        ExecuteFile(dir, name);
-        std::cout << Interpreter::Status::ToString() << std::endl;
-        return 0;
+    if (argc > 1) {
+        return ExecuteScript(argv[1]);
     }
-    UpdateNVTI();
-    std::cout << Interpreter::Status::ToString() << std::endl;
-    return 0;
+    return -1;
 }

@@ -515,6 +515,7 @@ Value& Value::operator+=(const Value& right) {
             this->bytes += (char)right.Byte;
             return *this;
         default:
+            DEBUG_CONTEXT();
             throw RuntimeException("+= operation not avaliable for right value ");
         }
     }
@@ -531,10 +532,12 @@ Value& Value::operator+=(const Value& right) {
             this->bytes += (char)right.Byte;
             return *this;
         default:
+            DEBUG_CONTEXT();
             throw RuntimeException("+= operation not avaliable for right value ");
         }
     }
-    throw Interpreter::RuntimeException("+= cant applay on this value");
+    DEBUG_CONTEXT();
+    throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 
 std::string Value::ToString() const {

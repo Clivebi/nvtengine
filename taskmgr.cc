@@ -9,36 +9,8 @@ extern "C" {
 #include "modules/openvas/support/nvtidb.hpp"
 #include "taskmgr.hpp"
 
-char* read_file_content(const char* path, int* file_size) {
-    FILE* f = NULL;
-    char* content = NULL;
-    size_t size = 0, read_size = 0;
-    f = fopen(path, "r");
-    if (f == NULL) {
-        return NULL;
-    }
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    content = (char*)malloc(size + 2);
-    if (content == NULL) {
-        fclose(f);
-        return NULL;
-    }
-    read_size = fread(content, 1, size, f);
-    fclose(f);
-    if (read_size != size) {
-        free(content);
-        return NULL;
-    }
-    *file_size = (read_size + 2);
-    content[read_size] = 0;
-    content[read_size + 1] = 0;
-    return content;
-}
-
-HostsTask::HostsTask(std::string host, std::string ports, Value& prefs)
-        : mScriptCount(0), mHosts(host), mPorts(ports), mPrefs(prefs), mMainThread(0) {
+HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO)
+        : mScriptCount(0), mHosts(host), mPorts(ports), mPrefs(prefs), mMainThread(0), mIO(IO) {
     masscan_init();
 }
 
@@ -162,7 +134,7 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
-    DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes);
+    DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
     OVAContext ctx("");
     ctx.Host = tcb->Host;
     ctx.Storage = tcb->Storage;
