@@ -427,13 +427,13 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
     if (ins->OpCode == Instructions::kBNG) {
         return ~firstVal;
     }
-    if(ins->OpCode == Instructions::kAND){
-        if(!firstVal.ToBoolean()){
+    if (ins->OpCode == Instructions::kAND) {
+        if (!firstVal.ToBoolean()) {
             return Value(false);
         }
     }
-    if(ins->OpCode == Instructions::kOR){
-         if(firstVal.ToBoolean()){
+    if (ins->OpCode == Instructions::kOR) {
+        if (firstVal.ToBoolean()) {
             return Value(true);
         }
     }
@@ -877,8 +877,45 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
     return oldVal;
 }
 
-#define CHECK_INDEX_NULL() \
-    if (toObject.IsNULL()) LOG(ctx->DumpContext(true))
+bool Executor::AutoConvertNilValue(Value& value, std::vector<Value>& indexer) {
+    if (indexer.size() == 1) {
+        if (indexer.front().IsInteger() && indexer.front().Integer < 4096) {
+            value = Value::make_array();
+            value._array().resize(indexer.front().Integer + 1);
+            return true;
+        }
+        if (indexer.front().IsInteger()) {
+            DEBUG_CONTEXT();
+            LOG("wanring please check auto convert nil to map use a integer key larger than 4096");
+        }
+        value = Value::make_map();
+        return true;
+    }
+    Value root;
+    Value parent;
+    for (size_t i = 0; i < indexer.size(); i++) {
+        Value ref = Value::make_map();
+        if (indexer[i].IsInteger()) {
+            if (indexer[i].Integer > 4096) {
+                return false;
+            }
+            ref = Value::make_array();
+            ref._array().resize(indexer[i].Integer + 1);
+        }
+        if (root.IsNULL()) {
+            root = ref;
+        }
+        if (i == 0) {
+            parent = ref;
+            continue;
+        }
+        parent[indexer[i - 1]] = ref;
+        parent = ref;
+    }
+    value = root;
+    return true;
+}
+
 // Instruction* CreateReference(const std::string& root,Instruction* path);
 // Instruction* VarUpdateExpression(Instruction* ref, Instruction* value, int opcode);
 Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
@@ -890,31 +927,20 @@ Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
     if (ref->Refs.size() == 0) {
         return UpdateVar(ref->Name, val, ins->OpCode, ctx);
     }
-    Value root = ctx->GetVarValue(ref->Name);
-    std::vector<Value> indexValues = ObjectPathToIndexer(GetInstruction(ref->Refs.front()), ctx);
+    std::vector<Value> indexer = ObjectPathToIndexer(GetInstruction(ref->Refs.front()), ctx);
+    Value root;
+    ctx->GetVarValue(ref->Name, root);
     if (root.IsNULL()) {
-        std::string logMsg =
-                "try " + ins->Name + "[index] = val on nil object,so convert to map or array";
-        LOG(logMsg);
-        if (indexValues.size() > 1) {
-            root = Value::make_map();
-        } else {
-            if (indexValues.front().IsInteger() && indexValues.front().Integer < 4096) {
-                root = Value::make_array();
-                root._array().resize(indexValues.front().Integer + 1);
-            } else {
-                root = Value::make_map();
-            }
+        LOG("try " + ins->Name + "[index] = val on nil object,so convert to map or array");
+        if (AutoConvertNilValue(root, indexer)) {
+            ctx->SetVarValue(ref->Name, root);
         }
-        ctx->SetVarValue(ref->Name,root);
     }
     Value& toObject = root;
-    for (size_t i = 0; i < indexValues.size() - 1; i++) {
-        CHECK_INDEX_NULL();
-        toObject = toObject[indexValues[i]];
+    for (size_t i = 0; i < indexer.size() - 1; i++) {
+        toObject = toObject[indexer[i]];
     }
-    CHECK_INDEX_NULL();
-    return UpdateValueAt(toObject, indexValues.back(), val, ins->OpCode);
+    return UpdateValueAt(toObject, indexer.back(), val, ins->OpCode);
 }
 // name ,indexer
 Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {
@@ -923,10 +949,14 @@ Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {
     Value root = ctx->GetVarValue(ins->Name);
     Value& toObject = root;
     for (size_t i = 0; i < indexValues.size() - 1; i++) {
-        CHECK_INDEX_NULL();
+        if (toObject.IsNULL()) {
+            return Value();
+        }
         toObject = toObject[indexValues[i]];
     }
-    CHECK_INDEX_NULL();
+    if (toObject.IsNULL()) {
+        return Value();
+    }
     const Value& last = toObject;
     return last[indexValues.back()];
 }

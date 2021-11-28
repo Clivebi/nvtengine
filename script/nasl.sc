@@ -194,7 +194,7 @@ func script_get_preference(name,id=-1){
 	return ova_script_get_preference(name,id);
 }
 
-func script_get_preference_file_content(name,id){
+func script_get_preference_file_content(name,id=-1){
 	return ova_script_get_preference_file_content(name,id);
 }
 
@@ -325,6 +325,9 @@ func gunzip(data){
 func string(x...){
 	var ret="";
 	for v in x {
+		if(v==nil){
+			continue;
+		}
 		ret += v;
 	}
 	return ret;
@@ -419,6 +422,9 @@ func crap(length,data){
 }
 
 func strlen(str){
+	if(str==nil){
+		return 0;
+	}
 	return len(str);
 }
 

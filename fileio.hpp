@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include "filepath.hpp"
-
+#include "engine/logger.hpp"
 class FileIO {
 public:
     virtual bool Write(const std::string& path, const std::string& data) {
@@ -37,6 +37,7 @@ public:
             free(pData);
             return NULL;
         }
+        fclose(hFile);
         for (int i = 0; i < SuffixSize; i++) {
             ((char*)pData)[i + nSize] = 0;
         }
