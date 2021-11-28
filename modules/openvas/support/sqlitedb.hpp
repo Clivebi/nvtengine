@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace openvas {
+namespace support {
 class DatabaseObject {
 protected:
     sqlite3* mRaw;
@@ -49,4 +49,4 @@ public:
         return std::string((const char*)buffer, length);
     }
 };
-} // namespace openvas
+} // namespace support

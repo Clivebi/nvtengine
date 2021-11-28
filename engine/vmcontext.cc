@@ -173,6 +173,7 @@ bool VMContext::GetVarValue(const std::string& name, Value& val) {
 Value VMContext::GetVarValue(const std::string& name) {
     Value ret;
     if (!GetVarValue(name, ret)) {
+        DEBUG_CONTEXT();
         throw RuntimeException("variable not found :" + name);
     }
     return ret;

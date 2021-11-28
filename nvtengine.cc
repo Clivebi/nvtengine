@@ -132,8 +132,9 @@ void UpdateNVTI(std::string script_path, std::string home) {
     CollectAllScript(script_path, "", result);
     Value ret = Value::make_array();
     for (auto iter : result) {
-        OVAContext context(iter);
-        DefaultExecutorCallback callback(script_path,&IO);
+        OVAContext context(iter, Value::make_map(), Value::make_map(),
+                           new support::ScriptStorage());
+        DefaultExecutorCallback callback(script_path, &IO);
         callback.mDescription = true;
         Interpreter::Executor exe(&callback, &context);
         RegisgerModulesBuiltinMethod(&exe);
@@ -141,7 +142,7 @@ void UpdateNVTI(std::string script_path, std::string home) {
         if (ok) {
             ret._array().push_back(context.Nvti);
             if (ret.Length() > 5000) {
-                openvas::NVTIDataBase db(FilePath(home) + "attributes.db");
+                support::NVTIDataBase db(FilePath(home) + "attributes.db");
                 db.UpdateAll(ret);
                 ret._array().clear();
             }
@@ -151,7 +152,7 @@ void UpdateNVTI(std::string script_path, std::string home) {
         }
     }
     {
-        openvas::NVTIDataBase db(FilePath(home) + "attributes.db");
+        support::NVTIDataBase db(FilePath(home) + "attributes.db");
         db.UpdateAll(ret);
         ret._array().clear();
     }
@@ -161,7 +162,7 @@ void NVTEngineTest() {
     Value pref = Value::make_map();
     FileIO IO;
     pref["scripts_folder"] = "/Volumes/work/convert";
-    HostsTask task("192.168.0.100", "80,443", pref,&IO);
+    HostsTask task("192.168.0.100", "80,443", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     task.BeginTask(result, "10000");
     task.Join();

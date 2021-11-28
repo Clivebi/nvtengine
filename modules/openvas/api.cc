@@ -2,7 +2,7 @@
 #include "api.hpp"
 
 #include "./api/crypto.cc"
-#include "./api/ovanetwork.cc"
+#include "./api/net.cc"
 #include "./api/script.cc"
 #include "./api/time.cc"
 #include "./api/util.cc"
@@ -40,6 +40,8 @@ BuiltinMethod ovaMethod[] = {
         {"log_message", log_message},
         {"error_message", error_message},
         {"get_script_oid", get_script_oid},
+        {"ResolveHostName", ResolveHostName},
+        {"ResolveHostNameToList", ResolveHostNameToList},
         {"open_sock_tcp", open_sock_tcp},
         {"open_sock_udp", open_sock_udp},
         {"open_priv_sock_tcp", open_priv_sock_tcp},
@@ -68,14 +70,14 @@ BuiltinMethod ovaMethod[] = {
         {"sleep", Sleep},
         {"get_host_ip", get_host_ip},
         {"HostEnv", HostEnv},
-        {"GetHostName",GetHostName},
+        {"GetHostName", GetHostName},
         {"vendor_version", vendor_version},
         {"MD5", Md5Buffer},
         {"SHA1", SHA1Buffer},
         {"SHA256", SHA256Buffer},
-        {"HMACMethod",HMACMethod},
-        {"TLSPRF",TLSPRF},
-        {"TLS1PRF",TLS1PRF},
+        {"HMACMethod", HMACMethod},
+        {"TLSPRF", TLSPRF},
+        {"TLS1PRF", TLS1PRF},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

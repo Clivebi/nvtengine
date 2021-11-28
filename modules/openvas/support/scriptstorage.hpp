@@ -8,7 +8,7 @@
 
 #include "../../../engine/value.hpp"
 using namespace Interpreter;
-namespace openvas {
+namespace support {
 class ScriptStorage : public CRefCountedThreadSafe<ScriptStorage> {
 protected:
     std::map<std::string, std::vector<Value>> mValues;
@@ -60,6 +60,9 @@ public:
         mValues[name].push_back(val);
     }
 
+    void AddService(const std::string& name, int port) { SetItem("Services/" + name, port); }
+    Value GetService(const std::string& name) { return GetItem("Services/" + name, true); }
+
 private:
     bool IsExist(std::vector<Value>& group, Value val) {
         auto iter = group.begin();
@@ -72,4 +75,4 @@ private:
         return false;
     }
 };
-} // namespace openvas
+} // namespace support

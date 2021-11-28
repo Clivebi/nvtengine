@@ -97,18 +97,27 @@ void HostsTask::Execute() {
             ipaddress addr = {0};
             addr.ipv4 = task->src_ipv4;
             addr.version = 4;
-            ipaddress_formatted_t fmtIP = ipaddress_fmt(addr);
-            tcb->Env["local_ip"] = fmtIP.string;
-            tcb->Env["ifname"] = task->nic.ifname;
+            ipaddress_formatted_t fmtV = ipaddress_fmt(addr);
+
+            tcb->Env[knowntext::kENV_local_ip] = fmtV.string;
+            tcb->Env[knowntext::kENV_default_ifname] = task->nic.ifname;
+
             addr.ipv4 = task->nic.router_ip;
-            fmtIP = ipaddress_fmt(addr);
-            tcb->Env["route_ip"] = fmtIP.string;
-            tcb->Env["scanner_scanned"] = Value(true);
-            tcb->Env["opened_tcp"] = tcps;
-            tcb->Env["opened_udp"] = udps;
+            fmtV = ipaddress_fmt(addr);
+            tcb->Env[knowntext::kENV_route_ip] = fmtV.string;
+
+            fmtV = macaddress_fmt(task->nic.source_mac);
+            tcb->Env[knowntext::kENV_local_mac] = fmtV.string;
+
+            fmtV = macaddress_fmt(task->nic.router_mac_ipv4);
+            tcb->Env[knowntext::kENV_route_mac] = fmtV.string;
+            tcb->Env[knowntext::kENV_opened_tcp] = tcps;
+            tcb->Env[knowntext::kENV_opened_udp] = udps;
             for (auto v : mPrefs._map()) {
                 tcb->Env[v.first] = v.second;
             }
+            tcb->Storage->AddService("www", 80);
+            tcb->Storage->AddService("www", 443);
         }
         tcb->Task = this;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
@@ -135,20 +144,20 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
-    OVAContext ctx("");
-    ctx.Host = tcb->Host;
-    ctx.Storage = tcb->Storage;
-    Interpreter::Executor Engine(&callback, &ctx);
+    Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
     for (int i = 0; i < 11; i++) {
         Value root = mGroupedScripts[i];
         for (auto v : root._map()) {
-            ctx.Name = v.second["filename"].bytes;
+            OVAContext ctx(v.second[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env,
+                           tcb->Storage);
             ctx.Nvti = v.second;
-            ctx.Env = tcb->Env;
-            ctx.Prefs = mPrefs;
-            //TODO check require keys
-            Engine.Execute(ctx.Name.c_str(), false);
+            ctx.Host = tcb->Host;
+            if (!CheckScript(&ctx, v.second)) {
+                continue;
+            }
+            Engine.SetUserContext(&ctx);
+            Engine.Execute(ctx.ScriptFileName.c_str(), false);
             if (tcb->Exit) {
                 break;
             }
@@ -161,7 +170,8 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
 }
 
 bool HostsTask::InitScripts(std::list<std::string>& scripts) {
-    openvas::NVTIDataBase nvtiDB("attributes.db");
+    support::NVTIDataBase nvtiDB("attributes.db");
+    support::Prefs prefsDB("prefs.db");
     std::map<std::string, int> loaded;
     for (int i = 0; i < 11; i++) {
         mGroupedScripts[i] = Value::make_map();
@@ -173,17 +183,21 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             //return false;
             continue;
         }
-        loaded[nvti["filename"].bytes] = 1;
-        mGroupedScripts[nvti["category"].ToInteger()][v] = nvti;
+        Value pref = prefsDB.Get(v);
+        if (!pref.IsObject()) {
+            nvti[knowntext::kNVTI_preference] = pref;
+        }
+        loaded[nvti[knowntext::kNVTI_filename].bytes] = 1;
+        mGroupedScripts[nvti[knowntext::kNVTI_category].ToInteger()][v] = nvti;
         std::list<std::string> deps;
-        Value dp = nvti["dependencies"];
+        Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {
             continue;
         }
         for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
-        if (!InitScripts(nvtiDB, deps, loaded)) {
+        if (!InitScripts(nvtiDB, prefsDB, deps, loaded)) {
             return false;
         }
     }
@@ -194,29 +208,94 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     return true;
 }
 
-bool HostsTask::InitScripts(openvas::NVTIDataBase& db, std::list<std::string>& scripts,
-                            std::map<std::string, int>& loaded) {
+bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
+                            std::list<std::string>& scripts, std::map<std::string, int>& loaded) {
     for (auto v : scripts) {
         if (loaded.find(v) != loaded.end()) {
             continue;
         }
-        Value nvti = db.GetFromFileName(v);
+        Value nvti = nvtiDB.GetFromFileName(v);
         if (nvti.IsNULL()) {
             LOG("load " + v + " failed");
             return false;
         }
+        Value pref = prefsDB.Get(nvti[knowntext::kNVTI_oid].bytes);
+        if (!pref.IsObject()) {
+            nvti[knowntext::kNVTI_preference] = pref;
+        }
         loaded[v] = 1;
-        mGroupedScripts[nvti["category"].ToInteger()][v] = nvti;
+        mGroupedScripts[nvti[knowntext::kNVTI_category].ToInteger()][v] = nvti;
         std::list<std::string> deps;
-        Value dp = nvti["dependencies"];
+        Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {
             continue;
         }
         for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
-        if (!InitScripts(db, deps, loaded)) {
+        if (!InitScripts(nvtiDB, prefsDB, deps, loaded)) {
             return false;
+        }
+    }
+    return true;
+}
+
+bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
+    Value mandatory_keys = nvti[knowntext::kNVTI_mandatory_keys];
+    if (mandatory_keys.IsObject()) {
+        for (auto v : mandatory_keys._array()) {
+            Value val = ctx->Storage->GetItem(v.bytes, true);
+            if (val.IsNULL()) {
+                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                          << " because mandatory key is missing :" << v.ToString() << std::endl;
+                return false;
+            }
+        }
+    }
+
+    Value require_keys = nvti[knowntext::kNVTI_require_keys];
+    if (require_keys.IsObject()) {
+        for (auto v : require_keys._array()) {
+            Value val = ctx->Storage->GetItem(v.bytes, true);
+            if (val.IsNULL()) {
+                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                          << " because require key is missing :" << v.ToString() << std::endl;
+                return false;
+            }
+        }
+    }
+
+    Value require_ports = nvti[knowntext::kNVTI_require_ports];
+    if (require_ports.IsObject()) {
+        for (auto v : require_ports._array()) {
+            if (!ctx->IsPortInOpenedRange(v, true)) {
+                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                          << " because require_ports is missing :" << v.ToString() << std::endl;
+                return false;
+            }
+        }
+    }
+
+    Value require_udp_ports = nvti[knowntext::kNVTI_require_udp_ports];
+    if (require_udp_ports.IsObject()) {
+        for (auto v : require_udp_ports._array()) {
+            if (!ctx->IsPortInOpenedRange(v, false)) {
+                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                          << " because require_udp_ports is missing :" << v.ToString() << std::endl;
+                return false;
+            }
+        }
+    }
+
+    Value exclude_keys = nvti[knowntext::kNVTI_exclude_keys];
+    if (exclude_keys.IsObject()) {
+        for (auto v : exclude_keys._array()) {
+            Value val = ctx->Storage->GetItem(v.bytes, true);
+            if (!val.IsNULL()) {
+                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                          << " because exclude_keys is exist :" << v.ToString() << std::endl;
+                return false;
+            }
         }
     }
     return true;

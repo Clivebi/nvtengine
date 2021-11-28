@@ -2,21 +2,20 @@
 #include "../../engine/vm.hpp"
 #include "../check.hpp"
 #include "./support/scriptstorage.hpp"
+#include "knowntext.hpp"
 using namespace Interpreter;
 struct OVAContext {
-    std::string Name;
-    std::string Host; // current runing host
+    const std::string ScriptFileName;
+    std::string Host;
     Value Nvti;
-    Value Prefs; // for global preference
-    Value Env;
-    scoped_refptr<openvas::ScriptStorage> Storage;
-    explicit OVAContext(std::string name) : Name(name) {
+    const Value& Prefs;
+    const Value& Env;
+    scoped_refptr<support::ScriptStorage> Storage;
+    explicit OVAContext(std::string script, const Value& pref, const Value& env,
+                        scoped_refptr<support::ScriptStorage> storage)
+            : ScriptFileName(script), Prefs(pref), Env(env), Storage(storage) {
         Nvti = Value::make_map();
-        Nvti["filename"] = name;
-        Storage = new openvas::ScriptStorage();
-        Prefs = Value::make_map();
-        Env = Value::make_map();
-        InitEnv();
+        Nvti[knowntext::kNVTI_filename] = script;
     }
     std::string NvtiString() { return Nvti.ToJSONString(false); }
     //for script preference
@@ -25,7 +24,8 @@ struct OVAContext {
     void GetPreferenceFile(const Value& id, const Value& name, std::string& content);
     void AddXref(const Value& name, const Value& value);
     void AddTag(const Value& name, const Value& value);
-    void InitEnv();
+
+    bool IsPortInOpenedRange(Value& port, bool tcp);
 };
 
 inline int GetInt(std::vector<Value>& args, int pos, int default_value) {

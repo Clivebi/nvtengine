@@ -181,14 +181,6 @@ func script_add_preference(name,type, value, id){
 	return ova_script_add_preference(name,type,value,id);
 }
 
-func resolve_host_name(hostname){
-}
-
-#add_host_name(hostname: tmp, source: "SSL/TLS server certificate")
-func add_host_name(hostname,source){
-
-}
-
 #script_get_preference("Launch IT-Grundschutz (10. EL)", id: 1)
 func script_get_preference(name,id=-1){
 	return ova_script_get_preference(name,id);
@@ -270,10 +262,6 @@ func mktime(sec, min, hour, mday, mon, year,isdst=-1){
 	return ova_mktime(sec,min,hour,mday,mon,year,isdst);
 }
 
-#get_host_name_source(hostname: hostname)
-func get_host_name_source(hostname){
-
-}
 #forge_ip_packet(ip_hl: 5, ip_v: 4, ip_off: 0, ip_id: 9, ip_tos: 0, ip_p: IPPROTO_ICMP, ip_len: 20, ip_src: host, ip_ttl: 255)
 func forge_ip_packet(ip_hl, ip_v, ip_off, ip_id, ip_tos, ip_p, ip_len, ip_src, ip_ttl){
 
@@ -610,4 +598,46 @@ func this_host(){
 
 func this_host_name(){
 	return GetHostName();
+}
+
+#add_host_name(hostname: tmp, source: "SSL/TLS server certificate")
+func add_host_name(hostname,source){
+	var map = get_kb_list("HostNameManger");
+	if(map==nil){
+		map = {};
+	}
+	map[hostname] = source;
+	return;
+}
+
+func get_host_name(){
+	return get_host_ip();
+}
+
+func get_host_names(){
+	var map = get_kb_list("HostNameManger");
+	if(map==nil){
+		return [];
+	}
+	return keys(map);
+}
+
+func get_host_name_source(hostname){
+	var map = get_kb_list("HostNameManger");
+	if(map==nil){
+		return "";
+	}
+	var source = map[hostname];
+	if(source==nil){
+		return "";
+	}
+	return source;
+}
+
+func resolve_host_name(hostname){
+	return ResolveHostName(hostname);
+}
+
+func resolve_hostname_to_multiple_ips(hostname){
+	return ResolveHostNameToList(hostname);
 }

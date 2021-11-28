@@ -40,6 +40,8 @@ public:
 
     void* GetUserContext() { return mContext; }
 
+    void SetUserContext(void* ctx) { mContext = ctx; }
+
     Value GetFunction(const std::string& name, VMContext* ctx);
 
 protected:
@@ -57,7 +59,7 @@ protected:
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);
-    bool  AutoConvertNilValue(Value& val,std::vector<Value>&indexer);
+    bool AutoConvertNilValue(Value& val, std::vector<Value>& indexer);
     Value ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateMap(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateArray(const Instruction* ins, VMContext* ctx);

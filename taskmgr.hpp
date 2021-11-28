@@ -7,6 +7,7 @@
 #include "fileio.hpp"
 #include "filepath.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
+#include "modules/openvas/support/prefsdb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
 
 using namespace Interpreter;
@@ -62,9 +63,9 @@ protected:
         int ScriptCount;
         Value Env;
         int ExecutedScriptCount;
-        scoped_refptr<openvas::ScriptStorage> Storage;
+        scoped_refptr<support::ScriptStorage> Storage;
         TCB(std::string host) {
-            Storage = new openvas::ScriptStorage();
+            Storage = new support::ScriptStorage();
             Env = Value::make_map();
             Exit = false;
             ScriptCount = 0;
@@ -109,6 +110,7 @@ protected:
         ptr->Execute();
     }
     bool InitScripts(std::list<std::string>& scripts);
-    bool InitScripts(openvas::NVTIDataBase& db, std::list<std::string>& scripts,
-                     std::map<std::string, int>& loaded);
+    bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
+                     std::list<std::string>& scripts, std::map<std::string, int>& loaded);
+    bool CheckScript(OVAContext* ctx,Value& nvti);
 };

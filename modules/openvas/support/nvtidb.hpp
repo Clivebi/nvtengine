@@ -5,7 +5,7 @@
 using namespace Interpreter;
 
 Value ParseJSON(std::string& str);
-namespace openvas {
+namespace support {
 
 class NVTIDataBase : DatabaseObject {
 public:
@@ -133,4 +133,4 @@ public:
         return true;
     }
 };
-}; // namespace openvas
+}; // namespace support

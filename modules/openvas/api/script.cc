@@ -1,10 +1,11 @@
 #include "../api.hpp"
+#include "../knowntext.hpp"
 
 Value script_name(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["name"] = args.front();
+    script->Nvti[knowntext::kNVTI_name] = args.front();
     return Value();
 }
 
@@ -12,7 +13,7 @@ Value script_version(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["version"] = args.front();
+    script->Nvti[knowntext::kNVTI_version] = args.front();
     return Value();
 }
 
@@ -20,7 +21,7 @@ Value script_timeout(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["timeout"] = args.front();
+    script->Nvti[knowntext::kNVTI_timeout] = args.front();
     return Value();
 }
 
@@ -32,40 +33,40 @@ Value script_family(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["family"] = args.front();
+    script->Nvti[knowntext::kNVTI_family] = args.front();
     return Value();
 }
 
 Value script_require_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
-    script->Nvti["require_keys"] = Value(args);
+    script->Nvti[knowntext::kNVTI_require_keys] = Value(args);
     return Value();
 }
 
 Value script_mandatory_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
-    script->Nvti["mandatory_keys"] = Value(args);
+    script->Nvti[knowntext::kNVTI_mandatory_keys] = Value(args);
     return Value();
 }
 
 Value script_require_ports(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["require_ports"] = Value(args);
+    script->Nvti[knowntext::kNVTI_require_ports] = Value(args);
     return Value();
 }
 
 Value script_require_udp_ports(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["require_udp_ports"] = Value(args);
+    script->Nvti[knowntext::kNVTI_require_udp_ports] = Value(args);
     return Value();
 }
 
 Value script_exclude_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
-    script->Nvti["exclude_keys"] = Value(args);
+    script->Nvti[knowntext::kNVTI_exclude_keys] = Value(args);
     return Value();
 }
 //#script_add_preference(name: "Prefix directory", type: "entry", value: "/etc/apache2/", id: 1)
@@ -108,20 +109,20 @@ Value script_oid(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["oid"] = args.front();
+    script->Nvti[knowntext::kNVTI_oid] = args.front();
     return Value();
 }
 
 Value script_cve_id(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
-    script->Nvti["cve_id"] = Value(args);
+    script->Nvti[knowntext::kNVTI_cve_id] = Value(args);
     return Value();
 }
 
 Value script_bugtraq_id(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["bugtraq_id"] = Value(args);
+    script->Nvti[knowntext::kNVTI_bugtraq_id] = Value(args);
     return Value();
 }
 
@@ -147,14 +148,14 @@ Value script_category(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["category"] = args[0];
+    script->Nvti[knowntext::kNVTI_category] = args[0];
     return Value();
 }
 
 Value script_dependencies(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRINGS();
     OVAContext* script = GetOVAContext(vm);
-    script->Nvti["dependencies"] = args;
+    script->Nvti[knowntext::kNVTI_dependencies] = args;
     return Value();
 }
 
@@ -189,7 +190,7 @@ Value get_preference(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value get_script_oid(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
-    return script->Nvti["oid"];
+    return script->Nvti[knowntext::kNVTI_oid];
 }
 
 Value replace_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

@@ -576,6 +576,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
     if (ctx->IsExecutedInterupt()) {
         return ctx->GetReturnValue();
     }
+    newCtx->SetVarValue("_FCT_ANON_ARGS",Value(actualValues));
     if (func->Refs.size() == 2) {
         const Instruction* formal = GetInstruction(func->Refs[1]);
         std::vector<const Instruction*> formalParamers = GetInstructions(formal->Refs);

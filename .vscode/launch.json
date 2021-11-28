@@ -8,9 +8,8 @@
             "name": "clang++ - 生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Interpreter",
+            "program": "${workspaceFolder}/build/NVTEngine",
             "args": [
-                "${workspaceFolder}/test/test1.sc"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
