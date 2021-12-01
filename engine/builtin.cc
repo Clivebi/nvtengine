@@ -382,10 +382,16 @@ Value DisplayContext(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return Value();
 }
 
+Value Clone(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(values, 1);
+    return values.front().Clone();
+}
+
 BuiltinMethod builtinFunction[] = {
         {"byte", ToByte},
         {"exit", Exit},
         {"len", len},
+        {"clone", Clone},
         {"append", append},
         {"require", Require},
         {"bytes", MakeBytes},

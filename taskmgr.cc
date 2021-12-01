@@ -72,6 +72,7 @@ void HostsTask::Execute() {
             if (ipaddress_is_equal(seek->address, arpItem[i].ip)) {
                 ipaddress_formatted_t mac = macaddress_fmt(arpItem[i].mac);
                 tcb->Storage->SetItem("Host/mac_address", mac.string);
+                break;
             }
         }
         std::string tcps = ",", udps = ",";
@@ -116,6 +117,11 @@ void HostsTask::Execute() {
             for (auto v : mPrefs._map()) {
                 tcb->Env[v.first] = v.second;
             }
+            tcb->Storage->SetItem("testname", "name1");
+            tcb->Storage->SetItem("testname", "name2");
+            tcb->Storage->SetItem("testname1", "name3");
+            tcb->Storage->SetItem("testname1", "name4");
+            tcb->Storage->SetItem("testname1", "name5");
             tcb->Storage->AddService("www", 80);
             tcb->Storage->AddService("www", 443);
         }
@@ -161,6 +167,13 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             if (tcb->Exit) {
                 break;
             }
+            if (ctx.Fork.IsForked()) {
+                ctx.Fork.Snapshot = ctx.Storage->Clone();
+                ctx.IsForkedTask = true;
+                while (ctx.Fork.PrepareForNextScriptExecute() && !tcb->Exit) {
+                    Engine.Execute(ctx.ScriptFileName.c_str(), false);
+                }
+            }
             tcb->ScriptCount++;
         }
         if (tcb->Exit) {
@@ -173,6 +186,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     support::NVTIDataBase nvtiDB("attributes.db");
     support::Prefs prefsDB("prefs.db");
     std::map<std::string, int> loaded;
+    bool loadDep = mPrefs[knowntext::kPref_load_dependencies].ToBoolean();
     for (int i = 0; i < 11; i++) {
         mGroupedScripts[i] = Value::make_map();
     }
@@ -184,11 +198,14 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             continue;
         }
         Value pref = prefsDB.Get(v);
-        if (!pref.IsObject()) {
+        if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
         loaded[nvti[knowntext::kNVTI_filename].bytes] = 1;
         mGroupedScripts[nvti[knowntext::kNVTI_category].ToInteger()][v] = nvti;
+        if (!loadDep) {
+            continue;
+        }
         std::list<std::string> deps;
         Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {

@@ -6,7 +6,7 @@
 #ifndef BYTE
 #define BYTE unsigned char
 #endif
-#define _DEBUG_SCRIPT
+//#define _DEBUG_SCRIPT
 
 #ifdef _DEBUG_SCRIPT
 #define DEBUG_CONTEXT() Interpreter::DebugContext()

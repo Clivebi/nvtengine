@@ -6,7 +6,7 @@
 #include "./api/script.cc"
 #include "./api/time.cc"
 #include "./api/util.cc"
-#include "apihelper.cc"
+#include "ovacontext.cc"
 
 BuiltinMethod ovaMethod[] = {
         {"script_name", script_name},

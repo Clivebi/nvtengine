@@ -154,6 +154,7 @@ public:
     std::string ObjectType() const { return "array"; };
     std::string ToString() const;
     std::string ToJSONString() const;
+    ArrayObject* Clone();
     DISALLOW_COPY_AND_ASSIGN(ArrayObject);
 };
 
@@ -168,6 +169,7 @@ public:
     ~MapObject() { Status::sMapCount--; }
 
 public:
+    MapObject* Clone();
     std::string ObjectType() const { return "map"; };
     std::string ToString() const;
     std::string ToJSONString() const;
@@ -341,6 +343,8 @@ public:
         }
         return Value(~Integer);
     }
+
+    Value Clone() const;
 
     ArrayObject* Array() const { return (ArrayObject*)object.get(); }
     MapObject* Map() const { return (MapObject*)object.get(); }

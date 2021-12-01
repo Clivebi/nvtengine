@@ -641,3 +641,21 @@ func resolve_host_name(hostname){
 func resolve_hostname_to_multiple_ips(hostname){
 	return ResolveHostNameToList(hostname);
 }
+
+func get_port_transport(port){
+	return get_kb_item("Transports/TCP/"+port);
+}
+
+func http_open_socket(port){
+	var ip = get_host_ip();
+	var transport = get_port_transport(port);
+	var isTLS = false;
+	if(transport != nil && transport > 0 ){
+		isTLS = true;
+	}
+	return TCPConnect(ip,port,30,isTLS);
+}
+
+func http_close_socket(soc){
+	close(soc);
+}

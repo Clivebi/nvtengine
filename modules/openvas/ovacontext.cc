@@ -1,5 +1,4 @@
-#include "api.hpp"
-
+#include "ovacontext.hpp"
 void OVAContext::AddPreference(const Value& id, const Value& name, const Value& type,
                                const Value& value) {
     Value x = Value::make_map();
@@ -84,4 +83,31 @@ bool OVAContext::IsPortInOpenedRange(Value& port, bool tcp) {
     //Services/wwww
     Value ret = Storage->GetItem(port.ToString(), false);
     return !ret.IsNULL();
+}
+
+Value OVAContext::GetKbItem(const std::string& name) {
+    if (IsForkedTask) {
+        return Fork.Snapshot->GetItem(name, Fork.GetItemPos(name));
+    }
+    int Count = Storage->GetItemSize(name);
+    if (Count > 1) {
+        Fork.Names.push_back(name);
+        Fork.Values.push_back(Count);
+        Fork.Current.push_back(0);
+        return Storage->GetItem(name, 0);
+    }
+    return Storage->GetItem(name, -1);
+}
+
+Value OVAContext::GetKbList(const std::string& name) {
+    return Storage->GetItemList(name);
+}
+
+void OVAContext::SetKbItem(const std::string& name, const Value& val) {
+    if (IsForkedTask) {
+        if (Fork.GetItemPos(name) != -1) {
+            LOG("In forked task update a forking key: " + name);
+        }
+    }
+    return Storage->SetItem(name, val);
 }

@@ -14,15 +14,23 @@ protected:
     std::map<std::string, std::vector<Value>> mValues;
 
 public:
-    Value GetItem(const std::string& name, bool onlylast) {
+    Value GetItem(const std::string& name, int pos) {
         auto iter = mValues.find(name);
         if (iter != mValues.end()) {
-            if (onlylast) {
+            if (pos < 0 || pos >= iter->second.size()) {
                 return iter->second.back();
             }
-            return iter->second;
+            return iter->second[pos];
         }
         return Value();
+    }
+
+    int GetItemSize(const std::string& name) {
+        auto iter = mValues.find(name);
+        if (iter != mValues.end()) {
+            return iter->second.size();
+        }
+        return 0;
     }
 
     void ReplaceItem(const std::string& name, const Value& val) {
@@ -32,7 +40,11 @@ public:
 
     Value GetItemList(const std::string& partten) {
         if (partten.find("*") == std::string::npos) {
-            return GetItem(partten, false);
+            auto iter = mValues.find(partten);
+            if (iter != mValues.end()) {
+                return iter->second;
+            }
+            return Value();
         }
         Value ret = Value::make_array();
         auto iter = mValues.begin();
@@ -58,6 +70,18 @@ public:
             return;
         }
         mValues[name].push_back(val);
+    }
+
+    scoped_refptr<ScriptStorage> Clone() {
+        scoped_refptr<ScriptStorage> New = new ScriptStorage();
+        for (auto v : mValues) {
+            std::vector<Value> newVector;
+            for (auto k : v.second) {
+                newVector.push_back(k.Clone());
+            }
+            New->mValues[v.first] = newVector;
+        }
+        return New;
     }
 
     void AddService(const std::string& name, int port) { SetItem("Services/" + name, port); }

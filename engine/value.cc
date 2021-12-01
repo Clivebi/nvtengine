@@ -460,6 +460,42 @@ Value& Value::operator=(const Value& val) {
     return *this;
 }
 
+ArrayObject* ArrayObject::Clone() {
+    ArrayObject* pNew = new ArrayObject();
+    for (auto v : _array) {
+        pNew->_array.push_back(v.Clone());
+    }
+    return pNew;
+}
+
+MapObject* MapObject::Clone() {
+    MapObject* pNew = new MapObject();
+    for (auto v : _map) {
+        pNew->_map[v.first.Clone()] = v.second.Clone();
+    }
+    return pNew;
+}
+
+Value Value::Clone() const {
+    switch (Type) {
+    case ValueType::kArray: {
+        Value ret = Value();
+        ret.Type = ValueType::kArray;
+        ret.object = Array()->Clone();
+        return ret;
+    }
+
+    case ValueType::kMap: {
+        Value ret = Value();
+        ret.Type = ValueType::kMap;
+        ret.object = Map()->Clone();
+        return ret;
+    }
+    default:
+        return Value(*this);
+    }
+}
+
 Value::Value(Resource* res)
         : Type(ValueType::kResource), Integer(0), bytes(), resource(res), object(NULL) {}
 Value::Value(const std::vector<Value>& val) : Integer(0), bytes(), resource(NULL) {
