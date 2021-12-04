@@ -4,7 +4,7 @@
 #include "../../../engine/value.hpp"
 #include "sqlitedb.hpp"
 using namespace Interpreter;
-Value ParseJSON(std::string& str);
+Value ParseJSON(std::string& str,bool unescape);
 namespace support {
 
 class Prefs : DatabaseObject {
@@ -47,7 +47,7 @@ public:
         sqlite3_bind_text(stmt, 1, oid.c_str(), oid.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text);
+            Value ret = ParseJSON(text,false);
             sqlite3_finalize(stmt);
             return ret;
         }

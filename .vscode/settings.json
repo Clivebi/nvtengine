@@ -106,6 +106,8 @@
         "socket": "cpp",
         "timer": "cpp",
         "regex": "cpp",
-        "stack-queue.c": "cpp"
+        "stack-queue.c": "cpp",
+        "*.ds_store": "cpp",
+        "unordered_set": "cpp"
     }
 }

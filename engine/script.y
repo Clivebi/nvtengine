@@ -99,6 +99,9 @@ IDENTIFIER:IDENT
         |IN 
         {
                 $$="in";
+        }|DEFAULT
+        {
+                $$="default";
         };
 
 declarationlist:declarationlist COMMA declaration

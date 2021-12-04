@@ -76,13 +76,14 @@ protected:
 
     FileIO* mIO;
     Value mPrefs;
-    Value mGroupedScripts[11];
     int mScriptCount;
     std::string mHosts;
     std::string mPorts;
-    std::list<TCB*> mTCBGroup;
     std::string mTaskID;
     size_t mMainThread;
+
+    std::list<TCB*> mTCBGroup;
+    std::list<Value> mGroupedScripts[11];
 
 public:
     HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO);
@@ -111,6 +112,7 @@ protected:
     }
     bool InitScripts(std::list<std::string>& scripts);
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
-                     std::list<std::string>& scripts, std::map<std::string, int>& loaded);
-    bool CheckScript(OVAContext* ctx,Value& nvti);
+                     std::list<std::string>& scripts, std::list<Value>& loadOrder,
+                     std::map<std::string, int>& loaded);
+    bool CheckScript(OVAContext* ctx, Value& nvti);
 };

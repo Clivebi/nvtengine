@@ -248,7 +248,7 @@ Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return Value(found);
 }
 
-Value MatchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_STRING(1);
@@ -262,7 +262,7 @@ Value MatchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::regex re = RegExp(args[1].bytes, icase);
     while (std::regex_search(s, m, re)) {
         for (auto iter = m.begin(); iter != m.end(); iter++) {
-            ret._array().push_back(m.str());
+            ret._array().push_back(iter->str());
         }
         s = m.suffix().str();
     }
@@ -279,9 +279,9 @@ Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         icase = args[3].ToBoolean();
     }
     std::smatch m;
-    Value ret = Value::make_array();
     std::regex re = RegExp(args[1].bytes, icase);
-    return std::regex_replace(args[0].bytes, re, args[2].bytes);
+    Value ret = std::regex_replace(args[0].bytes, re, args[2].bytes);
+    return ret;
 }
 
 BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
@@ -313,7 +313,7 @@ BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
                                {"ToLowerString", ToLowerBytes},
                                {"ToUpperString", ToUpperBytes},
                                {"IsMatchRegexp", IsMatchRegexp},
-                               {"MatchRegExp", MatchRegExp},
+                               {"SearchRegExp", SearchRegExp},
                                {"RegExpReplace", RegExpReplace}};
 
 void RegisgerBytesBuiltinMethod(Executor* vm) {

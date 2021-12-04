@@ -152,16 +152,16 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
     Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
+    LOG("\n");
     for (int i = 0; i < 11; i++) {
-        Value root = mGroupedScripts[i];
-        for (auto v : root._map()) {
-            OVAContext ctx(v.second[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env,
-                           tcb->Storage);
-            ctx.Nvti = v.second;
+        for (auto v : mGroupedScripts[i]) {
+            OVAContext ctx(v[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env, tcb->Storage);
+            ctx.Nvti = v;
             ctx.Host = tcb->Host;
-            if (!CheckScript(&ctx, v.second)) {
+            if (!CheckScript(&ctx, v)) {
                 continue;
             }
+            LOG("execute script " + ctx.ScriptFileName);
             Engine.SetUserContext(&ctx);
             Engine.Execute(ctx.ScriptFileName.c_str(), false);
             if (tcb->Exit) {
@@ -171,6 +171,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
                 ctx.Fork.Snapshot = ctx.Storage->Clone();
                 ctx.IsForkedTask = true;
                 while (ctx.Fork.PrepareForNextScriptExecute() && !tcb->Exit) {
+                    LOG("execute forked script " + ctx.ScriptFileName);
                     Engine.Execute(ctx.ScriptFileName.c_str(), false);
                 }
             }
@@ -186,9 +187,13 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     support::NVTIDataBase nvtiDB("attributes.db");
     support::Prefs prefsDB("prefs.db");
     std::map<std::string, int> loaded;
-    bool loadDep = mPrefs[knowntext::kPref_load_dependencies].ToBoolean();
+    std::list<Value> loadOrder;
+    bool loadDep = true;
+    if (mPrefs[knowntext::kPref_load_dependencies] == "no") {
+        loadDep = false;
+    }
     for (int i = 0; i < 11; i++) {
-        mGroupedScripts[i] = Value::make_map();
+        mGroupedScripts[i] = std::list<Value>();
     }
     for (auto v : scripts) {
         Value nvti = nvtiDB.Get(v);
@@ -201,32 +206,36 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
         if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
-        loaded[nvti[knowntext::kNVTI_filename].bytes] = 1;
-        mGroupedScripts[nvti[knowntext::kNVTI_category].ToInteger()][v] = nvti;
+        loaded[nvti[knowntext::kNVTI_filename].bytes] = loaded.size();
         if (!loadDep) {
+            loadOrder.push_back(nvti);
             continue;
         }
         std::list<std::string> deps;
         Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {
+            loadOrder.push_back(nvti);
             continue;
         }
         for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
-        if (!InitScripts(nvtiDB, prefsDB, deps, loaded)) {
+        if (!InitScripts(nvtiDB, prefsDB, deps, loadOrder, loaded)) {
             return false;
         }
+        loadOrder.push_back(nvti);
     }
-    mScriptCount = 0;
-    for (int i = 0; i < 11; i++) {
-        mScriptCount += mGroupedScripts[i].Length();
+
+    mScriptCount = loadOrder.size();
+    for (auto nvti : loadOrder) {
+        mGroupedScripts[nvti[knowntext::kNVTI_category].Integer].push_back(nvti);
     }
     return true;
 }
 
 bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
-                            std::list<std::string>& scripts, std::map<std::string, int>& loaded) {
+                            std::list<std::string>& scripts, std::list<Value>& loadOrder,
+                            std::map<std::string, int>& loaded) {
     for (auto v : scripts) {
         if (loaded.find(v) != loaded.end()) {
             continue;
@@ -237,22 +246,23 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
             return false;
         }
         Value pref = prefsDB.Get(nvti[knowntext::kNVTI_oid].bytes);
-        if (!pref.IsObject()) {
+        if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
-        loaded[v] = 1;
-        mGroupedScripts[nvti[knowntext::kNVTI_category].ToInteger()][v] = nvti;
+        loaded[v] = loaded.size();
         std::list<std::string> deps;
         Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {
+            loadOrder.push_back(nvti);
             continue;
         }
         for (auto x : dp._array()) {
             deps.push_back(x.bytes);
         }
-        if (!InitScripts(nvtiDB, prefsDB, deps, loaded)) {
+        if (!InitScripts(nvtiDB, prefsDB, deps, loadOrder, loaded)) {
             return false;
         }
+        loadOrder.push_back(nvti);
     }
     return true;
 }
@@ -263,7 +273,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : mandatory_keys._array()) {
             Value val = ctx->Storage->GetItem(v.bytes, true);
             if (val.IsNULL()) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because mandatory key is missing :" << v.ToString() << std::endl;
                 return false;
             }
@@ -275,7 +285,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : require_keys._array()) {
             Value val = ctx->Storage->GetItem(v.bytes, true);
             if (val.IsNULL()) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because require key is missing :" << v.ToString() << std::endl;
                 return false;
             }
@@ -286,7 +296,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     if (require_ports.IsObject()) {
         for (auto v : require_ports._array()) {
             if (!ctx->IsPortInOpenedRange(v, true)) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because require_ports is missing :" << v.ToString() << std::endl;
                 return false;
             }
@@ -297,7 +307,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     if (require_udp_ports.IsObject()) {
         for (auto v : require_udp_ports._array()) {
             if (!ctx->IsPortInOpenedRange(v, false)) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because require_udp_ports is missing :" << v.ToString() << std::endl;
                 return false;
             }
@@ -309,7 +319,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : exclude_keys._array()) {
             Value val = ctx->Storage->GetItem(v.bytes, true);
             if (!val.IsNULL()) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_oid].ToString()
+                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because exclude_keys is exist :" << v.ToString() << std::endl;
                 return false;
             }

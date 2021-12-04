@@ -304,6 +304,12 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         return val;
     }
     Value oldVal = ctx->GetVarValue(name);
+    if (oldVal.IsNULL()) {
+        oldVal.Type = ValueType::kInteger;
+        if (val.IsStringOrBytes()) {
+            oldVal.Type = val.Type;
+        }
+    }
     switch (code) {
     case Instructions::kuADD:
         oldVal += val;
@@ -334,18 +340,21 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         break;
     case Instructions::kuINC:
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer ");
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -576,7 +585,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
     if (ctx->IsExecutedInterupt()) {
         return ctx->GetReturnValue();
     }
-    newCtx->SetVarValue("_FCT_ANON_ARGS",Value(actualValues));
+    newCtx->SetVarValue("_FCT_ANON_ARGS", Value(actualValues));
     if (func->Refs.size() == 2) {
         const Instruction* formal = GetInstruction(func->Refs[1]);
         std::vector<const Instruction*> formalParamers = GetInstructions(formal->Refs);
@@ -595,9 +604,8 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                 } else {
                     //没有默认值，而且没有传递这个参数
                     if ((*iter)->Refs.size() == 0) {
-                        throw RuntimeException(
-                                "actual parameters count not equal formal paramers for func:" +
-                                ins->Name);
+                        LOG("actual parameters count not equal formal paramers for func:" +
+                            ins->Name);
                     }
                 }
                 i++;
@@ -612,7 +620,6 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
 
 Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMContext* ctx,
                                                      const Instruction* func) {
-    std::vector<Value> actualValues;
     scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, ins->Name);
     std::vector<const Instruction*> actual = GetInstructions(GetInstruction(ins->Refs[0])->Refs);
     std::vector<const Instruction*> formalParamers =
@@ -635,7 +642,8 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
     }
 
     for (auto iter = actual.begin(); iter != actual.end(); iter++) {
-        Execute(*iter, newCtx);
+        Value val = Execute(GetInstruction((*iter)->Refs[0]), ctx);
+        newCtx->SetVarValue((*iter)->Name, val);
     }
     Execute(GetInstruction(func->Refs[0]), newCtx);
     Value val = newCtx->GetReturnValue();
@@ -649,8 +657,7 @@ Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& 
     if (func->Refs.size() == 2) {
         const Instruction* formalParamersList = GetInstruction(func->Refs[0]);
         if (args.size() != formalParamersList->Refs.size()) {
-            throw RuntimeException("actual parameters count not equal formal paramers for func:" +
-                                   name);
+            LOG("actual parameters count not equal formal paramers for func:" + name);
         }
         std::vector<const Instruction*> formalParamers = GetInstructions(formalParamersList->Refs);
         std::vector<const Instruction*>::iterator iter = formalParamers.begin();
@@ -796,6 +803,12 @@ Value Executor::ExecuteSlice(const Instruction* ins, VMContext* ctx) {
 Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                               Instructions::Type opCode) {
     Value oldVal = toObject[index];
+    if (oldVal.IsNULL()) {
+        oldVal.Type = ValueType::kInteger;
+        if (val.IsStringOrBytes()) {
+            oldVal.Type = val.Type;
+        }
+    }
     switch (opCode & 0xFF) {
     case Instructions::kuWrite:
         oldVal = val;
@@ -829,18 +842,21 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         break;
     case Instructions::kuINC:
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer ");
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -851,6 +867,7 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
 
     case Instructions::kuDECReturnOld: {
         if (!oldVal.IsInteger()) {
+            DEBUG_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer ");
         }
         Value ret = oldVal;

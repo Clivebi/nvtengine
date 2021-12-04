@@ -1,5 +1,5 @@
 
-#include "./network/tcpstream.hpp"
+#include "net/dial.hpp"
 #include <brotli/decode.h>
 #include <zlib.h>
 
@@ -237,7 +237,7 @@ struct StreamSearch {
     }
 };
 
-bool DoReadHttpResponse(scoped_refptr<TCPStream> stream, HTTPResponse* resp) {
+bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     StreamSearch search("\r\n\r\n");
     http_parser parser;
     http_parser_init(&parser, HTTP_RESPONSE);
@@ -253,8 +253,9 @@ bool DoReadHttpResponse(scoped_refptr<TCPStream> stream, HTTPResponse* resp) {
     std::array<char, 8192> buffer {};
     int matched = 0;
     while (true) {
-        int size = stream->Recv(buffer.data(), buffer.size());
-        if (size < 0) {
+        int size = stream->Read(buffer.data(), buffer.size());
+        if (size <= 0) {
+            LOG("Read Error "+ ToString(size));
             return false;
         }
         if (!matched) {
@@ -268,6 +269,7 @@ bool DoReadHttpResponse(scoped_refptr<TCPStream> stream, HTTPResponse* resp) {
         }
         int parse_size = http_parser_execute(&parser, &settings, buffer.data(), size);
         if (parser.http_errno != 0) {
+            LOG("Http Parser Error");
             return false;
         }
         if (resp->IsMessageCompleteCalled) {
@@ -296,12 +298,14 @@ bool DoReadHttpResponse(scoped_refptr<TCPStream> stream, HTTPResponse* resp) {
 
 bool DoHttpRequest(std::string& host, std::string& port, bool isSSL, std::string& req,
                    HTTPResponse* resp) {
-    scoped_refptr<TCPStream> tcp = NewTCPStream(host, port, 60, isSSL);
+    scoped_refptr<net::Conn> tcp = net::Dial("tcp",host,port,60,isSSL,false);
     if (tcp.get() == NULL) {
+        LOG("Dial error");
         return false;
     }
-    int size = tcp->Send(req.c_str(), req.size());
+    int size = tcp->Write(req.c_str(), req.size());
     if (size != req.size()) {
+        LOG("write Error");
         return false;
     }
     return DoReadHttpResponse(tcp, resp);
@@ -582,13 +586,13 @@ Value URLQueryEscape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value URLPathEscape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
-    return Value(escape(args[0].bytes, encodePathSegment));
+    return Value(escape(args[0].bytes, encodePath));
 }
 Value URLPathUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     std::string result = "";
-    if (!unescape(args[0].bytes, result, encodePathSegment)) {
+    if (!unescape(args[0].bytes, result, encodePath)) {
         return Value();
     }
     return Value(result);
@@ -647,7 +651,7 @@ Value URLQueryEncode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ReadHttpResponse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_RESOURCE(0);
-    scoped_refptr<TCPStream> tcp = (TCPStream*)args[0].resource.get();
+    scoped_refptr<net::Conn> tcp = (net::Conn*)args[0].resource.get();
     HTTPResponse resp;
     if (DoReadHttpResponse(tcp, &resp)) {
         return resp.ToValue();

@@ -701,9 +701,13 @@ const Value Value::operator[](const Value& key) const {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            DEBUG_CONTEXT();
-            throw Interpreter::RuntimeException("index of array out of range ( " + ToString() +
-                                                "," + key.ToString() + " )");
+            LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
+                " ) auto extend");
+            if (key.Integer > 4096) {
+                throw RuntimeException("index of array out of range ( " + ToString() + "," +
+                                       key.ToString() + " )");
+            }
+            Array()->_array.resize(key.Integer + 1);
         }
         return Array()->_array[key.Integer];
     }
@@ -765,9 +769,13 @@ Value& Value::operator[](const Value& key) {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            DEBUG_CONTEXT();
-            throw Interpreter::RuntimeException("index of array out of range ( " + ToString() +
-                                                "," + key.ToString() + " )");
+            LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
+                " ) auto extend");
+            if (key.Integer > 4096) {
+                throw RuntimeException("index of array out of range ( " + ToString() + "," +
+                                       key.ToString() + " )");
+            }
+            Array()->_array.resize(key.Integer + 1);
         }
         return _array()[key.Integer];
     }
@@ -802,9 +810,13 @@ void Value::SetValue(const Value& key, const Value& val) {
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || key.Integer >= Length()) {
-            DEBUG_CONTEXT();
-            throw Interpreter::RuntimeException("set index of array out of range ( " + ToString() +
-                                                "," + key.ToString() + " )");
+            LOG("set index of array out of range ( " + ToString() + "," + key.ToString() +
+                " ) auto extend");
+            if (key.Integer > 4096) {
+                throw RuntimeException("set index of array out of range ( " + ToString() + "," +
+                                       key.ToString() + " )");
+            }
+            Array()->_array.resize(key.Integer + 1);
         }
         Array()->_array[key.Integer] = val;
         return;

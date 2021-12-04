@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <fstream>
+#include <regex>
 
 #include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
@@ -160,13 +161,13 @@ void UpdateNVTI(std::string script_path, std::string home) {
 
 void NVTEngineTest() {
     Value pref = Value::make_map();
-    pref[knowntext::kPref_load_dependencies] = false;
+    //pref[knowntext::kPref_load_dependencies] = false;
     FileIO IO;
     pref["scripts_folder"] = "/Volumes/work/convert";
-    HostsTask task("192.168.0.100", "80,443", pref, &IO);
+    HostsTask task("192.168.0.106", "80,443", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
-    list2.push_back("1.3.6.1.4.1.25623.1.0.100034");
+    list2.push_back("1.3.6.1.4.1.25623.1.0.103680");
     task.BeginTask(list2, "10000");
     task.Join();
 }
@@ -174,8 +175,10 @@ void NVTEngineTest() {
 int main(int argc, char* argv[]) {
     if (argc >= 2) {
         UpdateNVTI(argv[1], "");
+        std::cout << Interpreter::Status::ToString()<<std::endl;
         return 0;
     }
     NVTEngineTest();
+    std::cout << Interpreter::Status::ToString()<<std::endl;
     return 0;
 }

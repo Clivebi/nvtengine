@@ -1,5 +1,4 @@
-#include "tcpstream.hpp"
-
+#include "sslhelper.hpp"
 namespace OpenSSLHelper {
 
 int password_callback(char* buf, int num, int rwflag, void* userdata) {
@@ -43,21 +42,3 @@ scoped_refptr<SSLObject<EVP_PKEY>> LoadPrivateKeyFromBuffer(std::string& buffer,
     return new SSLObject<EVP_PKEY>(pKey, EVP_PKEY_free);
 }
 } // namespace OpenSSLHelper
-
-TCPStream* NewTCPStream(std::string& host, std::string& port, int timeout_sec, bool isSSL) {
-    int sockfd = Socket::OpenTCPConnection(host.c_str(), port.c_str(), timeout_sec);
-    if (sockfd < 0) {
-        return NULL;
-    }
-    if (!isSSL) {
-        return new TCPStream(sockfd, false);
-    }
-    TCPStream* stream = new TCPStream(sockfd, true);
-    Socket::SetBlock(stream->mSocket, 1);
-    if (SSL_connect(stream->mSSL) < 0) {
-        delete stream;
-        return NULL;
-    }
-    Socket::SetBlock(stream->mSocket, 0);
-    return stream;
-}

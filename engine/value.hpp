@@ -239,6 +239,8 @@ public:
     bool IsObject() const {
         return Type == ValueType::kObject || Type == ValueType::kArray || Type == ValueType::kMap;
     }
+    bool IsMap() const { return Type == ValueType::kMap; }
+    bool IsArray() const { return Type == ValueType::kArray; }
     bool IsFunction() {
         return Type == ValueType::kFunction || Type == ValueType::kRuntimeFunction;
     }

@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 
+namespace net {
 class Socket {
 public:
     static void SetBlock(int socket, int on) {
@@ -46,7 +47,6 @@ public:
     static int ConnectWithTimeout(int sockfd, const unsigned char* addr, int addr_len,
                                   int timeout) {
         int error = -1;
-        SetBlock(sockfd, 0);
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);
         if (error == 0) {
             return 0;
@@ -80,7 +80,7 @@ public:
         }
     }
 
-    static int OpenTCPConnection(const char* host, const char* port, int timeout_sec) {
+    static int DialTCP(const char* host, const char* port, int timeout_sec) {
         struct addrinfo hints, *servinfo, *p;
         int rv, sockfd;
         memset(&hints, 0, sizeof(hints));
@@ -94,6 +94,7 @@ public:
             if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
                 continue;
             }
+            SetBlock(sockfd, 0);
             if (ConnectWithTimeout(sockfd, (unsigned char*)p->ai_addr, p->ai_addrlen,
                                    timeout_sec) == -1) {
                 shutdown(sockfd, SHUT_RDWR);
@@ -108,7 +109,7 @@ public:
         return sockfd;
     }
 
-    static int OpenUDPConnection(const char* host, const char* port) {
+    static int DialUDP(const char* host, const char* port) {
         struct addrinfo hints, *servinfo, *p;
         int rv, sockfd;
         memset(&hints, 0, sizeof(hints));
@@ -122,6 +123,7 @@ public:
             if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
                 continue;
             }
+            SetBlock(sockfd, 0);
             if (connect(sockfd, (sockaddr*)p->ai_addr, p->ai_addrlen)) {
                 shutdown(sockfd, SHUT_RDWR);
                 continue;
@@ -135,3 +137,5 @@ public:
         return sockfd;
     }
 };
+
+} // namespace net

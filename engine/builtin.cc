@@ -101,6 +101,7 @@ Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
         while (iter != values.end()) {
             switch (iter->Type) {
             case ValueType::kBytes:
+            case ValueType::kString:
                 to.bytes += iter->bytes;
                 break;
             case ValueType::kInteger:

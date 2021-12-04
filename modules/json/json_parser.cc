@@ -11,7 +11,7 @@ void parser_json_error(json::JSONParser* parser, const char* s) {
 
 using namespace Interpreter;
 
-Value JSONValueToValue(json::JSONValue* val) {
+Value JSONValueToValue(json::JSONValue* val, bool unescape) {
     if (val == NULL) {
         return Value();
     }
@@ -21,7 +21,7 @@ Value JSONValueToValue(json::JSONValue* val) {
         ret = Value::make_array();
         auto iter = val->Array.begin();
         while (iter != val->Array.end()) {
-            ret._array().push_back(JSONValueToValue(*iter));
+            ret._array().push_back(JSONValueToValue(*iter, unescape));
             iter++;
         }
         return ret;
@@ -31,7 +31,7 @@ Value JSONValueToValue(json::JSONValue* val) {
         ret = Value::make_map();
         auto iter = val->Object.begin();
         while (iter != val->Object.end()) {
-            ret._map()[iter->first] = JSONValueToValue(iter->second);
+            ret._map()[iter->first] = JSONValueToValue(iter->second, unescape);
             iter++;
         }
         return ret;
@@ -48,8 +48,12 @@ Value JSONValueToValue(json::JSONValue* val) {
         return Value(0l);
     case json::JSONValue::NIL:
         return Value();
-    case json::JSONValue::STRING:
-        return Value(DecodeJSONString(val->Value));
+    case json::JSONValue::STRING: {
+        if (unescape) {
+            return Value(DecodeJSONString(val->Value));
+        }
+        return Value(val->Value);
+    }
     default:
         return Value();
     }
@@ -68,7 +72,7 @@ int ParseJSONTest(std::string& str) {
     return error;
 }
 
-Value ParseJSON(std::string& str) {
+Value ParseJSON(std::string& str, bool unescape) {
     json::YY_BUFFER_STATE bp;
     json::JSONParser* parser = new json::JSONParser();
     bp = json::yy_scan_bytes(str.c_str(), str.size());
@@ -80,7 +84,7 @@ Value ParseJSON(std::string& str) {
     if (error) {
         return Value();
     }
-    Value ret = JSONValueToValue(parser->root);
+    Value ret = JSONValueToValue(parser->root,unescape);
     delete parser;
     return ret;
 }

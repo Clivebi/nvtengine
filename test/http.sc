@@ -27,9 +27,10 @@ func httplib_test(){
     resp = HttpPost("http://api.k780.com/","application/x-www-form-urlencoded",URLQueryEncode(query),header);
     var info = JSONDecode(resp["body"]);
     Println(info["result"]["temperature"]);
-    Println(string(resp["body"]));
+    Println(ToString(resp["body"]));
 
 }
+httplib_test();
 
 #https://192.168.0.100/restgui/locale/strings/locale_str_zh.json
 #https://192.168.0.100/sysmgmt/2015/bmc/info
@@ -97,6 +98,4 @@ func test_detect_idar(){
 
 test_detect_idar();
 
-var  lastResult = do_http_request("http://www.baidu.com/");
-
-httplib_test();
+#var  lastResult = do_http_request("http://www.baidu.com/");

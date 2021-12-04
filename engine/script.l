@@ -102,7 +102,7 @@ int yywrap(void)
     yylval.value_double = temp;
     return DOUBLE_LITERAL;
 }
-<INITIAL>'[a-zA-Z]' {
+<INITIAL>'.' {
     yylval.value_byte = yytext[1];
     return INT8_LITERAL;
 }
@@ -114,6 +114,11 @@ int yywrap(void)
 
 <INITIAL>'\\r' {
     yylval.value_integer = '\r';
+    return INT8_LITERAL;
+}
+
+<INITIAL>'\\\\' {
+    yylval.value_integer = '\\';
     return INT8_LITERAL;
 }
 <INITIAL>'\\n' {
@@ -155,13 +160,12 @@ int yywrap(void)
 <STRING_LITERAL_STATE>\n        {
     parser->AppendToScanningString('\n');
 }
-<STRING_LITERAL_STATE>\\r        {
-    parser->AppendToScanningString('\r');
-}
+
 <STRING_LITERAL_STATE>\\[xX][0-9a-fA-F][0-9a-fA-F]        {
     long val = strtoll(yytext+2,NULL,16);
     parser->AppendToScanningString((char)(val&0xFF));
 }
+<STRING_LITERAL_STATE>\\r       parser->AppendToScanningString('\r');
 <STRING_LITERAL_STATE>\\\"      parser->AppendToScanningString('"');
 <STRING_LITERAL_STATE>\\n       parser->AppendToScanningString('\n');
 <STRING_LITERAL_STATE>\\t       parser->AppendToScanningString('\t');

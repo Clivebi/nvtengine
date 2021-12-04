@@ -53,7 +53,13 @@ struct OVAContext {
 
     explicit OVAContext(std::string script, const Value& pref, const Value& env,
                         scoped_refptr<support::ScriptStorage> storage)
-            : ScriptFileName(script), Prefs(pref), Env(env), Storage(storage) {
+            : ScriptFileName(script),
+              Prefs(pref),
+              Env(env),
+              Storage(storage),
+              IsForkedTask(false),
+              Host(""),
+              Fork() {
         Nvti = Value::make_map();
         Nvti[knowntext::kNVTI_filename] = script;
     }

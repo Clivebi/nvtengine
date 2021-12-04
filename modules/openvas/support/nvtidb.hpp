@@ -4,7 +4,7 @@
 #include "sqlitedb.hpp"
 using namespace Interpreter;
 
-Value ParseJSON(std::string& str);
+Value ParseJSON(std::string& str,bool unescape);
 namespace support {
 
 class NVTIDataBase : DatabaseObject {
@@ -69,7 +69,7 @@ public:
         Value ret = Value::make_array();
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            ret._array().push_back(ParseJSON(text));
+            ret._array().push_back(ParseJSON(text,false));
         }
         sqlite3_finalize(stmt);
         return ret;
@@ -84,7 +84,7 @@ public:
         sqlite3_bind_text(stmt, 1, oid.c_str(), oid.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text);
+            Value ret = ParseJSON(text,false);
             sqlite3_finalize(stmt);
             return ret;
         }
@@ -101,7 +101,7 @@ public:
         sqlite3_bind_text(stmt, 1, filename.c_str(), filename.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text);
+            Value ret = ParseJSON(text,false);
             sqlite3_finalize(stmt);
             return ret;
         }
