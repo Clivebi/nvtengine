@@ -227,7 +227,10 @@ func script_get_preference_file_content(name,id=-1){
 
 #open_sock_tcp(port, transport: ENCAPS_IP)
 func open_sock_tcp(port,buffsz,timeout, transport=0,priority=0){
-	return TCPConnect(get_host_ip(),port,timeout,transport>0);
+	if(!timeout){
+		timeout = 30;
+	}
+	return TCPConnect(get_host_ip(),ToInteger(port),timeout,transport>0);
 }
 
 #match(string: r, pattern: "\x01rlogind: Permission denied*", icase: TRUE)
@@ -361,8 +364,7 @@ func string(x...){
 }
 
 func raw_string(x...){
-	var ret = bytes();
-	return append(ret,x);
+	return bytes(x);
 }
 
 func isnull(val){
@@ -539,6 +541,10 @@ func str_replace(string, find, replace,count = -1){
 
 func keys(obj){
 	var list = [];
+	if(typeof(obj)=="array"){
+		DisplayContext();
+		Println("please check this may be have some bug**************");
+	}
 	for k,v in obj{
 		list = append(list,k);
 	}
@@ -561,8 +567,8 @@ func sort(obj){
 		dic[v] = 1;
 	}
 	var result = [];
-	for v in dic{
-		result = append(result,v);
+	for k,v in dic{
+		result = append(result,k);
 	}
 	return result;
 }
@@ -705,7 +711,7 @@ func get_port_transport(port){
 		return ENCAPS_TLSv12;
 	}
 	if(port==80){
-		return ENCAPS_IP;
+		return 0;
 	}
 	return get_kb_item("Transports/TCP/"+port);
 }
@@ -726,6 +732,14 @@ func http_open_socket(port){
 
 func http_close_socket(soc){
 	close(soc);
+}
+
+func display(msg...){
+	var msgs = "";
+	for v in msg{
+		msgs += ToString(v);
+	}
+	Println(msgs);
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

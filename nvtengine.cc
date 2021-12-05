@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include <fstream>
 #include <regex>
@@ -167,18 +168,19 @@ void NVTEngineTest() {
     HostsTask task("192.168.0.106", "80,443", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
-    list2.push_back("1.3.6.1.4.1.25623.1.0.103680");
+    list2.push_back("1.3.6.1.4.1.25623.1.0.105782");
     task.BeginTask(list2, "10000");
     task.Join();
 }
 
 int main(int argc, char* argv[]) {
+    std::cout << Interpreter::Status::ToString() << std::endl;
     if (argc >= 2) {
         UpdateNVTI(argv[1], "");
-        std::cout << Interpreter::Status::ToString()<<std::endl;
+        std::cout << Interpreter::Status::ToString() << std::endl;
         return 0;
     }
     NVTEngineTest();
-    std::cout << Interpreter::Status::ToString()<<std::endl;
+    std::cout << Interpreter::Status::ToString() << std::endl;
     return 0;
 }

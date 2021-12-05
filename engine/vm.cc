@@ -6,6 +6,40 @@ using namespace Interpreter;
 #include "script.lex.hpp"
 #include "script.tab.hpp"
 
+#define ALGINTO(a, b) (((a / b) + 1) * b)
+
+#ifdef _DEBUG_MEMORY_BROKEN
+void* operator new(size_t sz) {
+    BYTE* ptr = (BYTE*)malloc(sz + 64);
+    for (size_t i = 0; i < 34; i++) {
+        ptr[i] = 0xCC;
+    }
+    for (size_t i = sz; i < 30; i++) {
+        ptr[i] = 0xCC;
+    }
+    *(uint32_t*)ptr = sz;
+    return ptr + 34;
+}
+
+void operator delete(void* p) noexcept {
+    BYTE* ptr = (BYTE*)p;
+    ptr -= 34;
+    uint32_t sz = *(uint32_t*)ptr;
+    for (size_t i = 4; i < 34; i++) {
+        if (ptr[i] != 0xCC) {
+            abort();
+        }
+    }
+
+    for (size_t i = sz; i < 30; i++) {
+        if (ptr[i] != 0xCC) {
+            abort();
+        }
+    }
+    free(ptr);
+}
+#endif
+
 void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 void yyerror(Interpreter::Parser* parser, const char* s) {
@@ -60,7 +94,7 @@ scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error)
         return NULL;
     }
     scoped_refptr<Parser> parser = new Parser();
-    bp = yy_scan_buffer((char*)data, size);
+    bp = yy_scan_bytes((char*)data, size);
     yy_switch_to_buffer(bp);
     parser->Start(name);
     int err = yyparse(parser.get());
@@ -103,8 +137,8 @@ void Executor::RequireScript(const std::string& name, VMContext* ctx) {
         throw RuntimeException("load script <" + name + "> failed :" + error);
     }
     scoped_refptr<Script> last = mScriptList.back();
-    required->RelocateInstruction(last->GetNextInstructionKey() + 100,
-                                  last->GetNextConstKey() + 100);
+    required->RelocateInstruction(ALGINTO((last->GetNextInstructionKey() + 1), 1000),
+                                  ALGINTO((last->GetNextConstKey() + 1), 1000));
     mScriptList.push_back(required);
     Execute(required->EntryPoint, ctx);
 }
@@ -303,7 +337,9 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         ctx->SetVarValue(name, val);
         return val;
     }
-    Value oldVal = ctx->GetVarValue(name);
+
+    Value oldVal;
+    ctx->GetVarValue(name, oldVal);
     if (oldVal.IsNULL()) {
         oldVal.Type = ValueType::kInteger;
         if (val.IsStringOrBytes()) {
@@ -428,6 +464,9 @@ Value Executor::ExecuteIfStatement(const Instruction* ins, VMContext* ctx) {
 }
 
 Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
+    if (ins->OpCode == Instructions::kADD) {
+        return BatchAddOperation(ins, ctx);
+    }
     const Instruction* first = GetInstruction(ins->Refs[0]);
     Value firstVal = Execute(first, ctx);
     if (ins->OpCode == Instructions::kNOT) {
@@ -450,8 +489,6 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
     Value secondVal = Execute(second, ctx);
 
     switch (ins->OpCode) {
-    case Instructions::kADD:
-        return firstVal + secondVal;
     case Instructions::kSUB:
         return firstVal - secondVal;
     case Instructions::kMUL:
@@ -526,6 +563,7 @@ Value Executor::GetFunction(const std::string& name, VMContext* ctx) {
 
 Value Executor::CallFunction(const Instruction* ins, VMContext* ctx) {
     Value func = GetFunction(ins->Name, ctx);
+    LOG("Call function:", ins->Name);
     if (func.Type == ValueType::kRuntimeFunction) {
         return CallRutimeFunction(ins, ctx, func.RuntimeFunction);
     } else if (func.Type == ValueType::kFunction) {
@@ -1031,6 +1069,20 @@ Value Executor::ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx) {
     }
     Execute(defaultBranch, ctx);
     return Value();
+}
+
+Value Executor::BatchAddOperation(const Instruction* ins, VMContext* ctx) {
+    const Instruction* seek = ins;
+    Value result = Execute(GetInstruction(seek->Refs[1]), ctx);
+    while (true) {
+        const Instruction* ref0 = GetInstruction(seek->Refs[0]);
+        if (ref0->OpCode != Instructions::kADD) {
+            result += Execute(ref0, ctx);
+            return result;
+        }
+        seek = ref0;
+        result += Execute(GetInstruction(seek->Refs[1]), ctx);
+    }
 }
 
 } // namespace Interpreter

@@ -14,6 +14,7 @@ protected:
     std::map<std::string, std::vector<Value>> mValues;
 
 public:
+    explicit ScriptStorage() : mValues() {}
     Value GetItem(const std::string& name, int pos) {
         auto iter = mValues.find(name);
         if (iter != mValues.end()) {
@@ -46,13 +47,16 @@ public:
             }
             return Value();
         }
-        Value ret = Value::make_array();
+        Value ret = Value::make_map();
         auto iter = mValues.begin();
         while (iter != mValues.end()) {
             if (Interpreter::IsMatchString(iter->first, partten)) {
                 auto iter2 = iter->second.begin();
+                if (iter->second.size() > 1) {
+                    LOG("Check Key", iter->first, " this have more than one value");
+                }
                 while (iter2 != iter->second.end()) {
-                    ret._array().push_back(*iter2);
+                    ret[iter->first] = (*iter2);
                     iter2++;
                 }
             }
@@ -98,5 +102,6 @@ private:
         }
         return false;
     }
+    DISALLOW_COPY_AND_ASSIGN(ScriptStorage);
 };
 } // namespace support

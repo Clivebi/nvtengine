@@ -56,7 +56,7 @@ bool IsByteArray(const std::vector<Value>& values) {
         if (!iter->IsNumber()) {
             return false;
         }
-        if (iter->Integer > 255 || iter->Integer < 0) {
+        if (iter->Integer > 0xFF || iter->Integer < 0) {
             return false;
         }
         iter++;
@@ -78,7 +78,7 @@ bool IsStringArray(const std::vector<Value>& values) {
 void AppendIntegerArrayToBytes(Value& val, const std::vector<Value>& values) {
     std::vector<Value>::const_iterator iter = values.begin();
     while (iter != values.end()) {
-        val.bytes.append(1, (unsigned char)iter->Integer);
+        val.bytes.append(1, (unsigned char)(iter->Integer));
         iter++;
     }
 }
@@ -111,7 +111,7 @@ Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
             case ValueType::kArray:
                 if (!IsByteArray(iter->_array())) {
                     DEBUG_CONTEXT();
-                    throw RuntimeException("only integer array (0~255) can append to bytes");
+                    throw RuntimeException("only integer array (0~0xFF) can append to bytes");
                 }
                 AppendIntegerArrayToBytes(to, iter->_array());
                 break;
@@ -172,17 +172,17 @@ Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
             continue;
         }
         if (arg.Type == ValueType::kInteger) {
-            ret.bytes += (char)arg.Integer;
+            ret.bytes += (BYTE)(arg.Integer & 0xFF);
             continue;
         }
         if (arg.Type == ValueType::kByte) {
-            ret.bytes += (char)arg.Byte;
+            ret.bytes += (BYTE)arg.Byte;
             continue;
         }
         if (arg.Type == ValueType::kArray) {
             if (!IsByteArray(arg._array())) {
                 DEBUG_CONTEXT();
-                throw RuntimeException("convert to bytes must use integer array(0~255");
+                throw RuntimeException("convert to bytes must use integer array(0~0xFF");
             }
             AppendIntegerArrayToBytes(ret, arg._array());
             continue;

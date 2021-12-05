@@ -21,7 +21,7 @@ protected:
     DISALLOW_COPY_AND_ASSIGN(SSLObject<T>);
 
 public:
-    SSLObject(T* t, free_routine release) : mRaw(t), mFree(release) {}
+    explicit SSLObject(T* t, free_routine release) : mRaw(t), mFree(release) {}
     ~SSLObject() {
         Close();
         mRaw = NULL;

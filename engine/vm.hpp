@@ -66,6 +66,8 @@ protected:
     Value ExecuteSlice(const Instruction* ins, VMContext* ctx);
     Value ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx);
 
+    Value BatchAddOperation(const Instruction* ins, VMContext* ctx);
+
     Value UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                         Instructions::Type opCode);
     RUNTIME_FUNCTION GetBuiltinMethod(const std::string& name);

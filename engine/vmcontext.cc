@@ -1,4 +1,5 @@
 #include "vmcontext.hpp"
+
 #include <sstream>
 bool IsFunctionOverwriteEnabled(const std::string& name);
 namespace Interpreter {
@@ -21,7 +22,7 @@ VMContext* VMContext::sLastContext = NULL;
 
 void DebugContext() {
     if (VMContext::sLastContext != NULL) {
-        LOG(VMContext::sLastContext->DumpContext(true));
+        LOG(VMContext::sLastContext->DumpContext(false));
     }
 }
 #endif
@@ -174,7 +175,7 @@ Value VMContext::GetVarValue(const std::string& name) {
     Value ret;
     if (!GetVarValue(name, ret)) {
         DEBUG_CONTEXT();
-        throw RuntimeException("variable not found :" + name);
+        LOG("variable not found :" + name);
     }
     return ret;
 }

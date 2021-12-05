@@ -24,10 +24,7 @@ public:
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
         std::string path = (mFolder + FilePath(name));
         FileIO io;
-        void* ptr = io.Read(path, size, 2);
-        if (ptr) {
-            size += 2;
-        }
+        void* ptr = io.Read(path, size);
         return ptr;
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {

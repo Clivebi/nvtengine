@@ -28,6 +28,7 @@ public:
     void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {
         ctx->SetVarValue("description", Value(mDescription));
+        ctx->SetVarValue("COMMAND_LINE", Value(false));
         vm->RequireScript("nasl.sc", ctx);
     }
     void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
@@ -38,10 +39,7 @@ public:
             path = "../script/nasl.sc";
         }
         FileIO io;
-        void* ptr = io.Read(path, size, 2);
-        if (ptr) {
-            size += 2;
-        }
+        void* ptr = io.Read(path, size);
         return ptr;
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {

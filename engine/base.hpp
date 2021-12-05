@@ -279,3 +279,9 @@ template <typename T>
 scoped_refptr<T> make_scoped_refptr(T* t) {
     return scoped_refptr<T>(t);
 }
+
+#ifdef _DEBUG_MEMORY_BROKEN
+
+void* operator new(size_t sz);
+void operator delete(void* p) noexcept;
+#endif

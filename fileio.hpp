@@ -38,8 +38,8 @@ public:
             return NULL;
         }
         fclose(hFile);
-        for (int i = 0; i < SuffixSize; i++) {
-            ((char*)pData)[i + nSize] = 0;
+        for (int i = nSize; i < SuffixSize; i++) {
+            ((char*)pData)[i] = 0;
         }
         return pData;
     }

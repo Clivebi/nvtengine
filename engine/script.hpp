@@ -99,6 +99,7 @@ extern const char* kCaseItem;
 extern const char* kCase;
 extern const char* kBlockStatement;
 extern const char* kStatement;
+extern const char* kAddMulti;
 }; // namespace KnownListName
 
 class Instruction {
@@ -378,6 +379,7 @@ public:
     Value GetConstValue(Instruction::keyType key) { return mConstTable[key - mConstBase]; }
 
     const Instruction* GetInstruction(Instruction::keyType key) {
+        
         return mInstructionTable[key - mInstructionBase];
     }
 

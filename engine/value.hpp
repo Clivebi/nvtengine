@@ -62,7 +62,7 @@ bool IsMatchString(std::string word, std::string pattern);
 
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
-    Resource() { Status::sResourceCount++; }
+    explicit Resource() { Status::sResourceCount++; }
     virtual ~Resource() {
         Close();
         Status::sResourceCount--;
@@ -86,7 +86,7 @@ public:
         }
     }
     bool IsAvaliable() { return mFile != NULL; }
-    std::string TypeName() { return "FileResource"; }
+    std::string TypeName() { return "File"; }
 };
 
 namespace ValueType {

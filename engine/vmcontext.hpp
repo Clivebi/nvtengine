@@ -42,9 +42,6 @@ protected:
     int mFlags;
     bool mIsEnableWarning;
     Value mReturnValue;
-    VMContext();
-    VMContext(const VMContext&);
-    VMContext& operator=(const VMContext&);
 
 public:
     explicit VMContext(Type type, VMContext* Parent, std::string Name);
@@ -85,6 +82,7 @@ protected:
 private:
     std::map<std::string, Value> mVars;
     std::map<std::string, const Instruction*> mFunctions;
+    DISALLOW_COPY_AND_ASSIGN(VMContext);
 };
 
 } // namespace Interpreter

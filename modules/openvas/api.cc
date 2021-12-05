@@ -69,7 +69,6 @@ BuiltinMethod ovaMethod[] = {
         {"HostEnv", HostEnv},
         {"GetHostName", GetHostName},
         {"NASLString", NASLString},
-        {"ereg_replace", ereg_replace},
         {"vendor_version", vendor_version},
         {"MD5", Md5Buffer},
         {"SHA1", SHA1Buffer},

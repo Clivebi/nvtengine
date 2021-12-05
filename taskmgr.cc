@@ -139,7 +139,7 @@ void HostsTask::Execute() {
     for (auto iter : mTCBGroup) {
         pixie_thread_join(iter->ThreadHandle);
         //TODO copy result
-        free(iter);
+        delete (iter);
     }
 }
 
