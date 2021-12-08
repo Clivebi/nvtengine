@@ -122,7 +122,7 @@ void HostsTask::Execute() {
             tcb->Storage->SetItem("testname1", "name3");
             tcb->Storage->SetItem("testname1", "name4");
             tcb->Storage->SetItem("testname1", "name5");
-            tcb->Storage->AddService("www", 80);
+            //tcb->Storage->AddService("www", 80);
             tcb->Storage->AddService("www", 443);
         }
         tcb->Task = this;
@@ -172,6 +172,9 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
                 ctx.IsForkedTask = true;
                 while (ctx.Fork.PrepareForNextScriptExecute() && !tcb->Exit) {
                     LOG("execute forked script " + ctx.ScriptFileName);
+                    for (auto v : ctx.Fork.Names) {
+                        LOG("forked value named:", v);
+                    }
                     Engine.Execute(ctx.ScriptFileName.c_str(), false);
                 }
             }

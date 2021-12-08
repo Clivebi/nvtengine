@@ -170,6 +170,7 @@ func http_get(item, port){
 	header["Accept-Charset"] = "iso-8859-1,*,utf-8";
 	header["Pragma"] = "no-cache";
 	header["Cache-Control"] = "no-cache";
+	header["from-nasl"] = "true";
 	if(!item){
 		item = "/";
 	}
@@ -230,7 +231,12 @@ func open_sock_tcp(port,buffsz,timeout, transport=0,priority=0){
 	if(!timeout){
 		timeout = 30;
 	}
-	return TCPConnect(get_host_ip(),ToInteger(port),timeout,transport>0);
+	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,transport>1);
+	if(soc){
+		ConnSetReadTimeout(soc,10);
+		ConnSetWriteTimeout(soc,5);
+	}
+	return soc;
 }
 
 #match(string: r, pattern: "\x01rlogind: Permission denied*", icase: TRUE)
@@ -364,7 +370,11 @@ func string(x...){
 }
 
 func raw_string(x...){
-	return bytes(x);
+	var ret = bytes();
+	for v in x {
+		ret = append(ret,bytes(v));
+	}
+	return ret;
 }
 
 func isnull(val){

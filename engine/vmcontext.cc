@@ -174,7 +174,7 @@ bool VMContext::GetVarValue(const std::string& name, Value& val) {
 Value VMContext::GetVarValue(const std::string& name) {
     Value ret;
     if (!GetVarValue(name, ret)) {
-        DEBUG_CONTEXT();
+        //DEBUG_CONTEXT();
         LOG("variable not found :" + name);
     }
     return ret;
@@ -257,7 +257,7 @@ std::string VMContext::DumpContext(bool var) {
             o << prefix << "Vars:\n";
             auto iter2 = ctx->mVars.begin();
             while (iter2 != ctx->mVars.end()) {
-                o << prefix << iter2->first << ":" << iter2->second.ToString() << "\n";
+                o << prefix << iter2->first << ":" << iter2->second.ToString(true) << "\n";
                 iter2++;
             }
         }

@@ -64,10 +64,10 @@ inline int ReadAtleast(Reader* r, BYTE* buffer, int bufferSize, int minSize) {
     while (true) {
         i = r->Read(buffer + nPos, bufferSize - nPos);
         if (i <= 0) {
-            return i;
+            return nPos;
         }
         nPos += i;
-        if (nPos >= minSize) {
+        if (minSize > 0 && nPos >= minSize) {
             break;
         }
     }

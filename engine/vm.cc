@@ -487,6 +487,10 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
     }
     const Instruction* second = GetInstruction(ins->Refs[1]);
     Value secondVal = Execute(second, ctx);
+    if (secondVal.IsInteger() && firstVal.IsNULL()) {
+        firstVal.Type = ValueType::kInteger;
+        firstVal.Integer = 0;
+    }
 
     switch (ins->OpCode) {
     case Instructions::kSUB:
@@ -563,7 +567,7 @@ Value Executor::GetFunction(const std::string& name, VMContext* ctx) {
 
 Value Executor::CallFunction(const Instruction* ins, VMContext* ctx) {
     Value func = GetFunction(ins->Name, ctx);
-    LOG("Call function:", ins->Name);
+    //LOG("Call function:", ins->Name);
     if (func.Type == ValueType::kRuntimeFunction) {
         return CallRutimeFunction(ins, ctx, func.RuntimeFunction);
     } else if (func.Type == ValueType::kFunction) {
@@ -623,6 +627,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
     if (ctx->IsExecutedInterupt()) {
         return ctx->GetReturnValue();
     }
+    newCtx->AddVar("_FCT_ANON_ARGS");
     newCtx->SetVarValue("_FCT_ANON_ARGS", Value(actualValues));
     if (func->Refs.size() == 2) {
         const Instruction* formal = GetInstruction(func->Refs[1]);
@@ -1073,15 +1078,19 @@ Value Executor::ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx) {
 
 Value Executor::BatchAddOperation(const Instruction* ins, VMContext* ctx) {
     const Instruction* seek = ins;
-    Value result = Execute(GetInstruction(seek->Refs[1]), ctx);
+    std::list<Value> groups;
+    groups.push_back(Execute(GetInstruction(seek->Refs[1]), ctx));
     while (true) {
         const Instruction* ref0 = GetInstruction(seek->Refs[0]);
         if (ref0->OpCode != Instructions::kADD) {
-            result += Execute(ref0, ctx);
+            Value result = Execute(ref0, ctx);
+            for (auto iter : groups) {
+                result = result + iter;
+            }
             return result;
         }
         seek = ref0;
-        result += Execute(GetInstruction(seek->Refs[1]), ctx);
+        groups.push_front(Execute(GetInstruction(seek->Refs[1]), ctx));
     }
 }
 

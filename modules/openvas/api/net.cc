@@ -30,9 +30,10 @@ Value recv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         throw RuntimeException("recv resource type mismatch");
     }
     net::Conn* con = (net::Conn*)args[0].resource.get();
-    con->SetReadTimeout(timeout);
+    //con->SetReadTimeout(timeout);
     int size = ReadAtleast(con, buffer, length, minSize);
     if (size <= 0) {
+        LOG("ReadAtleast error ", size);
         delete[] buffer;
         return Value();
     }
@@ -60,6 +61,7 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("recv resource type mismatch");
     }
+    //LOG("send:", length, HexEncode(args[1].bytes.c_str(), length, "\\x"));
     net::Conn* con = (net::Conn*)args[0].resource.get();
     return con->Write(args[1].bytes.c_str(), length);
 }

@@ -168,7 +168,7 @@ void NVTEngineTest() {
     HostsTask task("192.168.0.106", "80,443", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
-    list2.push_back("1.3.6.1.4.1.25623.1.0.105782");
+    list2.push_back("1.3.6.1.4.1.25623.1.0.103680");
     task.BeginTask(list2, "10000");
     task.Join();
 }

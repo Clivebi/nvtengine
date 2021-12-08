@@ -210,11 +210,12 @@ std::string ToString(int64_t val) {
     return buffer;
 }
 
-std::string HexEncode(const char* buf, int count) {
+std::string HexEncode(const char* buf, int count, std::string prefix) {
     char buffer[6] = {0};
     std::string result = "";
     for (size_t i = 0; i < count; i++) {
         snprintf(buffer, 6, "%02X", (unsigned char)buf[i]);
+        result += prefix;
         result += buffer;
     }
     return result;
@@ -307,7 +308,7 @@ std::string MapObject::ToJSONString() const {
     o << "}";
     return o.str();
 }
-std::string ArrayObject::ToString() const {
+std::string ArrayObject::ToString(bool debug) const {
     std::stringstream o;
     bool first = true;
     o << "[";
@@ -316,14 +317,14 @@ std::string ArrayObject::ToString() const {
         if (!first) {
             o << ",";
         }
-        o << (*iter).ToString();
+        o << (*iter).ToString(debug);
         first = false;
         iter++;
     }
     o << "]";
     return o.str();
 }
-std::string MapObject::ToString() const {
+std::string MapObject::ToString(bool debug) const {
     std::stringstream o;
     bool first = true;
     o << "{";
@@ -334,7 +335,7 @@ std::string MapObject::ToString() const {
         }
         o << iter->first.MapKey();
         o << ":";
-        o << iter->second.ToString();
+        o << iter->second.ToString(debug);
         first = false;
         iter++;
     }
@@ -524,67 +525,85 @@ Value Value::make_map() {
 }
 
 Value& Value::operator+=(const Value& right) {
-    if (IsSameType(right)) {
-        if (Type == ValueType::kString || Type == ValueType::kBytes) {
-            bytes += right.bytes;
-            return *this;
-        }
+    if (IsSameType(right) && IsStringOrBytes()) {
+        bytes += right.bytes; //string + string
+        return *this;
     }
-    if (IsNumber() && right.IsNumber()) {
-        if (IsInteger()) {
-            Integer += right.ToInteger();
+    if (IsNumber() && right.IsNumber()) { //number + number
+        if (Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
+            Float = ToFloat() + right.ToFloat();
+            Type = ValueType::kFloat;
         } else {
-            Float += right.ToFloat();
+            Integer += right.ToInteger();
         }
         return *this;
     }
-    if (Type == ValueType::kString) {
-        switch (right.Type) {
-        case ValueType::kString:
-            this->bytes += right.bytes;
-            return *this;
+    if (right.IsStringOrBytes()) { // other + string
+        std::string result = "";
+        switch (Type) {
+        case ValueType::kByte:
+            result += (char)Byte;
+            break;
         case ValueType::kFloat:
         case ValueType::kInteger:
-            this->bytes += right.ToString();
-            return *this;
-        case ValueType::kByte:
-            this->bytes += (char)right.Byte;
-            return *this;
+            if (right.Type == ValueType::kBytes) {
+                result += (unsigned char)ToInteger();
+            } else {
+                result += ToString();
+            }
+            break;
         default:
-            DEBUG_CONTEXT();
-            throw RuntimeException("+= operation not avaliable for right value ");
+            result = ToString();
         }
+        result += right.bytes;
+        Type = right.Type;
+        Integer = 0;
+        bytes = result;
+        return *this;
     }
-    if (Type == ValueType::kBytes) {
+    if (IsStringOrBytes()) { //string + other
         switch (right.Type) {
-        case ValueType::kBytes:
-            this->bytes += right.bytes;
-            return *this;
+        case ValueType::kByte:
+            bytes += (char)right.Byte;
+            break;
         case ValueType::kFloat:
         case ValueType::kInteger:
-            this->bytes += (unsigned char)right.ToInteger();
-            return *this;
-        case ValueType::kByte:
-            this->bytes += (char)right.Byte;
-            return *this;
+            if (right.Type == ValueType::kBytes) {
+                bytes += (unsigned char)right.ToInteger();
+            } else {
+                bytes += right.ToString();
+            }
+            break;
         default:
-            DEBUG_CONTEXT();
-            throw RuntimeException("+= operation not avaliable for right value ");
+            bytes = right.ToString();
         }
+        return *this;
+    }
+    if (IsArray()) { //array + element
+        _array().push_back(right);
+        return *this;
     }
     DEBUG_CONTEXT();
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 
-std::string Value::ToString() const {
+std::string Value::ToString(bool debug) const {
     switch (Type) {
     case ValueType::kArray:
     case ValueType::kMap:
     case ValueType::kObject:
-        return object->ToString();
+        return object->ToString(debug);
     case ValueType::kBytes:
-    case ValueType::kString:
+        if (debug) {
+            return "bytes(" + HexEncode(bytes.c_str(), bytes.size(), "\\x") + ")";
+        }
         return bytes;
+    case ValueType::kString: {
+        if (debug) {
+            return "\"" + bytes + "\"";
+        }
+        return bytes;
+    }
     case ValueType::kNULL:
         return "nil";
     case ValueType::kInteger:
@@ -831,41 +850,9 @@ void Value::SetValue(const Value& key, const Value& val) {
 }
 
 Value operator+(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes()) {
-        switch (right.Type) {
-        case ValueType::kByte: {
-            Value ret(left.bytes + (char)right.Byte);
-            ret.Type = left.Type;
-            return ret;
-        }
-        case ValueType::kBytes:
-        case ValueType::kInteger:
-        case ValueType::kString:
-        case ValueType::kFloat: {
-            Value ret(left.ToString() + right.ToString());
-            ret.Type = left.Type;
-            return ret;
-        }
-        case ValueType::kNULL:
-            //DEBUG_CONTEXT();
-            LOG("nil warning!!!!" + left.ToString());
-            return left;
-
-        default:
-            DEBUG_CONTEXT();
-            throw Interpreter::RuntimeException("+ operation not avaliable for this value ( " +
-                                                left.ToString() + "," + right.ToString() + " )");
-        }
-    }
-    if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
-        throw Interpreter::RuntimeException("+ operation not avaliable for this value ( " +
-                                            left.ToString() + "," + right.ToString() + " )");
-    }
-    if (left.Type == ValueType::kFloat || right.Type == ValueType::kFloat) {
-        return Value(left.ToFloat() + right.ToFloat());
-    }
-    return Value(left.ToInteger() + right.ToInteger());
+    Value result = left;
+    result += right;
+    return result;
 }
 
 Value operator-(const Value& left, const Value& right) {
@@ -931,7 +918,7 @@ bool operator<=(const Value& left, const Value& right) {
         throw Interpreter::RuntimeException("<= operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
-    return left.ToFloat() < right.ToFloat();
+    return left.ToFloat() <= right.ToFloat();
 }
 bool operator>(const Value& left, const Value& right) {
     if (left.Type == ValueType::kString && right.Type == ValueType::kString) {

@@ -41,9 +41,9 @@ func test_basic_convert(){
     #float + integer = float
     assertEqual(typeof(res),"float");
 
-    #integer+=float  result as Integer
+    #integer+=float  result as float
     i += 4.6;
-    assertEqual(typeof(i),"integer");
+    assertEqual(typeof(i),"float");
 
     #convert string to bytes
     var buf = bytes("hello");
@@ -81,6 +81,10 @@ func test_basic_convert(){
     assertEqual(ToString(1000),"1000");
     assertEqual(ToString(3.14),ToString(ToFloat("3.14")));
     assertEqual(HexEncode(0xEEFFBB),"EEFFBB");
+    assertEqual(100+"200","100200");
+    assertEqual("100"+200,"100200");
+    assertEqual(bytes("hell")+'o',"hello");
+    assertEqual("hello"+'o',"helloo");
 }
 
 test_basic_convert();
@@ -357,7 +361,6 @@ func byteslib_test(){
     for v in list_array{
         assertEqual(v,"hello");
     }
-    DisplayContext();
     assertEqual(ToLowerString("heLLo"),"hello");
     assertEqual(ToUpperString("heLLo"),"HELLO");
     assertEqual(HasPrefixString(str,"!!! X"),false);

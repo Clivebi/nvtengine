@@ -28,16 +28,26 @@ public:
     }
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
+            LOG("Wait read timeout:", mReadTimeout);
             return -1;
         }
-        return recv(mSocket, buffer, size, 0);
+        int nSize = ::recv(mSocket, buffer, size, 0);
+        if (nSize == -1) {
+            LOG("recv error ", errno);
+        }
+        return nSize;
     }
 
     virtual int Write(const void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
+            LOG("Wait write timeout:", mReadTimeout);
             return -1;
         }
-        return send(mSocket, buffer, size, 0);
+        int nSize = ::send(mSocket, buffer, size, 0);
+        if (nSize == -1) {
+            LOG("send error ", errno);
+        }
+        return nSize;
     }
 
     virtual std::string TypeName() { return mName; }
@@ -49,10 +59,10 @@ protected:
     BaseConn* mCon;
 
 public:
-    explicit Conn(BaseConn* con, bool enableReadCache) {
+    explicit Conn(BaseConn* con, bool bufferedReader) {
         mCon = con;
         mReader = NULL;
-        if (enableReadCache) {
+        if (bufferedReader) {
             mReader = new BufferedReader(con);
         }
     }

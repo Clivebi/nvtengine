@@ -66,6 +66,30 @@ Value ConnRead(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
+Value ConnSetReadTimeout(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_RESOURCE(0);
+    CHECK_PARAMETER_INTEGER(1);
+    if (!net::Conn::IsConn(args[0].resource)) {
+        throw RuntimeException("ConnRead resource type mismatch");
+    }
+    net::Conn* con = (net::Conn*)(args[0].resource.get());
+    con->SetReadTimeout(args[1].Integer);
+    return Value();
+}
+
+Value ConnSetWriteTimeout(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_RESOURCE(0);
+    CHECK_PARAMETER_INTEGER(1);
+    if (!net::Conn::IsConn(args[0].resource)) {
+        throw RuntimeException("ConnRead resource type mismatch");
+    }
+    net::Conn* con = (net::Conn*)(args[0].resource.get());
+    con->SetWriteTimeout(args[1].Integer);
+    return Value();
+}
+
 Value ConnWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
@@ -102,7 +126,8 @@ Value ConnReadUntil(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         cache += buffer[0];
         if (buffer[0] == key.back()) {
             if (cache.size() >= key.size()) {
-                if (!strncmp(cache.c_str() + (cache.size() - key.size()), key.c_str(), key.size())) {
+                if (!strncmp(cache.c_str() + (cache.size() - key.size()), key.c_str(),
+                             key.size())) {
                     return cache;
                 }
             }
@@ -127,10 +152,14 @@ Value ConnTLSHandshake(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return Value(true);
 }
 
-BuiltinMethod netConnMethod[] = {
-        {"TCPConnect", TCPConnect},       {"UDPConnect", UDPConnect},
-        {"ConnRead", ConnRead},           {"ConnWrite", ConnWrite},
-        {"ConnReadUntil", ConnReadUntil}, {"ConnTLSHandshake", ConnTLSHandshake}};
+BuiltinMethod netConnMethod[] = {{"TCPConnect", TCPConnect},
+                                 {"UDPConnect", UDPConnect},
+                                 {"ConnRead", ConnRead},
+                                 {"ConnWrite", ConnWrite},
+                                 {"ConnReadUntil", ConnReadUntil},
+                                 {"ConnTLSHandshake", ConnTLSHandshake},
+                                 {"ConnSetReadTimeout", ConnSetReadTimeout},
+                                 {"ConnSetWriteTimeout", ConnSetWriteTimeout}};
 
 void RegisgerNetConnBuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(netConnMethod, COUNT_OF(netConnMethod));

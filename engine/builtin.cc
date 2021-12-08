@@ -53,10 +53,7 @@ Value ToByte(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
 bool IsByteArray(const std::vector<Value>& values) {
     std::vector<Value>::const_iterator iter = values.begin();
     while (iter != values.end()) {
-        if (!iter->IsNumber()) {
-            return false;
-        }
-        if (iter->Integer > 0xFF || iter->Integer < 0) {
+        if (!iter->IsInteger()) {
             return false;
         }
         iter++;
@@ -78,7 +75,7 @@ bool IsStringArray(const std::vector<Value>& values) {
 void AppendIntegerArrayToBytes(Value& val, const std::vector<Value>& values) {
     std::vector<Value>::const_iterator iter = values.begin();
     while (iter != values.end()) {
-        val.bytes.append(1, (unsigned char)(iter->Integer));
+        val.bytes.append(1, (unsigned char)(iter->Integer & 0xFF));
         iter++;
     }
 }
@@ -182,7 +179,7 @@ Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
         if (arg.Type == ValueType::kArray) {
             if (!IsByteArray(arg._array())) {
                 DEBUG_CONTEXT();
-                throw RuntimeException("convert to bytes must use integer array(0~0xFF");
+                throw RuntimeException("convert to bytes must use integer array(0~0xFF)");
             }
             AppendIntegerArrayToBytes(ret, arg._array());
             continue;
@@ -214,7 +211,7 @@ Value MakeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
         if (arg.Type == ValueType::kArray) {
             if (!IsByteArray(arg._array())) {
                 DEBUG_CONTEXT();
-                throw RuntimeException("convert to string must use integer array (0~255)");
+                throw RuntimeException("convert to string must use integer array (0~0xFF)");
             }
             AppendIntegerArrayToBytes(ret, arg._array());
             continue;
@@ -388,6 +385,11 @@ Value Clone(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return values.front().Clone();
 }
 
+Value Dump(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(values, 1);
+    return values.front().ToString(true);
+}
+
 BuiltinMethod builtinFunction[] = {
         {"byte", ToByte},
         {"exit", Exit},
@@ -403,6 +405,7 @@ BuiltinMethod builtinFunction[] = {
         {"ToString", ToString},
         {"ToInteger", ToInteger},
         {"ToFloat", ToFloat},
+        {"Dump", Dump},
         {"HexDecodeString", HexDecodeString},
         {"HexEncode", HexEncode},
         {"DisplayContext", DisplayContext},
