@@ -676,6 +676,7 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
             }
         }
         if (!found) {
+            DEBUG_CONTEXT();
             throw RuntimeException((*iter)->Name + " is not a parametr for " + ins->Name);
         }
     }

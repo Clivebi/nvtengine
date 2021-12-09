@@ -7,7 +7,7 @@
 
 Value Md5Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING(0);
     BYTE hash[MD5_DIGEST_LENGTH] = {0};
     MD5_CTX shCtx = {0};
     MD5_Init(&shCtx);
@@ -20,7 +20,7 @@ Value Md5Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value SHA1Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING(0);
     BYTE hash[SHA_DIGEST_LENGTH] = {0};
     SHA_CTX shCtx = {0};
     SHA1_Init(&shCtx);
@@ -33,7 +33,7 @@ Value SHA1Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value SHA256Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING(0);
     BYTE hash[SHA256_DIGEST_LENGTH] = {0};
     SHA256_CTX shCtx = {0};
     SHA256_Init(&shCtx);

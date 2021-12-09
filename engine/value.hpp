@@ -62,6 +62,9 @@ bool IsMatchString(std::string word, std::string pattern);
 
 bool IsPrintableString(const std::string& src);
 
+std::string& replace_str(std::string& str, const std::string& to_replaced,
+                         const std::string& newchars, int maxcount);
+
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
     explicit Resource() { Status::sResourceCount++; }

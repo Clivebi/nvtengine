@@ -214,7 +214,7 @@ std::string HexEncode(const char* buf, int count, std::string prefix) {
     char buffer[6] = {0};
     std::string result = "";
     for (size_t i = 0; i < count; i++) {
-        snprintf(buffer, 6, "%02X", (unsigned char)buf[i]);
+        snprintf(buffer, 6, "%02x", (unsigned char)buf[i]);
         result += prefix;
         result += buffer;
     }
@@ -282,6 +282,27 @@ bool IsMatchString(std::string word, int n, std::string pattern, int m) {
 // Check if a string matches with a given wildcard pattern
 bool IsMatchString(std::string word, std::string pattern) {
     return IsMatchString(word, 0, pattern, 0);
+}
+
+std::string& replace_str(std::string& str, const std::string& to_replaced,
+                         const std::string& newchars, int maxcount) {
+    int count = 0;
+    if (to_replaced.size() == 0 || str.size() == 0) {
+        return str;
+    }
+    for (std::string::size_type pos(0); pos != std::string::npos; pos += newchars.length()) {
+        pos = str.find(to_replaced, pos);
+        if (pos != std::string::npos) {
+            str.replace(pos, to_replaced.length(), newchars);
+            count++;
+            if (maxcount != -1 && maxcount == count) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    return str;
 }
 
 bool cmp_key::operator()(const Value& k1, const Value& k2) const {
@@ -949,6 +970,10 @@ Value operator+(const Value& left, const Value& right) {
 }
 
 Value operator-(const Value& left, const Value& right) {
+    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
+        std::string result = left.bytes;
+        return replace_str(result, right.bytes, "", 1);
+    }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("- operation not avaliable for this value ( " +

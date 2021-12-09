@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <unistd.h>
 #endif
 #include <errno.h>
 #include <stdlib.h>
@@ -26,6 +27,17 @@ public:
             flags &= ~O_NONBLOCK;
             fcntl(socket, F_SETFL, flags);
         }
+    }
+    static void Close(int fd) {
+        if (fd == -1) {
+            return;
+        }
+        shutdown(fd, SHUT_RDWR);
+#ifdef WIN32
+        closesocket(fd);
+#else
+        close(fd);
+#endif
     }
     // >0 for success
     static int WaitSocketAvaliable(int fd, int timeout_sec, bool read) {
@@ -97,7 +109,7 @@ public:
             SetBlock(sockfd, 0);
             if (ConnectWithTimeout(sockfd, (unsigned char*)p->ai_addr, p->ai_addrlen,
                                    timeout_sec) == -1) {
-                shutdown(sockfd, SHUT_RDWR);
+                Close(sockfd);
                 continue;
             }
             break;
@@ -125,7 +137,7 @@ public:
             }
             SetBlock(sockfd, 0);
             if (connect(sockfd, (sockaddr*)p->ai_addr, p->ai_addrlen)) {
-                shutdown(sockfd, SHUT_RDWR);
+                Close(sockfd);
                 continue;
             }
             break;

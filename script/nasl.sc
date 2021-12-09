@@ -571,7 +571,7 @@ func str_replace(string, find, replace,count = -1){
 func keys(obj){
 	var list = [];
 	if(typeof(obj)=="array"){
-		DisplayContext();
+		#DisplayContext();
 		Println("please check this may be have some bug**************");
 	}
 	for k,v in obj{

@@ -169,7 +169,7 @@ void NVTEngineTest() {
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
     list2.push_back("1.3.6.1.4.1.25623.1.0.103692");
-    task.BeginTask(list2, "10000");
+    task.BeginTask(result, "10000");
     task.Join();
 }
 

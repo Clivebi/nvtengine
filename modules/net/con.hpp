@@ -22,7 +22,7 @@ public:
     bool IsAvaliable() { return mSocket != -1; }
     virtual void Close() {
         if (mSocket != -1) {
-            shutdown(mSocket, SHUT_RDWR);
+            Socket::Close(mSocket);
             mSocket = -1;
         }
     }

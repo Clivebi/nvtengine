@@ -143,26 +143,6 @@ Value RepeatBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-std::string& replace_str(std::string& str, const std::string& to_replaced,
-                         const std::string& newchars, int maxcount) {
-    int count = 0;
-    if (to_replaced.size() == 0 || str.size() == 0) {
-        return str;
-    }
-    for (std::string::size_type pos(0); pos != std::string::npos; pos += newchars.length()) {
-        pos = str.find(to_replaced, pos);
-        if (pos != std::string::npos) {
-            str.replace(pos, to_replaced.length(), newchars);
-            count++;
-            if (maxcount != -1 && maxcount == count) {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-    return str;
-}
 
 Value ReplaceBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
