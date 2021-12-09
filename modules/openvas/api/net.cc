@@ -173,13 +173,13 @@ std::vector<std::string> ResolveHostNameToList(const std::string& host, int fami
 
 Value ResolveHostName(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(0);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING(0);
     return ResolveHostName(args[0].bytes, AF_UNSPEC);
 }
 
 Value ResolveHostNameToList(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(0);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING(0);
     std::vector<std::string> res = ResolveHostNameToList(args[0].bytes, AF_UNSPEC);
     if (res.size() == 0) {
         return Value();

@@ -247,11 +247,11 @@ func script_get_preference_file_content(name,id=-1){
 #open_sock_tcp(port, transport: ENCAPS_IP)
 func open_sock_tcp(port,buffsz,timeout, transport=0,priority=0){
 	if(!timeout){
-		timeout = 30;
+		timeout = 15;
 	}
 	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,transport>1);
 	if(soc){
-		ConnSetReadTimeout(soc,10);
+		ConnSetReadTimeout(soc,5);
 		ConnSetWriteTimeout(soc,5);
 	}
 	return soc;
@@ -754,9 +754,14 @@ func http_open_socket(port){
 			isTLS = true;
 		}
 	}else{
-		isTLS = (transport > 0);
+		isTLS = (transport > 1);
 	}
-	return TCPConnect(ip,port,30,isTLS);
+	var soc = TCPConnect(ip,ToInteger(port),30,isTLS);
+	if(soc){
+		ConnSetReadTimeout(soc,5);
+		ConnSetWriteTimeout(soc,5);
+	}
+	return soc;
 }
 
 func http_close_socket(soc){

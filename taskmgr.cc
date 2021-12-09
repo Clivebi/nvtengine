@@ -205,6 +205,9 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             //return false;
             continue;
         }
+        if (loaded.find(nvti[knowntext::kNVTI_filename].bytes) != loaded.end()) {
+            continue;
+        }
         Value pref = prefsDB.Get(v);
         if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
