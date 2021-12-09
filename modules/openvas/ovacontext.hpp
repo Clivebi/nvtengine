@@ -1,6 +1,6 @@
 #pragma once
 #include "../../engine/vm.hpp"
-#include "../check.hpp"
+#include "../../engine/check.hpp"
 #include "./support/scriptstorage.hpp"
 #include "knowntext.hpp"
 using namespace Interpreter;

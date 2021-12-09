@@ -1,32 +1,38 @@
 #include <algorithm>
 #include <regex>
 
-#include "check.hpp"
+#include "../engine/check.hpp"
 using namespace Interpreter;
 
 Value ContainsBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    return Value(args[0].bytes.find(args[1].bytes) != std::string::npos);
+    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
+        return Value(args[0].bytes.find(args[1].bytes) != std::string::npos);
+    }
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    return Value(p0.find(p1) != std::string::npos);
 }
 
 Value HasPrefixBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    return Value(args[0].bytes.find(args[1].bytes) == 0);
+    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
+        return Value(args[0].bytes.find(args[1].bytes) == 0);
+    }
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    return Value(p0.find(p1) == 0);
 }
 
 Value HasSuffixBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    if (args[0].bytes.size() < args[1].bytes.size()) {
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    if (p0.size() < p1.size()) {
         return Value(false);
     }
-    int pos = args[0].bytes.size() - args[1].bytes.size();
-    if (args[0].bytes.substr(pos) == args[1].bytes) {
+    int pos = p0.size() - p1.size();
+    if (p0.substr(pos) == p1) {
         return Value(true);
     }
     return Value(false);
@@ -38,107 +44,111 @@ bool ContainsByte(std::string& str, unsigned char c) {
 
 Value TrimLeftBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
     size_t pos = 0;
-    for (size_t i = 0; i < args[0].bytes.size(); i++) {
-        if (ContainsByte(args[1].bytes, args[0].bytes[i])) {
+    for (size_t i = 0; i < p0.size(); i++) {
+        if (ContainsByte(p1, p0[i])) {
             pos = i + 1;
             continue;
         }
         break;
     }
-    if (pos < args[0].bytes.size()) {
-        Value ret = Value::make_bytes(args[0].bytes.substr(pos));
-        ret.Type = args[0].Type;
+    if (pos < p0.size()) {
+        Value ret = Value::make_bytes(p0.substr(pos));
         return ret;
     }
     Value ret = Value::make_bytes("");
-    ret.Type = args[0].Type;
     return ret;
 }
 
 Value TrimRightBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    if (args[0].bytes.size() == 0) {
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    if (p0.size() == 0) {
         return Value("");
     }
-    size_t length = args[0].bytes.size();
-    for (size_t i = args[0].bytes.size() - 1; i >= 0; i--) {
-        if (ContainsByte(args[1].bytes, args[0].bytes[i])) {
+    size_t length = p0.size();
+    for (size_t i = p0.size() - 1; i >= 0; i--) {
+        if (ContainsByte(p1, p0[i])) {
             length = i;
             continue;
         }
         break;
     }
-    Value ret = Value::make_bytes(args[0].bytes.substr(0, length));
-    ret.Type = args[0].Type;
+    Value ret = Value::make_bytes(p0.substr(0, length));
     return ret;
 }
 
 Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
     size_t pos = 0;
-    for (size_t i = 0; i < args[0].bytes.size(); i++) {
-        if (ContainsByte(args[1].bytes, args[0].bytes[i])) {
+    for (size_t i = 0; i < p0.size(); i++) {
+        if (ContainsByte(p1, p0[i])) {
             pos = i + 1;
             continue;
         }
         break;
     }
-    size_t end = args[0].bytes.size() - 1;
-    for (size_t i = args[0].bytes.size() - 1; i >= 0; i--) {
-        if (ContainsByte(args[1].bytes, args[0].bytes[i])) {
+    size_t end = p0.size() - 1;
+    for (size_t i = p0.size() - 1; i >= 0; i--) {
+        if (ContainsByte(p1, p0[i])) {
             end = i;
             continue;
         }
         break;
     }
     Value ret = Value::make_bytes("");
-    ret.Type = args[0].Type;
     if (pos > end) {
         return ret;
     }
-    ret.bytes = args[0].bytes.substr(pos, end - pos);
+    ret.bytes = p0.substr(pos, end - pos);
     return ret;
 }
 
 Value IndexBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    size_t pos = args[0].bytes.find(args[1].bytes);
+    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
+        return Value(args[0].bytes.find(args[1].bytes));
+    }
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    size_t pos = p0.find(p1);
     return Value((long)pos);
 }
 
 Value LastIndexBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    size_t pos = args[0].bytes.rfind(args[1].bytes);
+    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
+        return Value(args[0].bytes.rfind(args[1].bytes));
+    }
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    size_t pos = p0.rfind(p1);
     return Value((long)pos);
 }
 
 Value RepeatBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_INTEGER(1);
+    int count = GetInt(args, 1);
+    std::string p0 = GetString(args, 0);
     std::string result = "";
-    for (size_t i = 0; i < args[1].Integer; i++) {
-        result.append(args[0].bytes);
+    for (size_t i = 0; i < count; i++) {
+        result.append(p0);
     }
     Value ret = Value::make_bytes(result);
-    ret.Type = args[0].Type;
     return ret;
 }
 
 std::string& replace_str(std::string& str, const std::string& to_replaced,
                          const std::string& newchars, int maxcount) {
     int count = 0;
+    if (to_replaced.size() == 0 || str.size() == 0) {
+        return str;
+    }
     for (std::string::size_type pos(0); pos != std::string::npos; pos += newchars.length()) {
         pos = str.find(to_replaced, pos);
         if (pos != std::string::npos) {
@@ -156,27 +166,25 @@ std::string& replace_str(std::string& str, const std::string& to_replaced,
 
 Value ReplaceBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    CHECK_PARAMETER_STRING(2);
-    CHECK_PARAMETER_INTEGER(3);
-    std::string result = args[0].bytes;
-    result = replace_str(result, args[1].bytes, args[2].bytes, (int)args[3].Integer);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    std::string p2 = GetString(args, 2);
+    int count = GetInt(args, 3, -1);
+    std::string result = p0;
+    result = replace_str(result, p1, p2, count);
     Value ret = Value::make_bytes(result);
-    ret.Type = args[0].Type;
     ret.bytes = result;
     return ret;
 }
 
 Value ReplaceAllBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    CHECK_PARAMETER_STRING(2);
-    std::string result = args[0].bytes;
-    result = replace_str(result, args[1].bytes, args[2].bytes, -1);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    std::string p2 = GetString(args, 2);
+    std::string result = p0;
+    result = replace_str(result, p1, p2, -1);
     Value ret = Value::make_bytes(result);
-    ret.Type = args[0].Type;
     ret.bytes = result;
     return ret;
 }
@@ -185,6 +193,9 @@ std::vector<Value> Split(std::string& src, std::string& slip) {
     size_t i = std::string::npos;
     std::string part = src;
     std::vector<Value> result;
+    if (src.size() == 0 || slip.size() == 0) {
+        return result;
+    }
     while (true) {
         i = part.find(slip);
         if (i != std::string::npos) {
@@ -202,12 +213,11 @@ std::vector<Value> Split(std::string& src, std::string& slip) {
 
 Value SplitBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    std::vector<Value> result = Split(args[0].bytes, args[1].bytes);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    std::vector<Value> result = Split(p0, p1);
     std::vector<Value>::iterator iter = result.begin();
     while (iter != result.end()) {
-        iter->Type = args[1].Type;
         iter++;
     }
     return Value(result);
@@ -215,16 +225,16 @@ Value SplitBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value ToUpperBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
-    transform(args[0].bytes.begin(), args[0].bytes.end(), args[0].bytes.begin(), toupper);
-    return args[0];
+    std::string p0 = GetString(args, 0);
+    transform(p0.begin(), p0.end(), p0.begin(), toupper);
+    return p0;
 }
 
 Value ToLowerBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
-    transform(args[0].bytes.begin(), args[0].bytes.end(), args[0].bytes.begin(), tolower);
-    return args[0];
+    std::string p0 = GetString(args, 0);
+    transform(p0.begin(), p0.end(), p0.begin(), tolower);
+    return p0;
 }
 
 inline std::regex RegExp(const std::string& r, bool icase) {
@@ -237,29 +247,29 @@ inline std::regex RegExp(const std::string& r, bool icase) {
 //buffer,partten,bool icase
 Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
     bool icase = true;
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
     }
-    std::regex re = RegExp(args[1].bytes, icase);
-    bool found = std::regex_search(args[0].bytes.begin(), args[0].bytes.end(), re);
+    std::regex re = RegExp(p1, icase);
+    bool found = std::regex_search(p0.begin(), p0.end(), re);
     return Value(found);
 }
 
 Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
     bool icase = true;
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
     }
     std::smatch m;
-    std::string s = args[0].bytes;
+    std::string s = p0;
     Value ret = Value::make_array();
-    std::regex re = RegExp(args[1].bytes, icase);
+    std::regex re = RegExp(p1, icase);
     while (std::regex_search(s, m, re)) {
         for (auto iter = m.begin(); iter != m.end(); iter++) {
             ret._array().push_back(iter->str());
@@ -271,16 +281,16 @@ Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
-    CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
-    CHECK_PARAMETER_STRING(2);
+    std::string p0 = GetString(args, 0);
+    std::string p1 = GetString(args, 1);
+    std::string p2 = GetString(args, 2);
     bool icase = true;
     if (args.size() > 3) {
         icase = args[3].ToBoolean();
     }
     std::smatch m;
-    std::regex re = RegExp(args[1].bytes, icase);
-    Value ret = std::regex_replace(args[0].bytes, re, args[2].bytes);
+    std::regex re = RegExp(p1, icase);
+    Value ret = std::regex_replace(p0, re, p2);
     return ret;
 }
 

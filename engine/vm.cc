@@ -487,10 +487,10 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
     }
     const Instruction* second = GetInstruction(ins->Refs[1]);
     Value secondVal = Execute(second, ctx);
-    if (secondVal.IsInteger() && firstVal.IsNULL()) {
+    /* if (secondVal.IsInteger() && firstVal.IsNULL()) {
         firstVal.Type = ValueType::kInteger;
         firstVal.Integer = 0;
-    }
+    }*/
 
     switch (ins->OpCode) {
     case Instructions::kSUB:

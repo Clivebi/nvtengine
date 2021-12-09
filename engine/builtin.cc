@@ -1,48 +1,50 @@
 #include <iostream>
 
+#include "check.hpp"
 #include "vm.hpp"
-
-#define COUNT_OF(a) (sizeof(a) / sizeof(a[0]))
 
 using namespace Interpreter;
 
-#define CHECK_PARAMETER_COUNT(args, count)                              \
-    if (args.size() < count) {                                          \
-        DEBUG_CONTEXT();                                                \
-        throw RuntimeException(std::string(__FUNCTION__) +              \
-                               ": the count of parameters not enough"); \
-    }
+
 Value Println(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     std::string result;
     for (std::vector<Value>::iterator iter = values.begin(); iter != values.end(); iter++) {
-        result += iter->ToString();
+        if (iter->IsStringOrBytes()) {
+            if (!IsPrintableString(iter->bytes)) {
+                result += iter->ToDescription();
+            } else {
+                result += iter->ToString();
+            }
+        } else {
+            result += iter->ToString();
+        }
         result += " ";
     }
     std::cout << result << std::endl;
     return Value();
 }
 
-Value len(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
+Value len(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
     return Value(arg.Length());
 }
 
-Value TypeOf(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
+Value TypeOf(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
     return Value(arg.TypeName());
 }
 
-Value ToString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
+Value ToString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
     return Value(arg.ToString());
 }
 
-Value ToByte(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
+Value ToByte(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
     if (!arg.IsNumber()) {
         DEBUG_CONTEXT();
         throw RuntimeException("only integer can convert to byte");
@@ -80,22 +82,22 @@ void AppendIntegerArrayToBytes(Value& val, const std::vector<Value>& values) {
     }
 }
 
-Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value to = values.front();
+Value append(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value to = args.front();
     if (to.Type == ValueType::kArray) {
-        std::vector<Value>::iterator iter = values.begin();
+        std::vector<Value>::iterator iter = args.begin();
         iter++;
-        while (iter != values.end()) {
+        while (iter != args.end()) {
             to._array().push_back(*iter);
             iter++;
         }
         return to;
     }
     if (to.Type == ValueType::kBytes) {
-        std::vector<Value>::iterator iter = values.begin();
+        std::vector<Value>::iterator iter = args.begin();
         iter++;
-        while (iter != values.end()) {
+        while (iter != args.end()) {
             switch (iter->Type) {
             case ValueType::kBytes:
             case ValueType::kString:
@@ -124,19 +126,16 @@ Value append(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     throw RuntimeException("first append value must an array or bytes");
 }
 
-Value close(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value res = values.front();
-    if (res.Type != ValueType::kResource) {
-        throw RuntimeException("close parameter must a resource");
-    }
-    res.resource->Close();
+Value close(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_RESOURCE(0);
+    args.front().resource->Close();
     return Value();
 }
 
-Value Exit(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value exitCode = values.front();
+Value Exit(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value exitCode = args.front();
     if (!exitCode.IsInteger()) {
         throw RuntimeException("exit parameter must a integer");
     }
@@ -144,26 +143,26 @@ Value Exit(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return Value();
 }
 
-Value Require(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
+Value Require(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
     if (!ctx->IsTop()) {
         throw RuntimeException("require must called in top context");
     }
-    Value name = values.front();
-    if (name.Type != ValueType::kString) {
+    Value name = args.front();
+    if (!name.IsStringOrBytes()) {
         throw RuntimeException("require parameter must a string");
     }
     vm->RequireScript(name.bytes, ctx);
     return Value();
 }
 
-Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    if (values.size() == 0) {
+Value MakeBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    if (args.size() == 0) {
         return Value::make_bytes("");
     }
     Value ret = Value::make_bytes("");
 
-    for (auto arg : values) {
+    for (auto arg : args) {
         if (arg.IsStringOrBytes()) {
             ret.bytes += arg.bytes;
             continue;
@@ -188,14 +187,14 @@ Value MakeBytes(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-Value MakeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    if (values.size() == 0) {
+Value MakeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    if (args.size() == 0) {
         return Value("");
     }
     Value ret = Value::make_bytes("");
     ret.Type = ValueType::kString;
 
-    for (auto arg : values) {
+    for (auto arg : args) {
         if (arg.IsStringOrBytes()) {
             ret.bytes += arg.bytes;
             continue;
@@ -233,10 +232,10 @@ bool IsHexChar(char c) {
     return false;
 }
 
-Value HexDecodeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
-    if (arg.Type != ValueType::kString) {
+Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
+    if (!arg.IsStringOrBytes()) {
         DEBUG_CONTEXT();
         throw RuntimeException("HexDecodeString parameter must a string");
     }
@@ -260,10 +259,10 @@ Value HexDecodeString(std::vector<Value>& values, VMContext* ctx, Executor* vm) 
     return Value::make_bytes(result);
 }
 
-Value HexEncode(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+Value HexEncode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     char buf[16] = {0};
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
+    CHECK_PARAMETER_COUNT(1);
+    Value& arg = args.front();
     switch (arg.Type) {
     case ValueType::kBytes:
     case ValueType::kString:
@@ -277,42 +276,14 @@ Value HexEncode(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     throw RuntimeException("HexEncode unsupported parameter type<" + arg.TypeName() + ">");
 }
 
-Value ToInteger(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
-    switch (arg.Type) {
-    case ValueType::kInteger:
-    case ValueType::kByte:
-        return arg;
-    case ValueType::kFloat:
-        return Value((Value::INTVAR)arg.Float);
-    case ValueType::kString:
-    case ValueType::kBytes: {
-        Value::INTVAR val = strtoll(arg.bytes.c_str(), NULL, 0);
-        return Value(val);
-    }
-    default:
-        return Value((__LONG_LONG_MAX__));
-    }
+Value ToInteger(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    return args.front().ToInteger();
 }
 
-Value ToFloat(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
-    switch (arg.Type) {
-    case ValueType::kInteger:
-    case ValueType::kByte:
-        return Value((double)arg.Integer);
-    case ValueType::kFloat:
-        return arg;
-    case ValueType::kString:
-    case ValueType::kBytes: {
-        double val = strtod(arg.bytes.c_str(), NULL);
-        return Value(val);
-    }
-    default:
-        return Value((double)0.0);
-    }
+Value ToFloat(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    return args.front().ToFloat();
 }
 
 bool IsBigEndianVM() {
@@ -324,7 +295,7 @@ bool IsBigEndianVM() {
     return true;
 }
 
-Value VMEnv(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+Value VMEnv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     Value ret = Value::make_map();
     if (IsBigEndianVM()) {
         ret._map()[Value("ByteOrder")] = "BigEndian";
@@ -345,49 +316,36 @@ Value VMEnv(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-Value GetAvaliableFunction(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+Value GetAvaliableFunction(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return vm->GetAvailableFunction(ctx);
 }
 
-Value IsFunctionExist(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
-    if (arg.Type != ValueType::kString && arg.Type != ValueType::kBytes) {
-        throw RuntimeException("IsFunctionExist parameter must a string");
-    }
-    Value ret = vm->GetFunction(arg.bytes, ctx);
+Value IsFunctionExist(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    Value ret = vm->GetFunction(args.front().ToString(), ctx);
     if (ret.IsFunction()) {
         return Value(true);
     }
     return Value(false);
 }
 
-Value Error(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    Value& arg = values.front();
-    if (arg.Type != ValueType::kString && arg.Type != ValueType::kBytes) {
-        throw RuntimeException("error parameter must a string");
-    }
-    throw RuntimeException(arg.bytes);
+Value Error(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    throw RuntimeException(args.front().ToString());
 }
 
-Value DisplayContext(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    if (values.size()) {
-        std::cout << ctx->DumpContext(values.front().ToBoolean()) << std::endl;
+Value DisplayContext(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    if (args.size()) {
+        std::cout << ctx->DumpContext(args.front().ToBoolean()) << std::endl;
     } else {
         std::cout << ctx->DumpContext(false) << std::endl;
     }
     return Value();
 }
 
-Value Clone(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    return values.front().Clone();
-}
-
-Value Dump(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(values, 1);
-    return values.front().ToString(true);
+Value Clone(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    return args.front().Clone();
 }
 
 BuiltinMethod builtinFunction[] = {
@@ -405,7 +363,6 @@ BuiltinMethod builtinFunction[] = {
         {"ToString", ToString},
         {"ToInteger", ToInteger},
         {"ToFloat", ToFloat},
-        {"Dump", Dump},
         {"HexDecodeString", HexDecodeString},
         {"HexEncode", HexEncode},
         {"DisplayContext", DisplayContext},

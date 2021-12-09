@@ -1,23 +1,17 @@
 
 #include <array>
 
+#include "../engine/check.hpp"
 #include "./net/dial.hpp"
 #include "./net/tcp.hpp"
-#include "check.hpp"
 using namespace Interpreter;
 Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
-    CHECK_PARAMETER_STRING(0);
-    std::string host = args[0].bytes, port;
-    if (args[1].IsInteger()) {
-        port = args[1].ToString();
-    } else {
-        CHECK_PARAMETER_STRING(1);
-        port = args[1].bytes;
-    }
-    CHECK_PARAMETER_INTEGER(2);
-    CHECK_PARAMETER_INTEGER(3);
-    Resource* res = net::Dial("tcp", host, port, (int)args[2].Integer, args[3].ToBoolean(), true);
+    std::string host = GetString(args, 0);
+    std::string port = GetString(args, 1);
+    int timeout = GetInt(args, 2, 30);
+    int isSSL = GetInt(args, 3, 0);
+    Resource* res = net::Dial("tcp", host, port, timeout, isSSL, true);
     if (res == NULL) {
         return Value();
     }
@@ -26,17 +20,9 @@ Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value UDPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
-    CHECK_PARAMETER_STRING(0);
-    std::string host = args[0].bytes, port;
-    if (args[1].IsInteger()) {
-        port = args[1].ToString();
-    } else {
-        CHECK_PARAMETER_STRING(1);
-        port = args[1].bytes;
-    }
-    CHECK_PARAMETER_INTEGER(2);
-    CHECK_PARAMETER_INTEGER(3);
-    Resource* res = net::Dial("udp", host, port, (int)args[2].Integer, args[3].ToBoolean(), false);
+    std::string host = GetString(args, 0);
+    std::string port = GetString(args, 1);
+    Resource* res = net::Dial("udp", host, port, 0, 0, false);
     if (res == NULL) {
         return Value();
     }
@@ -46,16 +32,16 @@ Value UDPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ConnRead(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_INTEGER(1);
+    int length = GetInt(args, 1);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnRead resource type mismatch");
     }
-    if (args[1].Integer > 1 * 1024 * 1024) {
+    if (length > 1 * 1024 * 1024 || length < 0) {
         throw RuntimeException("ConnRead length must less 1M");
     }
-    unsigned char* buffer = new unsigned char[args[1].Integer];
+    unsigned char* buffer = new unsigned char[length];
     net::Conn* con = (net::Conn*)(args[0].resource.get());
-    int size = con->Read(buffer, (int)args[1].Integer);
+    int size = con->Read(buffer, (int)length);
     if (size < 0) {
         delete[] buffer;
         return Value();
@@ -69,55 +55,54 @@ Value ConnRead(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ConnSetReadTimeout(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_INTEGER(1);
+    int timeout = GetInt(args, 1);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnRead resource type mismatch");
     }
     net::Conn* con = (net::Conn*)(args[0].resource.get());
-    con->SetReadTimeout(args[1].Integer);
+    con->SetReadTimeout(timeout);
     return Value();
 }
 
 Value ConnSetWriteTimeout(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_INTEGER(1);
+    int timeout = GetInt(args, 1);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnRead resource type mismatch");
     }
     net::Conn* con = (net::Conn*)(args[0].resource.get());
-    con->SetWriteTimeout(args[1].Integer);
+    con->SetWriteTimeout(timeout);
     return Value();
 }
 
 Value ConnWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_STRING(1);
+    std::string data = GetString(args, 1);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnWrite resource type mismatch");
     }
     net::Conn* con = (net::Conn*)(args[0].resource.get());
-    int size = con->Write(args[1].bytes.c_str(), args[1].bytes.size());
+    int size = con->Write(data.c_str(), data.size());
     return Value(size);
 }
 
 Value ConnReadUntil(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_STRING(1);
-    CHECK_PARAMETER_INTEGER(2);
+    std::string deadText = GetString(args, 1);
+    int limit = GetInt(args, 2, 0);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnReadUntil resource type mismatch");
     }
     net::Conn* con = (net::Conn*)(args[0].resource.get());
     std::string cache = "";
-    int limit = args[2].Integer;
     if (limit == 0) {
         limit = 4 * 1024 * 1024;
     }
     char buffer[2];
-    std::string& key = args[1].bytes;
+    std::string& key = deadText;
     while (true) {
         int size = con->Read(buffer, 1);
         if (size != 1) {

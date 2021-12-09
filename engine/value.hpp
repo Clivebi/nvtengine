@@ -60,6 +60,8 @@ bool IsSafeSet(bool html, BYTE c);
 
 bool IsMatchString(std::string word, std::string pattern);
 
+bool IsPrintableString(const std::string& src);
+
 class Resource : public CRefCountedThreadSafe<Resource> {
 public:
     explicit Resource() { Status::sResourceCount++; }
@@ -140,7 +142,8 @@ public:
     virtual ~Object() {}
     virtual std::string ObjectType() const = 0;
     virtual std::string MapKey() const { return Interpreter::ToString((int64_t)this); }
-    virtual std::string ToString(bool debug) const = 0;
+    virtual std::string ToString() const = 0;
+    virtual std::string ToDescription() const =0;
     virtual std::string ToJSONString() const = 0;
 };
 
@@ -152,7 +155,8 @@ public:
 
 public:
     std::string ObjectType() const { return "array"; };
-    std::string ToString(bool debug) const;
+    std::string ToString() const;
+    std::string ToDescription() const;
     std::string ToJSONString() const;
     ArrayObject* Clone();
     DISALLOW_COPY_AND_ASSIGN(ArrayObject);
@@ -171,7 +175,8 @@ public:
 public:
     MapObject* Clone();
     std::string ObjectType() const { return "map"; };
-    std::string ToString(bool debug) const;
+    std::string ToString() const;
+    std::string ToDescription() const;
     std::string ToJSONString() const;
     DISALLOW_COPY_AND_ASSIGN(MapObject);
 };
@@ -354,7 +359,10 @@ public:
     std::vector<Value>& _array() { return ((ArrayObject*)object.get())->_array; }
 
     std::string MapKey() const;
-    std::string ToString(bool debug = false) const;
+    //转成一个字符串
+    std::string ToString() const;
+    //描述信息
+    std::string ToDescription() const;
     std::string ToJSONString(bool escape = true) const;
     double ToFloat() const;
     INTVAR ToInteger() const;

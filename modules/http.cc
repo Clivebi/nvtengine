@@ -1,10 +1,11 @@
 
-#include "net/dial.hpp"
 #include <brotli/decode.h>
 #include <zlib.h>
 
 #include <array>
-#include "check.hpp"
+
+#include "../engine/check.hpp"
+#include "net/dial.hpp"
 #include "thirdpart/http-parser/http_parser.h"
 using namespace Interpreter;
 
@@ -255,7 +256,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     while (true) {
         int size = stream->Read(buffer.data(), buffer.size());
         if (size <= 0) {
-            LOG("Read Error "+ ToString(size));
+            LOG("Read Error " + ToString(size));
             return false;
         }
         if (!matched) {
@@ -298,7 +299,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
 
 bool DoHttpRequest(std::string& host, std::string& port, bool isSSL, std::string& req,
                    HTTPResponse* resp) {
-    scoped_refptr<net::Conn> tcp = net::Dial("tcp",host,port,60,isSSL,false);
+    scoped_refptr<net::Conn> tcp = net::Dial("tcp", host, port, 60, isSSL, false);
     if (tcp.get() == NULL) {
         LOG("Dial error");
         return false;
@@ -569,9 +570,8 @@ bool parser_url(std::string& url, std::string& scheme, std::string& host, std::s
 
 Value URLQueryUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
     std::string result = "";
-    if (!unescape(args[0].bytes, result, encodeQueryComponent)) {
+    if (!unescape(args[0].ToString(), result, encodeQueryComponent)) {
         return Value();
     }
     return Value(result);
@@ -579,20 +579,17 @@ Value URLQueryUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value URLQueryEscape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
-    return Value(escape(args[0].bytes, encodeQueryComponent));
+    return Value(escape(args[0].ToString(), encodeQueryComponent));
 }
 
 Value URLPathEscape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
-    return Value(escape(args[0].bytes, encodePath));
+    return Value(escape(args[0].ToString(), encodePath));
 }
 Value URLPathUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
     std::string result = "";
-    if (!unescape(args[0].bytes, result, encodePath)) {
+    if (!unescape(args[0].ToString(), result, encodePath)) {
         return Value();
     }
     return Value(result);
@@ -600,10 +597,10 @@ Value URLPathUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value URLQueryDecode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    std::string query = GetString(args, 0);
     Value ret = Value::make_map();
     std::list<std::pair<std::string, std::string>> result;
-    if (parser_querys(args[0].bytes, result)) {
+    if (parser_querys(query, result)) {
         auto iter = result.begin();
         while (iter != result.end()) {
             ret._map()[iter->first] = iter->second;
@@ -661,28 +658,28 @@ Value ReadHttpResponse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value DeflateBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    std::string src = GetString(args, 0);
     Value ret = Value::make_bytes("");
     ret.Type = args[0].Type;
-    DeflateStream(args[0].bytes, ret.bytes);
+    DeflateStream(src, ret.bytes);
     return ret;
 }
 
 Value BrotliDecompressBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    std::string src = GetString(args, 0);
     Value ret = Value::make_bytes("");
     ret.Type = args[0].Type;
-    BrotliDecompress(args[0].bytes, ret.bytes);
+    BrotliDecompress(src, ret.bytes);
     return ret;
 }
 
 Value URLParse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    std::string url = GetString(args, 0);
     std::string host, port, scheme, path;
     std::map<std::string, std::string> querys;
-    parser_url(args[0].bytes, scheme, host, port, path, querys);
+    parser_url(url, scheme, host, port, path, querys);
     Value ret = Value::make_map();
     ret._map()["host"] = host;
     ret._map()["port"] = port;
@@ -730,11 +727,11 @@ void BuildRequestHeader(Value val, std::string& forHost, std::string& port,
 
 Value HttpGet(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    std::string url = GetString(args, 0);
     std::map<std::string, std::string> headers;
     std::string host, port, scheme, path;
     std::map<std::string, std::string> querys;
-    parser_url(args[0].bytes, scheme, host, port, path, querys);
+    parser_url(url, scheme, host, port, path, querys);
     if (args.size() == 2 && args[1].Type == ValueType::kMap) {
         BuildRequestHeader(args[1], host, port, headers);
     } else {
@@ -763,20 +760,23 @@ Value HttpGet(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value HttpPost(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
-    CHECK_PARAMETER_STRING(0); //URL
-    CHECK_PARAMETER_STRING(1); //contentType
-    CHECK_PARAMETER_STRING(2); //content
+    //CHECK_PARAMETER_STRING(0); //URL
+    //CHECK_PARAMETER_STRING(1); //contentType
+    //CHECK_PARAMETER_STRING(2); //content
+    std::string url = GetString(args, 0);
+    std::string contentType = GetString(args, 1);
+    std::string content = GetString(args, 2);
     std::map<std::string, std::string> headers;
     std::map<std::string, std::string> querys;
     std::string host, port, scheme, path;
-    parser_url(args[0].bytes, scheme, host, port, path, querys);
+    parser_url(url, scheme, host, port, path, querys);
     if (args.size() == 4 && args[3].Type == ValueType::kMap) {
         BuildRequestHeader(args[3], host, port, headers);
     } else {
         BuildRequestHeader(Value(), host, port, headers);
     }
-    headers["Content-Type"] = args[1].bytes;
-    headers["Content-Length"] = Value(args[2].bytes.size()).ToString();
+    headers["Content-Type"] = contentType;
+    headers["Content-Length"] = Value(content.size()).ToString();
     std::stringstream o;
     o << "POST " << escape(path, encodePath);
     if (querys.size()) {
@@ -789,7 +789,7 @@ Value HttpPost(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         iter++;
     }
     o << "\r\n";
-    o << args[2].bytes;
+    o << content;
 
     std::string req = o.str();
     HTTPResponse resp;
@@ -801,8 +801,8 @@ Value HttpPost(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value HttpPostForm(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0); //URL
-    CHECK_PARAMETER_MAP(1);    //URLValues
+    std::string url = GetString(args, 0);
+    CHECK_PARAMETER_MAP(1); //URLValues
     //CHECK_PARAMETER_MAP(2); //addtions headers
     std::vector<Value> querys;
     std::map<std::string, std::string> uq;
@@ -810,7 +810,7 @@ Value HttpPostForm(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     Value query = URLQueryEncode(querys, ctx, vm);
     std::map<std::string, std::string> headers;
     std::string host, port, scheme, path;
-    parser_url(args[0].bytes, scheme, host, port, path, uq);
+    parser_url(url, scheme, host, port, path, uq);
     if (args.size() == 3 && args[2].Type == ValueType::kMap) {
         BuildRequestHeader(args[2], host, port, headers);
     } else {

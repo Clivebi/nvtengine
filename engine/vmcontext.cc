@@ -257,7 +257,7 @@ std::string VMContext::DumpContext(bool var) {
             o << prefix << "Vars:\n";
             auto iter2 = ctx->mVars.begin();
             while (iter2 != ctx->mVars.end()) {
-                o << prefix << iter2->first << ":" << iter2->second.ToString(true) << "\n";
+                o << prefix << iter2->first << ":" << iter2->second.ToDescription() << "\n";
                 iter2++;
             }
         }

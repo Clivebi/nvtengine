@@ -87,6 +87,24 @@ func make_list(list...){
 	return ret;
 }
 
+func nasl_make_list_unique(list...){
+	var helper = {};
+	for v in list{
+		if(typeof(v)=="map" || typeof(v)=="array"){
+			for v2 in v{
+				helper[v2] = 1;
+			}
+			continue;
+		}
+		helper[v] = 1;
+	}
+	var ret = [];
+	for k,v in helper{
+		ret = append(ret,k);
+	}
+	return ret;
+}
+
 func power(x,y){
 	for( i =0;i<y;i++){
 		x*=x;
@@ -378,7 +396,8 @@ func raw_string(x...){
 }
 
 func isnull(val){
-	return (val==nil);
+	var type = typeof(val);
+	return (type=="nil" || type == "undef");
 }
 
 func defined_func(name){
@@ -420,14 +439,14 @@ func strstr(str1,str2){
 	return str1[pos:];
 }
 
-func substr(str,start,end=0){
-	if(end == start){
-		return str[start:start+1];
+func substr(str,start,end=-1){
+	if(end == -1 || end >= len(str)){
+		end = len(str)-1;
 	}
-	if(end<start){
-		return str[start:];
+	if(start > end || start < 0){
+		return "";
 	}
-	return str[start:end];
+	return str[start:end+1];
 }
 
 func insstr(str1,str2,i1,i2=-1){
@@ -750,6 +769,18 @@ func display(msg...){
 		msgs += ToString(v);
 	}
 	Println(msgs);
+}
+
+func cert_open(cert){
+	return X509Open(cert);
+}
+
+func cert_close(cert){
+	return close(cert);
+}
+
+func cert_query(cert,cmd,idx=0){
+	return X509Query(cert,cmd,idx);
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

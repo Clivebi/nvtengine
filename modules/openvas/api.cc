@@ -58,8 +58,6 @@ BuiltinMethod ovaMethod[] = {
         {"localtime", LocalTime},
         {"mktime", MakeTime},
         {"isotime_now", ISOTimeNow},
-        {"isotime_is_valid", ISOTimeIsValid},
-        {"isotime_scan", ISOTimeScan},
         {"isotime_print", ISOTimePrint},
         {"isotime_add", ISOTimeAdd},
         {"rand", Rand},
@@ -76,6 +74,8 @@ BuiltinMethod ovaMethod[] = {
         {"HMACMethod", HMACMethod},
         {"TLSPRF", TLSPRF},
         {"TLS1PRF", TLS1PRF},
+        {"X509Open", X509Open},
+        {"X509Query", X509Query},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

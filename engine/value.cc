@@ -308,7 +308,7 @@ std::string MapObject::ToJSONString() const {
     o << "}";
     return o.str();
 }
-std::string ArrayObject::ToString(bool debug) const {
+std::string ArrayObject::ToString() const {
     std::stringstream o;
     bool first = true;
     o << "[";
@@ -317,14 +317,31 @@ std::string ArrayObject::ToString(bool debug) const {
         if (!first) {
             o << ",";
         }
-        o << (*iter).ToString(debug);
+        o << (*iter).ToString();
         first = false;
         iter++;
     }
     o << "]";
     return o.str();
 }
-std::string MapObject::ToString(bool debug) const {
+
+std::string ArrayObject::ToDescription() const {
+    std::stringstream o;
+    bool first = true;
+    o << "[";
+    auto iter = _array.begin();
+    while (iter != _array.end()) {
+        if (!first) {
+            o << ",";
+        }
+        o << (*iter).ToDescription();
+        first = false;
+        iter++;
+    }
+    o << "]";
+    return o.str();
+}
+std::string MapObject::ToString() const {
     std::stringstream o;
     bool first = true;
     o << "{";
@@ -335,7 +352,26 @@ std::string MapObject::ToString(bool debug) const {
         }
         o << iter->first.MapKey();
         o << ":";
-        o << iter->second.ToString(debug);
+        o << iter->second.ToString();
+        first = false;
+        iter++;
+    }
+    o << "}";
+    return o.str();
+}
+
+std::string MapObject::ToDescription() const {
+    std::stringstream o;
+    bool first = true;
+    o << "{";
+    auto iter = _map.begin();
+    while (iter != _map.end()) {
+        if (!first) {
+            o << ",";
+        }
+        o << iter->first.MapKey();
+        o << ":";
+        o << iter->second.ToDescription();
         first = false;
         iter++;
     }
@@ -525,6 +561,9 @@ Value Value::make_map() {
 }
 
 Value& Value::operator+=(const Value& right) {
+    if (right.IsNULL()) {
+        return *this;
+    }
     if (IsSameType(right) && IsStringOrBytes()) {
         bytes += right.bytes; //string + string
         return *this;
@@ -583,34 +622,67 @@ Value& Value::operator+=(const Value& right) {
         _array().push_back(right);
         return *this;
     }
+
     DEBUG_CONTEXT();
+    LOG(ToString(), right.ToString());
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 
-std::string Value::ToString(bool debug) const {
+std::string Value::ToString() const {
     switch (Type) {
     case ValueType::kArray:
     case ValueType::kMap:
     case ValueType::kObject:
-        return object->ToString(debug);
+        return object->ToString();
     case ValueType::kBytes:
-        if (debug) {
-            return "bytes(" + HexEncode(bytes.c_str(), bytes.size(), "\\x") + ")";
-        }
+    case ValueType::kString:
         return bytes;
-    case ValueType::kString: {
-        if (debug) {
-            return "\"" + bytes + "\"";
-        }
-        return bytes;
-    }
     case ValueType::kNULL:
-        return "nil";
+        return "";
     case ValueType::kInteger:
-    case ValueType::kByte:
         return Interpreter::ToString(Integer);
     case ValueType::kFloat:
         return Interpreter::ToString(Float);
+    case ValueType::kByte: {
+        std::string ret;
+        ret.append((char)Byte, 1);
+        return ret;
+    }
+    default:
+        return "";
+    }
+}
+
+bool IsPrintableString(const std::string& src) {
+    for (size_t i = 0; i < src.size(); i++) {
+        if (!isprint((int)src[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//描述信息
+std::string Value::ToDescription() const {
+    switch (Type) {
+    case ValueType::kArray:
+    case ValueType::kMap:
+    case ValueType::kObject:
+        return object->ToDescription();
+    case ValueType::kBytes:
+    case ValueType::kString: {
+        if (IsPrintableString(bytes)) {
+            return ValueType::ToString(Type) + "(" + bytes + ")";
+        }
+        return ValueType::ToString(Type) + "(" + HexEncode(bytes.c_str(), bytes.size()) + ")";
+    }
+    case ValueType::kNULL:
+        return "nil";
+    case ValueType::kByte:
+    case ValueType::kInteger:
+        return ValueType::ToString(Type) + "(" + Interpreter::ToString(Integer) + ")";
+    case ValueType::kFloat:
+        return ValueType::ToString(Type) + "(" + Interpreter::ToString(Float) + ")";
     case ValueType::kResource:
         return "resource@" + Interpreter::ToString((int64_t)resource.get());
 
@@ -618,6 +690,7 @@ std::string Value::ToString(bool debug) const {
         return "unknown";
     }
 }
+
 std::string Value::ToJSONString(bool escape) const {
     switch (Type) {
     case ValueType::kArray:
@@ -637,22 +710,34 @@ std::string Value::ToJSONString(bool escape) const {
 }
 
 double Value::ToFloat() const {
-    if (Type == ValueType::kFloat) {
-        return Float;
-    }
-    if (IsInteger()) {
+    switch (Type) {
+    case ValueType::kInteger:
+    case ValueType::kByte:
         return (double)Integer;
+    case ValueType::kFloat:
+        return Float;
+    case ValueType::kString:
+    case ValueType::kBytes: {
+        return strtod(bytes.c_str(), NULL);
     }
-    return 0;
+    default:
+        return 0.0;
+    }
 }
 Value::INTVAR Value::ToInteger() const {
-    if (Type == ValueType::kFloat) {
-        return (INTVAR)Float;
-    }
-    if (IsInteger()) {
+    switch (Type) {
+    case ValueType::kInteger:
+    case ValueType::kByte:
         return Integer;
+    case ValueType::kFloat:
+        return (Value::INTVAR)Float;
+    case ValueType::kString:
+    case ValueType::kBytes: {
+        return strtoll(bytes.c_str(), NULL, 0);
     }
-    return 0;
+    default:
+        return (__LONG_LONG_MAX__);
+    }
 }
 
 std::string Value::MapKey() const {
@@ -698,6 +783,14 @@ bool Value::ToBoolean() const {
     }
     if (IsInteger()) {
         return ToInteger() != 0;
+    }
+    if (IsStringOrBytes()) {
+        if (bytes.size() == 0) {
+            return false;
+        }
+        if (bytes.size() == 1) {
+            return bytes == "0";
+        }
     }
     return true;
 }
@@ -899,8 +992,11 @@ Value operator%(const Value& left, const Value& right) {
 }
 
 bool operator<(const Value& left, const Value& right) {
-    if (left.Type == ValueType::kString && right.Type == ValueType::kString) {
+    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
         return left.bytes < right.bytes;
+    }
+    if (left.IsNULL() && !right.IsNULL()) {
+        return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();
@@ -910,8 +1006,11 @@ bool operator<(const Value& left, const Value& right) {
     return left.ToFloat() < right.ToFloat();
 }
 bool operator<=(const Value& left, const Value& right) {
-    if (left.Type == ValueType::kString && right.Type == ValueType::kString) {
+    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
         return left.bytes <= right.bytes;
+    }
+    if (left.IsNULL() && right.IsNULL()) {
+        return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();
@@ -921,8 +1020,11 @@ bool operator<=(const Value& left, const Value& right) {
     return left.ToFloat() <= right.ToFloat();
 }
 bool operator>(const Value& left, const Value& right) {
-    if (left.Type == ValueType::kString && right.Type == ValueType::kString) {
+    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
         return left.bytes > right.bytes;
+    }
+    if (left.IsNULL() && !right.IsNULL()) {
+        return false;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();
@@ -932,8 +1034,11 @@ bool operator>(const Value& left, const Value& right) {
     return left.ToFloat() > right.ToFloat();
 }
 bool operator>=(const Value& left, const Value& right) {
-    if (left.Type == ValueType::kString && right.Type == ValueType::kString) {
+    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
         return left.bytes >= right.bytes;
+    }
+    if (left.IsNULL() && right.IsNULL()) {
+        return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();

@@ -476,6 +476,7 @@ Value ISOTimePrint(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args[0].Length() < 15 || check_isotime(string)) {
         strcpy(helpbuf, "[none]");
     } else {
+        //2021-06-01 01:16:03
         snprintf(helpbuf, sizeof helpbuf, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", string, string + 4,
                  string + 6, string + 9, string + 11, string + 13);
     }

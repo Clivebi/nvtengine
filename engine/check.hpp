@@ -11,6 +11,22 @@ inline std::string check_error(int i, const char* type, Interpreter::VMContext* 
     return s.str();
 }
 
+inline std::string GetString(std::vector<Interpreter::Value>& args, int pos) {
+    if (pos >= args.size()) {
+        return "";
+    }
+    Interpreter::Value& arg = args[pos];
+    return arg.ToString();
+}
+
+inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal = -1) {
+    if (pos >= args.size()) {
+        return defaultVal;
+    }
+    Interpreter::Value& arg = args[pos];
+    return (int)arg.ToInteger();
+}
+
 #define ERROR_RETURN_NULL
 #ifdef ERROR_RETURN_NULL
 #define EXCEPTION(a) \
@@ -29,14 +45,21 @@ inline std::string check_error(int i, const char* type, Interpreter::VMContext* 
         EXCEPTION(std::string(__FUNCTION__) + " : the count of parameters not enough"); \
     }
 
+#define CHECK_PARAMETER_RESOURCE(i)                                             \
+    if (args[i].Type != ValueType::kResource) {                                 \
+        for (auto v : args) {                                                   \
+            std::cerr << v.ToString() << std::endl;                             \
+        }                                                                       \
+        EXCEPTION(std::string(__FUNCTION__) + check_error(i, "resource", ctx)); \
+    }
+
 #define CHECK_PARAMETER_STRING(i)                                                      \
-    if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {     \
+    if (!args[i].IsStringOrBytes()) {                                                  \
         for (auto v : args) {                                                          \
             std::cerr << v.ToString() << std::endl;                                    \
         }                                                                              \
         EXCEPTION(std::string(__FUNCTION__) + check_error(i, "string or bytes", ctx)); \
     }
-
 #define CHECK_PARAMETER_STRINGS()                                                          \
     for (size_t i = 0; i < args.size(); i++) {                                             \
         if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {     \
@@ -53,14 +76,6 @@ inline std::string check_error(int i, const char* type, Interpreter::VMContext* 
             std::cerr << v.ToString() << std::endl;                            \
         }                                                                      \
         EXCEPTION(std::string(__FUNCTION__) + check_error(i, "integer", ctx)); \
-    }
-
-#define CHECK_PARAMETER_RESOURCE(i)                                             \
-    if (args[i].Type != ValueType::kResource) {                                 \
-        for (auto v : args) {                                                   \
-            std::cerr << v.ToString() << std::endl;                             \
-        }                                                                       \
-        EXCEPTION(std::string(__FUNCTION__) + check_error(i, "resource", ctx)); \
     }
 
 #define CHECK_PARAMETER_MAP(i)                                             \
