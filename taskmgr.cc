@@ -3,6 +3,8 @@ extern "C" {
 #include "thirdpart/masscan/pixie-threads.h"
 #include "thirdpart/masscan/pixie-timer.h"
 }
+#include <regex>
+
 #include "engine/vm.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/api.hpp"
@@ -277,11 +279,29 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     Value mandatory_keys = nvti[knowntext::kNVTI_mandatory_keys];
     if (mandatory_keys.IsObject()) {
         for (auto v : mandatory_keys._array()) {
-            Value val = ctx->Storage->GetItem(v.bytes, true);
-            if (val.IsNULL()) {
-                std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
-                          << " because mandatory key is missing :" << v.ToString() << std::endl;
-                return false;
+            if (v.bytes.find("=") != std::string::npos) {
+                std::list<std::string> group = split(v.bytes, '=');
+                Value val = ctx->Storage->GetItem(group.front(), -1);
+                if (val.IsNULL()) {
+                    std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
+                              << " because mandatory key is missing :" << v.ToString() << std::endl;
+                    return false;
+                }
+                std::regex re = std::regex(group.back(), std::regex_constants::icase);
+                bool found = std::regex_search(val.bytes.begin(), val.bytes.end(), re);
+                if (!found) {
+                    std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
+                              << " because mandatory key is missing :" << v.ToString() << std::endl;
+                    return false;
+                }
+
+            } else {
+                Value val = ctx->Storage->GetItem(v.bytes, true);
+                if (val.IsNULL()) {
+                    std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
+                              << " because mandatory key is missing :" << v.ToString() << std::endl;
+                    return false;
+                }
             }
         }
     }

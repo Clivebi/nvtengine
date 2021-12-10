@@ -110,8 +110,7 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_type & DT_DIR) {
             if (entry->d_name[0] != '.') {
-                relative_path += entry->d_name;
-                CollectAllScript(path + relative_path, relative_path, result);
+                CollectAllScript(path + entry->d_name, relative_path + entry->d_name, result);
             }
             continue;
         }

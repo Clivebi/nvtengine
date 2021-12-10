@@ -88,7 +88,7 @@ int yywrap(void)
     yylval.identifier = parser->CreateString(yytext);
     return IDENT;
 }
-<INITIAL>([1-9][0-9]*)|"0" {
+<INITIAL>([1-9][0-9]*)|"0"|"00" {
     yylval.value_integer = strtoll(yytext,NULL,10);
     return INT_LITERAL;
 }

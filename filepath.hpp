@@ -11,6 +11,7 @@ protected:
 public:
     FilePath(const char* src) : _full(src) {}
     FilePath(std::string src) : _full(src) {}
+    FilePath(const FilePath& src) : _full(src._full) {}
 
     FilePath& operator+=(const FilePath& part) {
         if (part._full.size() == 0) {
@@ -23,7 +24,7 @@ public:
         return *this;
     }
     FilePath operator+(const FilePath& right) {
-        FilePath ret = *this;
+        FilePath ret(*this);
         ret += right;
         return ret;
     }

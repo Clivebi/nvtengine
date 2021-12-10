@@ -47,6 +47,19 @@ Value script_require_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm
 Value script_mandatory_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
+    if (args.back().bytes.find("=") != std::string::npos) {
+        std::list<std::string> list = split(args.back().bytes, '=');
+        std::vector<Value> result;
+        for (auto v : args) {
+            if (v.bytes == list.front()) {
+                continue;
+            }
+            result.push_back(v);
+        }
+        result.push_back(args.back());
+        script->Nvti[knowntext::kNVTI_mandatory_keys] = Value(result);
+        return Value();
+    }
     script->Nvti[knowntext::kNVTI_mandatory_keys] = Value(args);
     return Value();
 }
@@ -138,7 +151,6 @@ Value script_xref(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value script_tag(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_STRING(1);
     OVAContext* script = GetOVAContext(vm);
     script->AddTag(args[0], args[1]);
     return Value();
