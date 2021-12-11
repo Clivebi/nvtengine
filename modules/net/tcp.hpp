@@ -8,7 +8,7 @@ public:
     SSL* mSSL;
 
 public:
-    explicit TCPConn(int Socket) : BaseConn(Socket, 60, 60, "tcp") {
+    explicit TCPConn(int Socket) : BaseConn(Socket, 20, 20, "tcp") {
         mSSLContext = NULL;
         mSSL = NULL;
         SSL_load_error_strings();
@@ -35,14 +35,14 @@ public:
             int err = SSL_get_error(mSSL, n);
             if (err == SSL_ERROR_WANT_READ) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-                    LOG("read timeout....");
+                    LOG("SSL read timeout....");
                     return -1;
                 }
                 continue;
             }
             if (err == SSL_ERROR_WANT_WRITE) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-                    LOG("Write timeout....");
+                    LOG("SSL Write timeout....");
                     return -1;
                 }
                 continue;
@@ -64,14 +64,14 @@ public:
             int err = SSL_get_error(mSSL, n);
             if (err == SSL_ERROR_WANT_READ) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-                    LOG("read timeout....");
+                    LOG("SSL read timeout....");
                     return -1;
                 }
                 continue;
             }
             if (err == SSL_ERROR_WANT_WRITE) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-                    LOG("Write timeout....");
+                    LOG("SSL Write timeout....");
                     return -1;
                 }
                 continue;

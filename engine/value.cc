@@ -693,7 +693,7 @@ std::string Value::ToDescription() const {
     case ValueType::kBytes:
     case ValueType::kString: {
         if (IsPrintableString(bytes)) {
-            return ValueType::ToString(Type) + "(" + bytes + ")";
+            return bytes;
         }
         return ValueType::ToString(Type) + "(" + HexEncode(bytes.c_str(), bytes.size()) + ")";
     }
@@ -701,11 +701,12 @@ std::string Value::ToDescription() const {
         return "nil";
     case ValueType::kByte:
     case ValueType::kInteger:
-        return ValueType::ToString(Type) + "(" + Interpreter::ToString(Integer) + ")";
+        return ValueType::ToString(Type) + "@" + Interpreter::ToString(Integer);
     case ValueType::kFloat:
-        return ValueType::ToString(Type) + "(" + Interpreter::ToString(Float) + ")";
+        return ValueType::ToString(Type) + "@" + Interpreter::ToString(Float);
     case ValueType::kResource:
-        return "resource@" + Interpreter::ToString((int64_t)resource.get());
+        return "resource@" + resource->TypeName() + "@" +
+               Interpreter::ToString((int64_t)resource.get());
 
     default:
         return "unknown";
@@ -1074,18 +1075,39 @@ bool operator>=(const Value& left, const Value& right) {
 }
 
 bool operator==(const Value& left, const Value& right) {
+    //number == number
     if (left.IsNumber() && right.IsNumber()) {
         return left.ToFloat() == right.ToFloat();
     }
+    //string == string
     if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
         return left.bytes == right.bytes;
     }
-    //if (left.IsStringOrBytes() || right.IsStringOrBytes()) {
-    //    if (left.IsInteger() || right.IsInteger()) {
-    //        return left.ToString() == right.ToString();
-    // //   }
-    //}
+    if (left.IsNULL()) {
+        return false == right.ToBoolean();
+    }
+    if (right.IsNULL()) {
+        return false == left.ToBoolean();
+    }
+    if (left.IsStringOrBytes() && right.IsInteger()) {
+        if (right.Type != ValueType::kByte) {
+            DEBUG_CONTEXT();
+            LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
+                right.ToDescription());
+        }
+
+        return left.bytes == right.ToString();
+    }
+    if (right.IsStringOrBytes() && left.IsInteger()) {
+        if (left.Type != ValueType::kByte) {
+            DEBUG_CONTEXT();
+            LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
+                right.ToDescription());
+        }
+        return right.bytes == left.ToString();
+    }
     if (!left.IsSameType(right)) {
+        LOG("compare value not same type may be have bug <always false> ", left.ToDescription(), " ", right.ToDescription());
         return false;
     }
     switch (left.Type) {
@@ -1103,7 +1125,6 @@ bool operator==(const Value& left, const Value& right) {
         MapObject* src = (MapObject*)right.object.get();
         return ptr->_map == src->_map;
     }
-
     default:
         return false;
     }

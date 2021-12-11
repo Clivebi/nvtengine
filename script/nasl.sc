@@ -245,16 +245,33 @@ func script_get_preference_file_content(name,id=-1){
 }
 
 #open_sock_tcp(port, transport: ENCAPS_IP)
-func open_sock_tcp(port,buffsz,timeout, transport=0,priority=0){
+func open_sock_tcp(port,buffsz,timeout, transport=nil,priority=0){
 	if(!timeout){
 		timeout = 15;
 	}
-	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,transport>1);
+	var isTLS = false;
+	if(transport == nil){
+		 isTLS = get_port_transport(port) > 1;
+	}else{
+		isTLS = transport > 1;
+	}
+	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,isTLS);
 	if(soc){
 		ConnSetReadTimeout(soc,5);
 		ConnSetWriteTimeout(soc,5);
 	}
 	return soc;
+}
+
+func socket_get_cert(socket){
+	if(!socket){
+		return nil;
+	}
+	var cert = ConnGetPeerCert(socket);
+	if(cert){
+		return X509Query(cert,"image",0);
+	}
+	return nil;
 }
 
 #match(string: r, pattern: "\x01rlogind: Permission denied*", icase: TRUE)
@@ -740,26 +757,31 @@ func get_port_transport(port){
 		return ENCAPS_TLSv12;
 	}
 	if(port==80){
-		return 0;
+		return 1;
 	}
-	return get_kb_item("Transports/TCP/"+port);
+	var kb = get_kb_item("Transports/TCP/"+port);
+	if(kb == nil){
+		var soc = TCPConnect(ip,ToInteger(port),15,true);
+		if(soc != nil){
+			replace_kb_item("Transports/TCP/"+port,ENCAPS_TLSv12);
+			return ENCAPS_TLSv12;
+		}else{
+			replace_kb_item("Transports/TCP/"+port,ENCAPS_IP);
+			return ENCAPS_IP;
+		}
+	}
+	return kb;
 }
 
 func http_open_socket(port){
 	var ip = get_host_ip();
-	var transport = get_port_transport(port);
-	var isTLS = false;
-	if(transport == nil){
-		if(port == 443){
-			isTLS = true;
-		}
-	}else{
-		isTLS = (transport > 1);
-	}
+	var isTLS = get_port_transport(port) > 1;
 	var soc = TCPConnect(ip,ToInteger(port),30,isTLS);
 	if(soc){
 		ConnSetReadTimeout(soc,5);
 		ConnSetWriteTimeout(soc,5);
+	}else{
+		Println("http_open_socket failed :",ip+":"+port);
 	}
 	return soc;
 }

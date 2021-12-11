@@ -114,6 +114,14 @@ bool VMContext::IsInFunctionContext() {
     return false;
 }
 
+VMContext* VMContext::GetTopContext() {
+    VMContext* ctx = this;
+    while (ctx->mParent != NULL) {
+        ctx = ctx->mParent;
+    }
+    return ctx;
+}
+
 void VMContext::AddVar(const std::string& name) {
     if (!IsBuiltinVarName(name)) {
         throw RuntimeException("variable name is builtin :" + name);
@@ -139,17 +147,26 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
             iter->second = value;
             return;
         }
-        ctx = ctx->mParent;
-    }
-    if (mIsEnableWarning) {
-        LOG("variable <" + name + "> not found, so new one.");
+        if (ctx->mType == Function) {
+            ctx = GetTopContext();
+        } else {
+            ctx = ctx->mParent;
+        }
     }
     mVars[name] = value;
 }
 
 bool VMContext::IsShadowName(const std::string& name) {
     VMContext* ctx = this;
+    if (mType == Function) {
+        ctx = GetTopContext();
+    } else {
+        ctx = mParent;
+    }
     while (ctx != NULL) {
+        if (ctx->mType == Function) {
+            break;
+        }
         std::map<std::string, Value>::iterator iter = ctx->mVars.find(name);
         if (iter != ctx->mVars.end()) {
             return true;
@@ -167,7 +184,11 @@ bool VMContext::GetVarValue(const std::string& name, Value& val) {
             val = iter->second;
             return true;
         }
-        ctx = ctx->mParent;
+        if (ctx->mType == Function) {
+            ctx = GetTopContext();
+        } else {
+            ctx = ctx->mParent;
+        }
     }
     return false;
 }

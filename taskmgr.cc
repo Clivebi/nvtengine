@@ -119,6 +119,8 @@ void HostsTask::Execute() {
             for (auto v : mPrefs._map()) {
                 tcb->Env[v.first] = v.second;
             }
+            tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
+            tcb->Storage->SetItem("default_credentials/disable_brute_force_checks",true);
             tcb->Storage->SetItem("testname", "name1");
             tcb->Storage->SetItem("testname", "name2");
             tcb->Storage->SetItem("testname1", "name3");
@@ -154,7 +156,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
     Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
-    LOG("\n");
+    LOG("\nstart execute script");
     for (int i = 0; i < 11; i++) {
         for (auto v : mGroupedScripts[i]) {
             OVAContext ctx(v[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env, tcb->Storage);
@@ -185,6 +187,12 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
         if (tcb->Exit) {
             break;
         }
+    }
+    LOG("All script complete.... Total Count: ", mScriptCount,
+        " Executed count: ", tcb->ScriptCount);
+    Value result = tcb->Storage->GetItemList("HostDetails/*");
+    for (auto v : result._map()) {
+        std::cout << v.first.ToString() << " :" << v.second.ToString() << std::endl;
     }
 }
 

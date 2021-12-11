@@ -49,6 +49,7 @@ public:
 
     void SetEnableWarning(bool val) { mIsEnableWarning = val; }
 
+    bool IsLocalContext() { return mType == For || mType == Switch; }
     bool IsTop() { return mParent == NULL; }
     bool IsExecutedInterupt() { return (mFlags & 0xFF); }
     void CleanContinueFlag() { mFlags &= 0xFE; }
@@ -73,6 +74,8 @@ public:
     Value GetTotalFunction();
 
     std::string DumpContext(bool global_var = false);
+
+    VMContext* GetTopContext();
 
 protected:
     void LoadBuiltinVar();

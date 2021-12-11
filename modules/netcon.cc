@@ -137,6 +137,21 @@ Value ConnTLSHandshake(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return Value(true);
 }
 
+Value ConnGetPeerCert(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_RESOURCE(0);
+    if (args[0].resource->TypeName() != "tcp") {
+        return Value();
+    }
+    net::Conn* con = (net::Conn*)(args[0].resource.get());
+    net::TCPConn* tcp = (net::TCPConn*)con->GetBaseConn();
+    scoped_refptr<Resource> res = tcp->GetPeerCert();
+    if (res == NULL) {
+        return Value();
+    }
+    return Value(res);
+}
+
 BuiltinMethod netConnMethod[] = {{"TCPConnect", TCPConnect},
                                  {"UDPConnect", UDPConnect},
                                  {"ConnRead", ConnRead},
@@ -144,7 +159,8 @@ BuiltinMethod netConnMethod[] = {{"TCPConnect", TCPConnect},
                                  {"ConnReadUntil", ConnReadUntil},
                                  {"ConnTLSHandshake", ConnTLSHandshake},
                                  {"ConnSetReadTimeout", ConnSetReadTimeout},
-                                 {"ConnSetWriteTimeout", ConnSetWriteTimeout}};
+                                 {"ConnSetWriteTimeout", ConnSetWriteTimeout},
+                                 {"ConnGetPeerCert", ConnGetPeerCert}};
 
 void RegisgerNetConnBuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(netConnMethod, COUNT_OF(netConnMethod));

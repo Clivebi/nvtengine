@@ -5,19 +5,11 @@
 
 using namespace Interpreter;
 
-
 Value Println(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     std::string result;
+    std::string name;
     for (std::vector<Value>::iterator iter = values.begin(); iter != values.end(); iter++) {
-        if (iter->IsStringOrBytes()) {
-            if (!IsPrintableString(iter->bytes)) {
-                result += iter->ToDescription();
-            } else {
-                result += iter->ToString();
-            }
-        } else {
-            result += iter->ToString();
-        }
+        result += iter->ToDescription();
         result += " ";
     }
     std::cout << result << std::endl;

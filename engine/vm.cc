@@ -677,7 +677,8 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
         }
         if (!found) {
             DEBUG_CONTEXT();
-            throw RuntimeException((*iter)->Name + " is not a parametr for " + ins->Name);
+            LOG((*iter)->Name, " is not a parametr for ", ins->Name);
+            //throw RuntimeException((*iter)->Name + " is not a parametr for " + ins->Name);
         }
     }
 
@@ -748,6 +749,10 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
     std::list<std::string> key_val = split(ins->Name, ',');
     std::string key = key_val.front(), val = key_val.back();
     Value objVal = Execute(iter_able_obj, ctx);
+    ctx->AddVar(val);
+    if (key.size()) {
+        ctx->AddVar(key);
+    }
     switch (objVal.Type) {
     case ValueType::kString: {
         for (size_t i = 0; i < objVal.bytes.size(); i++) {

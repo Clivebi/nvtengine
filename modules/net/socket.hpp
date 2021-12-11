@@ -59,6 +59,8 @@ public:
     static int ConnectWithTimeout(int sockfd, const unsigned char* addr, int addr_len,
                                   int timeout) {
         int error = -1;
+        int set = 1;
+        setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);
         if (error == 0) {
             return 0;
@@ -85,9 +87,6 @@ public:
             if (error != 0) {
                 return -4; //connect fail
             }
-
-            int set = 1;
-            setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
             return 0;
         }
     }

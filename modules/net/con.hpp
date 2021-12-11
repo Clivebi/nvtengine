@@ -28,24 +28,24 @@ public:
     }
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-            LOG("Wait read timeout:", mReadTimeout);
+            LOG("BaseConn read timeout:", mReadTimeout);
             return -1;
         }
         int nSize = ::recv(mSocket, buffer, size, 0);
         if (nSize == -1) {
-            LOG("recv error ", errno);
+            LOG("BaseConn recv error ", errno);
         }
         return nSize;
     }
 
     virtual int Write(const void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-            LOG("Wait write timeout:", mReadTimeout);
+            LOG("BaseConn write timeout:", mReadTimeout);
             return -1;
         }
         int nSize = ::send(mSocket, buffer, size, 0);
         if (nSize == -1) {
-            LOG("send error ", errno);
+            LOG("BaseConn send error ", errno);
         }
         return nSize;
     }
