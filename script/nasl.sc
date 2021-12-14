@@ -188,7 +188,7 @@ func http_get(item, port){
 	header["Accept-Charset"] = "iso-8859-1,*,utf-8";
 	header["Pragma"] = "no-cache";
 	header["Cache-Control"] = "no-cache";
-	header["from-nasl"] = "true";
+	#header["from-nasl"] = "true";
 	if(!item){
 		item = "/";
 	}
@@ -704,6 +704,18 @@ func get_udp_port_state(port){
 func this_host(){
 	var result = HostEnv();
 	return result["local_ip"];
+}
+
+func get_opened_tcp(){
+	var result = HostEnv();
+	var ret = [];
+	var list = SplitString(result["opened_tcp"],",")
+	for v in list{
+		if(len(v) > 0){
+			ret = append(ret,ToInteger(v));
+		}
+	}
+	return ret;
 }
 
 func this_host_name(){
