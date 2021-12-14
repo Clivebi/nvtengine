@@ -119,7 +119,7 @@ void HostsTask::Execute() {
             for (auto v : mPrefs._map()) {
                 tcb->Env[v.first] = v.second;
             }
-            tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
+            //tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
             tcb->Storage->SetItem("default_credentials/disable_brute_force_checks",true);
             tcb->Storage->SetItem("testname", "name1");
             tcb->Storage->SetItem("testname", "name2");
@@ -190,7 +190,8 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     }
     LOG("All script complete.... Total Count: ", mScriptCount,
         " Executed count: ", tcb->ScriptCount);
-    Value result = tcb->Storage->GetItemList("HostDetails/*");
+    std::cout<<"*********************************************"<<std::endl;
+    Value result = tcb->Storage->GetItemList("HostDetails*");
     for (auto v : result._map()) {
         std::cout << v.first.ToString() << " :" << v.second.ToString() << std::endl;
     }
