@@ -5,7 +5,8 @@ namespace json {
 #include "json.lex.cpp"
 #include "json.tab.cpp"
 void parser_json_error(json::JSONParser* parser, const char* s) {
-    printf("parser_json error : %s on line:%d\n", s, yylineno);
+    printf("parser_json error : %s on line:%d column:%d\n", s, yyget_lineno(parser->GetContext()),
+           yyget_column(parser->GetContext()));
 }
 } // namespace json
 
@@ -59,32 +60,22 @@ Value JSONValueToValue(json::JSONValue* val, bool unescape) {
     }
 }
 
-int ParseJSONTest(std::string& str) {
-    json::YY_BUFFER_STATE bp;
-    json::JSONParser* parser = new json::JSONParser();
-    bp = json::yy_scan_bytes(str.c_str(), str.size());
-    yy_switch_to_buffer(bp);
-    int error = json::yyparse(parser);
-    json::yy_flush_buffer(bp);
-    json::yy_delete_buffer(bp);
-    json::yylex_destroy();
-    delete parser;
-    return error;
-}
-
 Value ParseJSON(std::string& str, bool unescape) {
     json::YY_BUFFER_STATE bp;
-    json::JSONParser* parser = new json::JSONParser();
-    bp = json::yy_scan_bytes(str.c_str(), str.size());
-    yy_switch_to_buffer(bp);
+    json::yyscan_t scanner;
+    json::yylex_init(&scanner);
+    json::JSONParser* parser = new json::JSONParser(scanner);
+    bp = json::yy_scan_bytes((char*)str.c_str(), str.size(), scanner);
+    json::yy_switch_to_buffer(bp, scanner);
     int error = json::yyparse(parser);
-    json::yy_flush_buffer(bp);
-    json::yy_delete_buffer(bp);
-    json::yylex_destroy();
+    json::yy_flush_buffer(bp, scanner);
+    json::yy_delete_buffer(bp, scanner);
+    json::yylex_destroy(scanner);
     if (error) {
+        delete parser;
         return Value();
     }
-    Value ret = JSONValueToValue(parser->root,unescape);
+    Value ret = JSONValueToValue(parser->root, unescape);
     delete parser;
     return ret;
 }

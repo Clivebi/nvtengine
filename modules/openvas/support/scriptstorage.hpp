@@ -88,6 +88,14 @@ public:
         return New;
     }
 
+    void Combine(const ScriptStorage* from) {
+        for (auto v : from->mValues) {
+            for (auto k : v.second) {
+                SetItem(v.first, k);
+            }
+        }
+    }
+
     void AddService(const std::string& name, int port) { SetItem("Services/" + name, port); }
     Value GetService(const std::string& name) { return GetItem("Services/" + name, true); }
 

@@ -21,7 +21,7 @@ MAC、windows、linux、unix
 - [x] 语法实现  
 - [x] 基础内置API实现  
 - [x] 无依赖端口(syn arp ping)扫描  
-- [ ] 无依赖服务发现  
+- [x] 无依赖服务发现  
 - [ ] 无依赖主机指纹识别  
 - [x] openvas基础(string,http) API  
 - [ ]  openvas数据包构造API  

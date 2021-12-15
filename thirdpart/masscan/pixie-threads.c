@@ -209,6 +209,7 @@ void pixie_thread_join(size_t thread_handle)
 {
 #if defined(WIN32)
     WaitForSingleObject((HANDLE)thread_handle, INFINITE);
+    CloseHandle((HANDLE)thread_handle);
 #else
     void *p;
 

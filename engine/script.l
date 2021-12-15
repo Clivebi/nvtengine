@@ -6,12 +6,12 @@
 using Instruction= Interpreter::Instruction;
 #include "script.tab.hpp"
 
-#define YY_DECL int yylex(Interpreter::Parser * parser)
+#define YY_DECL int my_yylex(YYSTYPE* yylval,yyscan_t yyscanner,Interpreter::Parser * parser)
 
 
 /* 一个功能性函数-都要加 */
 extern "C" {
-int yywrap(void)
+int yywrap( yyscan_t yyscanner)
 {
     return 1;
 }
@@ -21,6 +21,7 @@ int yywrap(void)
 %}
 
 %option yylineno
+%option reentrant
 
 %start COMMENT STRING_LITERAL_STATE 
 %%
@@ -85,44 +86,44 @@ int yywrap(void)
 <INITIAL>">>>="      return URSHIFTASSIGN;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
-    yylval.identifier = parser->CreateString(yytext);
+    yylval->identifier = parser->CreateString(yytext);
     return IDENT;
 }
 <INITIAL>([1-9][0-9]*)|"0"|"00" {
-    yylval.value_integer = strtoll(yytext,NULL,10);
+    yylval->value_integer = strtoll(yytext,NULL,10);
     return INT_LITERAL;
 }
 <INITIAL>0[xX][0-9a-fA-F]+ {
-    yylval.value_integer = strtoll(yytext+2,NULL,16);
+    yylval->value_integer = strtoll(yytext+2,NULL,16);
     return INT_LITERAL;
 }
 <INITIAL>[0-9]+\.[0-9]+ {
     double temp;
     sscanf(yytext, "%lf", &temp);
-    yylval.value_double = temp;
+    yylval->value_double = temp;
     return DOUBLE_LITERAL;
 }
 <INITIAL>'.' {
-    yylval.value_byte = yytext[1];
+    yylval->value_byte = yytext[1];
     return INT8_LITERAL;
 }
 
 <INITIAL>'\\t' {
-    yylval.value_integer = '\t';
+    yylval->value_integer = '\t';
     return INT8_LITERAL;
 }
 
 <INITIAL>'\\r' {
-    yylval.value_integer = '\r';
+    yylval->value_integer = '\r';
     return INT8_LITERAL;
 }
 
 <INITIAL>'\\\\' {
-    yylval.value_integer = '\\';
+    yylval->value_integer = '\\';
     return INT8_LITERAL;
 }
 <INITIAL>'\\n' {
-    yylval.value_integer = '\n';
+    yylval->value_integer = '\n';
     return INT8_LITERAL;
 }
 
@@ -153,7 +154,7 @@ int yywrap(void)
 <COMMENT>.      ;
 
 <STRING_LITERAL_STATE>\"        {
-    yylval.identifier = parser->FinishScanningString();
+    yylval->identifier = parser->FinishScanningString();
     BEGIN INITIAL;
     return STRING_LITERAL;
 }

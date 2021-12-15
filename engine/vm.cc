@@ -44,7 +44,8 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 void yyerror(Interpreter::Parser* parser, const char* s) {
     char message[1024] = {0};
-    sprintf(message, "%s on line:%d", s, yylineno);
+    sprintf(message, "%s on line:%d column:%d ", s, yyget_lineno(parser->GetContext()),
+            yyget_column(parser->GetContext()));
     parser->mLastError = message;
 }
 
@@ -74,6 +75,7 @@ bool Executor::Execute(const char* name, bool showWarning) {
         mCallback->OnScriptWillExecute(this, script, context);
         Execute(script->EntryPoint, context);
         bRet = true;
+        mCallback->OnScriptEntryExecuted(this, script, context);
     } catch (const RuntimeException& e) {
         error = e.what();
     }
@@ -86,21 +88,23 @@ bool Executor::Execute(const char* name, bool showWarning) {
 }
 
 scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error) {
-    YY_BUFFER_STATE bp;
     size_t size = 0;
     void* data = mCallback->LoadScriptFile(this, name, size);
     if (data == NULL) {
         error = "callback LoadScriptFile failed";
         return NULL;
     }
-    scoped_refptr<Parser> parser = new Parser();
-    bp = yy_scan_bytes((char*)data, size);
-    yy_switch_to_buffer(bp);
+    YY_BUFFER_STATE bp;
+    yyscan_t scanner;
+    yylex_init(&scanner);
+    scoped_refptr<Parser> parser = new Parser(scanner);
+    bp = yy_scan_bytes((char*)data, size, scanner);
+    yy_switch_to_buffer(bp, scanner);
     parser->Start(name);
     int err = yyparse(parser.get());
-    yy_flush_buffer(bp);
-    yy_delete_buffer(bp);
-    yylex_destroy();
+    yy_flush_buffer(bp, scanner);
+    yy_delete_buffer(bp, scanner);
+    yylex_destroy(scanner);
     free(data);
     if (err) {
         error = parser->mLastError;
@@ -700,7 +704,7 @@ Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& 
     const Instruction* func = ctx->GetFunction(name);
     const Instruction* body = GetInstruction(func->Refs[0]);
     if (func->Refs.size() == 2) {
-        const Instruction* formalParamersList = GetInstruction(func->Refs[0]);
+        const Instruction* formalParamersList = GetInstruction(func->Refs[1]);
         if (args.size() != formalParamersList->Refs.size()) {
             LOG("actual parameters count not equal formal paramers for func:" + name);
         }

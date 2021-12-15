@@ -55,7 +55,7 @@
 #define YYSKELETON_NAME "yacc.c"
 
 /* Pure parsers.  */
-#define YYPURE 0
+#define YYPURE 1
 
 /* Push parsers.  */
 #define YYPUSH 0
@@ -67,20 +67,19 @@
 
 
 /* First part of user prologue.  */
-#line 3 "./json.y"
+#line 4 "./json.y"
 
 #include "json_parser.hpp"
-#line 7 "./json.y"
+#line 8 "./json.y"
 
-// https://stackoverflow.com/questions/23717039/generating-a-compiler-from-lex-and-yacc-grammar
-//int yylex(JSONParser * parser);
-int parser_json(JSONParser * parser);
+
+int parser_json(YYSTYPE* yyval,void* yyscanner,JSONParser * parser);
 void parser_json_error(JSONParser * parser,const char *s);
-#define yylex   parser_json
+#define yylex(a,b) parser_json(a,b->GetContext(),b)
 #define yyerror parser_json_error
 //void yyerror(JSONParser * parser,const char *s);
 
-#line 84 "json.tab.cpp"
+#line 83 "json.tab.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -834,13 +833,6 @@ yydestruct (const char *yymsg,
 }
 
 
-/* Lookahead token kind.  */
-int yychar;
-
-/* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
-/* Number of syntax errors so far.  */
-int yynerrs;
 
 
 
@@ -852,6 +844,19 @@ int yynerrs;
 int
 yyparse (JSONParser * parser)
 {
+/* Lookahead token kind.  */
+int yychar;
+
+
+/* The semantic value of the lookahead symbol.  */
+/* Default value used for initialization, for pacifying older GCCs
+   or non-GCC compilers.  */
+YY_INITIAL_VALUE (static YYSTYPE yyval_default;)
+YYSTYPE yylval YY_INITIAL_VALUE (= yyval_default);
+
+    /* Number of syntax errors so far.  */
+    int yynerrs = 0;
+
     yy_state_fast_t yystate = 0;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus = 0;
@@ -1004,7 +1009,7 @@ yybackup:
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token\n"));
-      yychar = yylex (parser);
+      yychar = yylex (&yylval, parser);
     }
 
   if (yychar <= YYEOF)
@@ -1097,7 +1102,7 @@ yyreduce:
               parser->root = (yyvsp[0].object);
               (yyval.object)= (yyvsp[0].object);
       }
-#line 1101 "json.tab.cpp"
+#line 1106 "json.tab.cpp"
     break;
 
   case 3: /* root: array  */
@@ -1106,7 +1111,7 @@ yyreduce:
               parser->root = (yyvsp[0].object);
               (yyval.object)= (yyvsp[0].object);
       }
-#line 1110 "json.tab.cpp"
+#line 1115 "json.tab.cpp"
     break;
 
   case 4: /* value: NUMBER  */
@@ -1115,7 +1120,7 @@ yyreduce:
                 (yyval.object)=parser->NewValue((yyvsp[0].text));
                 (yyval.object)->Type = JSONValue::NUMBER;
         }
-#line 1119 "json.tab.cpp"
+#line 1124 "json.tab.cpp"
     break;
 
   case 5: /* value: STRING_LITERAL  */
@@ -1123,7 +1128,7 @@ yyreduce:
        {
                 (yyval.object)=parser->NewValue((yyvsp[0].text));
         }
-#line 1127 "json.tab.cpp"
+#line 1132 "json.tab.cpp"
     break;
 
   case 6: /* value: TRUE  */
@@ -1132,7 +1137,7 @@ yyreduce:
                 (yyval.object)=parser->NewValue((yyvsp[0].text));
                 (yyval.object)->Type = JSONValue::BOOL;
         }
-#line 1136 "json.tab.cpp"
+#line 1141 "json.tab.cpp"
     break;
 
   case 7: /* value: FALSE  */
@@ -1141,7 +1146,7 @@ yyreduce:
                 (yyval.object)=parser->NewValue((yyvsp[0].text));
                 (yyval.object)->Type = JSONValue::BOOL;
         }
-#line 1145 "json.tab.cpp"
+#line 1150 "json.tab.cpp"
     break;
 
   case 8: /* value: NIL  */
@@ -1150,7 +1155,7 @@ yyreduce:
                (yyval.object)=parser->NewValue((yyvsp[0].text));
                (yyval.object)->Type = JSONValue::NIL;
        }
-#line 1154 "json.tab.cpp"
+#line 1159 "json.tab.cpp"
     break;
 
   case 9: /* value: object  */
@@ -1158,7 +1163,7 @@ yyreduce:
               {
                (yyval.object)=(yyvsp[0].object);
        }
-#line 1162 "json.tab.cpp"
+#line 1167 "json.tab.cpp"
     break;
 
   case 10: /* value: array  */
@@ -1166,7 +1171,7 @@ yyreduce:
              {
                (yyval.object)=(yyvsp[0].object);
        }
-#line 1170 "json.tab.cpp"
+#line 1175 "json.tab.cpp"
     break;
 
   case 11: /* value_list: value_list COMMA value  */
@@ -1174,7 +1179,7 @@ yyreduce:
         {
                 (yyval.object)=parser->AddToArray((yyvsp[-2].object),(yyvsp[0].object));
         }
-#line 1178 "json.tab.cpp"
+#line 1183 "json.tab.cpp"
     break;
 
   case 12: /* value_list: value  */
@@ -1182,7 +1187,7 @@ yyreduce:
         {
                 (yyval.object)=parser->NewArray((yyvsp[0].object));
         }
-#line 1186 "json.tab.cpp"
+#line 1191 "json.tab.cpp"
     break;
 
   case 13: /* array: LB RB  */
@@ -1190,7 +1195,7 @@ yyreduce:
         {
                 (yyval.object)=parser->NewArray(NULL);
         }
-#line 1194 "json.tab.cpp"
+#line 1199 "json.tab.cpp"
     break;
 
   case 14: /* array: LB value_list RB  */
@@ -1198,7 +1203,7 @@ yyreduce:
         {
                 (yyval.object)=(yyvsp[-1].object);
         }
-#line 1202 "json.tab.cpp"
+#line 1207 "json.tab.cpp"
     break;
 
   case 15: /* object_member: STRING_LITERAL COLON value  */
@@ -1206,7 +1211,7 @@ yyreduce:
         {
                 (yyval.member)=parser->NewMember((yyvsp[-2].text),(yyvsp[0].object));
         }
-#line 1210 "json.tab.cpp"
+#line 1215 "json.tab.cpp"
     break;
 
   case 16: /* object_member_list: object_member_list COMMA object_member  */
@@ -1214,7 +1219,7 @@ yyreduce:
         {       
                 (yyval.object)=parser->AddMember((yyvsp[-2].object),(yyvsp[0].member));
         }
-#line 1218 "json.tab.cpp"
+#line 1223 "json.tab.cpp"
     break;
 
   case 17: /* object_member_list: object_member  */
@@ -1222,7 +1227,7 @@ yyreduce:
                       {
                 (yyval.object)=parser->NewObject((yyvsp[0].member));
         }
-#line 1226 "json.tab.cpp"
+#line 1231 "json.tab.cpp"
     break;
 
   case 18: /* object: LC object_member_list RC  */
@@ -1230,7 +1235,7 @@ yyreduce:
         {
                 (yyval.object)=(yyvsp[-1].object);
         }
-#line 1234 "json.tab.cpp"
+#line 1239 "json.tab.cpp"
     break;
 
   case 19: /* object: LC RC  */
@@ -1238,11 +1243,11 @@ yyreduce:
         {
                 (yyval.object)=parser->NewObject(NULL);
         }
-#line 1242 "json.tab.cpp"
+#line 1247 "json.tab.cpp"
     break;
 
 
-#line 1246 "json.tab.cpp"
+#line 1251 "json.tab.cpp"
 
       default: break;
     }

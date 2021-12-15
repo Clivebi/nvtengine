@@ -16,15 +16,20 @@ protected:
 
     bool mLogInstruction;
 
+    void* mUserContext;
+
 public:
     std::string mLastError;
-    Parser() : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString() {
+    Parser(void* context) : mScript(NULL), mLogInstruction(0), mStringHolder(), mScanningString() {
         Status::sParserCount++;
+        mUserContext = context;
     }
     ~Parser() {
         Finish();
         Status::sParserCount--;
     }
+
+    void* GetContext() { return mUserContext; }
 
     void Start(std::string name) { mScript = new Script(name); }
     scoped_refptr<Script> Finish() {

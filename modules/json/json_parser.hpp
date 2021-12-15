@@ -36,9 +36,10 @@ private:
     std::string mScanningString;
     std::list<JSONValue*> mValueHolder;
     std::list<JSONMember*> mMemberHolder;
+    void* mUserContext;
 
 public:
-    JSONParser() : root(NULL) {}
+    JSONParser(void* Context) : root(NULL), mUserContext(Context) {}
     ~JSONParser() {
         auto iter = mStringHolder.begin();
         while (iter != mStringHolder.end()) {
@@ -58,6 +59,8 @@ public:
         root = NULL;
     }
     JSONValue* root;
+
+    void* GetContext() { return mUserContext; }
 
 public:
     void StartScanningString() { mScanningString.clear(); }

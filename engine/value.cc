@@ -674,11 +674,13 @@ std::string Value::ToString() const {
     }
 }
 
-bool IsPrintableString(const std::string& src) {
+bool IsVisableString(const std::string& src) {
     for (size_t i = 0; i < src.size(); i++) {
-        if (!isprint((int)src[i])) {
-            return false;
+        int c = ((int)src[i]) & 0xFF;
+        if (isprint(c) || c == '\r' || c == '\n' || c == '\t' || c == ' ') {
+            continue;
         }
+        return false;
     }
     return true;
 }
@@ -692,7 +694,7 @@ std::string Value::ToDescription() const {
         return object->ToDescription();
     case ValueType::kBytes:
     case ValueType::kString: {
-        if (IsPrintableString(bytes)) {
+        if (IsVisableString(bytes)) {
             return bytes;
         }
         return ValueType::ToString(Type) + "(" + HexEncode(bytes.c_str(), bytes.size()) + ")";
@@ -1107,7 +1109,8 @@ bool operator==(const Value& left, const Value& right) {
         return right.bytes == left.ToString();
     }
     if (!left.IsSameType(right)) {
-        LOG("compare value not same type may be have bug <always false> ", left.ToDescription(), " ", right.ToDescription());
+        LOG("compare value not same type may be have bug <always false> ", left.ToDescription(),
+            " ", right.ToDescription());
         return false;
     }
     switch (left.Type) {

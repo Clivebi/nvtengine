@@ -164,7 +164,7 @@ void NVTEngineTest() {
     //pref[knowntext::kPref_load_dependencies] = false;
     FileIO IO;
     pref["scripts_folder"] = "/Volumes/work/nvtscript";
-    HostsTask task("192.168.0.106", "80,443", pref, &IO);
+    HostsTask task("192.168.0.106", "22,80,443,5900", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
     list2.push_back("1.3.6.1.4.1.25623.1.0.900234");

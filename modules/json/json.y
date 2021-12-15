@@ -1,15 +1,15 @@
 %parse-param {JSONParser * parser}
 %lex-param {JSONParser * parser}
+%define api.pure
 %{
 #include "json_parser.hpp"
 %}
 %require "3.2"
 %{
-// https://stackoverflow.com/questions/23717039/generating-a-compiler-from-lex-and-yacc-grammar
-//int yylex(JSONParser * parser);
-int parser_json(JSONParser * parser);
+
+int parser_json(YYSTYPE* yyval,void* yyscanner,JSONParser * parser);
 void parser_json_error(JSONParser * parser,const char *s);
-#define yylex   parser_json
+#define yylex(a,b) parser_json(a,b->GetContext(),b)
 #define yyerror parser_json_error
 //void yyerror(JSONParser * parser,const char *s);
 %}

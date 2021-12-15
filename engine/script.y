@@ -1,15 +1,19 @@
 %parse-param {Interpreter::Parser * parser}
 %lex-param {Interpreter::Parser * parser}
+%define api.pure
 %{
 #include <stdio.h>
 #include <string>
 #include "parser.hpp"
+#include "script.tab.hpp"
 %}
 %require "3.2"
 %{
 //using Instruction= Interpreter::Instruction;
 using namespace Interpreter;
-int yylex(Interpreter::Parser * parser);
+
+#define yylex(a,b) my_yylex(a,b->GetContext(),b)
+int my_yylex(YYSTYPE* yyval,void* yyscanner,Interpreter::Parser * parser);
 void yyerror(Interpreter::Parser * parser,const char *s);
 %}
 %union {
@@ -17,7 +21,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
     long        value_integer;
     double      value_double; 
     unsigned char   value_byte;
-    Instruction* object;
+    Interpreter::Instruction* object;
 };
 
 %token  <identifier>VAR FUNCTION FOR IF ELIF ELSE ADD SUB MUL DIV MOD ASSIGN

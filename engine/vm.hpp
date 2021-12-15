@@ -22,6 +22,8 @@ class ExecutorCallback {
 public:
     virtual void OnScriptWillExecute(Executor* vm, scoped_refptr<Script> Script,
                                      VMContext* ctx) = 0;
+    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script,
+                                       VMContext* ctx) = 0;
     virtual void OnScriptExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) = 0;
     virtual void* LoadScriptFile(Executor* vm, const char* name, size_t& size) = 0;
     virtual void OnScriptError(Executor* vm, const char* name, const char* msg) = 0;

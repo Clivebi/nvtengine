@@ -88,7 +88,6 @@ typedef union YYSTYPE YYSTYPE;
 #endif
 
 
-extern YYSTYPE yylval;
 
 
 int yyparse (JSONParser * parser);

@@ -143,7 +143,6 @@ Value RepeatBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-
 Value ReplaceBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
     std::string p0 = GetString(args, 0);
@@ -274,6 +273,39 @@ Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
+Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING(0);
+    size_t n = args[0].Length();
+    size_t i = 0;
+    std::string result = "";
+    while (i < n) {
+        std::string hex = "";
+        std::string str = "";
+        char buffer[6] = {0};
+        for (int j = 0; j < 16; j++, i++) {
+            if (i < n) {
+                sprintf(buffer, "%02X ", (BYTE)args[0].bytes[i]);
+                hex += buffer;
+                if (isprint(args[0].bytes[i])) {
+                    str += (char)args[0].bytes[i];
+                } else {
+                    str += ".";
+                }
+            } else {
+                hex += "   ";
+                str += " ";
+            }
+        }
+        result += hex;
+        result += "\t";
+        result += str;
+        result += "\n";
+    }
+    std::cout << result << std::endl;
+    return result;
+}
+
 BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
                                {"HasPrefixBytes", HasPrefixBytes},
                                {"HasSuffixBytes", HasSuffixBytes},
@@ -304,7 +336,9 @@ BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
                                {"ToUpperString", ToUpperBytes},
                                {"IsMatchRegexp", IsMatchRegexp},
                                {"SearchRegExp", SearchRegExp},
-                               {"RegExpReplace", RegExpReplace}};
+                               {"RegExpReplace", RegExpReplace},
+                               {"HexDumpBytes", HexDumpBytes},
+                               {"HexDumpString", HexDumpBytes}};
 
 void RegisgerBytesBuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(bytesMethod, COUNT_OF(bytesMethod));

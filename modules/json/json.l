@@ -4,13 +4,13 @@
 #include <string.h>
 #include "json_parser.hpp"
 #include "json.tab.hpp"
-#define YY_DECL int parser_json(JSONParser * parser)
-
+#define YY_DECL int parser_json(YYSTYPE* yylval,yyscan_t yyscanner,JSONParser * parser)
 
 
 %}
 
 %option yylineno
+%option reentrant
 
 %start STRING_LITERAL_STATE 
 %%
@@ -30,12 +30,12 @@
 }
 
 <INITIAL>([+-]*[1-9][0-9]*)|"0" {
-    yylval.text = parser->NewString(yytext);
+    yylval->text = parser->NewString(yytext);
     return NUMBER;
 }
 
 <INITIAL>[+-]*[0-9]+\.[0-9]+ {
-    yylval.text = parser->NewString(yytext);
+    yylval->text = parser->NewString(yytext);
     return NUMBER;
 }
 
@@ -45,7 +45,7 @@
 
 
 <STRING_LITERAL_STATE>\"        {
-    yylval.text = parser->FinishScanningString();
+    yylval->text = parser->FinishScanningString();
     BEGIN INITIAL;
     return STRING_LITERAL;
 }

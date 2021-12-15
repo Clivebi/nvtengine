@@ -31,12 +31,14 @@ public:
         ctx->SetVarValue("COMMAND_LINE", Value(false));
         vm->RequireScript("nasl.sc", ctx);
     }
+    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) {
+    }
     void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
         std::string path = (mFolder + FilePath(name));
-        if (std::string(name) == "nasl.sc") {
-            path = "../script/nasl.sc";
+        if (std::string(name) == "nasl.sc" || std::string(name) == "servicedetect.sc") {
+            path = "../script/" + std::string(name);
         }
         FileIO io;
         void* ptr = io.Read(path, size);
@@ -53,20 +55,23 @@ public:
 
 class HostsTask {
 protected:
+    friend class DetectServiceCallback;
     struct TCB {
         size_t ThreadHandle;
         std::string Host;
         bool Exit;
         HostsTask* Task;
-        int ScriptCount;
+        int ScriptProgress;
         Value Env;
         int ExecutedScriptCount;
+        std::vector<int> TCPPorts;
+        std::vector<int> UDPPorts;
         scoped_refptr<support::ScriptStorage> Storage;
         TCB(std::string host) {
             Storage = new support::ScriptStorage();
             Env = Value::make_map();
             Exit = false;
-            ScriptCount = 0;
+            ScriptProgress = 0;
             ExecutedScriptCount = 0;
             Host = host;
         }
@@ -108,9 +113,23 @@ protected:
         HostsTask* ptr = (HostsTask*)p;
         ptr->Execute();
     }
+
+protected:
+    struct DetectServiceParamter {
+        TCB* tcb;
+        std::vector<int> ports;
+        scoped_refptr<support::ScriptStorage> storage;
+    };
+    static void DetectServiceProxy(void* p) {
+        DetectServiceParamter* param = (DetectServiceParamter*)p;
+        param->tcb->Task->DetectService(param);
+    }
+    void DetectService(DetectServiceParamter*p);
     bool InitScripts(std::list<std::string>& scripts);
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
                      std::list<std::string>& scripts, std::list<Value>& loadOrder,
                      std::map<std::string, int>& loaded);
     bool CheckScript(OVAContext* ctx, Value& nvti);
+
+    void TCPDetectService(TCB* tcb, const std::vector<int>& ports, int thread_count);
 };

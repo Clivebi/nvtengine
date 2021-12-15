@@ -709,7 +709,7 @@ func this_host(){
 func get_opened_tcp(){
 	var result = HostEnv();
 	var ret = [];
-	var list = SplitString(result["opened_tcp"],",")
+	var list = SplitString(result["opened_tcp"],",");
 	for v in list{
 		if(len(v) > 0){
 			ret = append(ret,ToInteger(v));

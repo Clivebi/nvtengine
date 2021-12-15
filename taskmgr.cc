@@ -77,6 +77,8 @@ void HostsTask::Execute() {
                 break;
             }
         }
+        std::vector<int> portsTCP;
+        std::vector<int> portsUDP;
         std::string tcps = ",", udps = ",";
         for (unsigned int i = 0; i < seek->size; i++) {
             if (TCP_UNKNOWN == seek->list[i].type) {
@@ -84,11 +86,13 @@ void HostsTask::Execute() {
                 tcb->Storage->SetItem(name, Value(1));
                 tcps += ToString(seek->list[i].port);
                 tcps += ",";
+                portsTCP.push_back(seek->list[i].port);
                 continue;
             }
             if (UDP_UNKNOWN == seek->list[i].type) {
                 std::string name = "Ports/udp/" + ToString(seek->list[i].port);
                 tcb->Storage->SetItem(name, Value(1));
+                portsUDP.push_back(seek->list[i].port);
             }
             if (UDP_CLOSED != seek->list[i].type) {
                 udps += ToString(seek->list[i].port);
@@ -120,15 +124,10 @@ void HostsTask::Execute() {
                 tcb->Env[v.first] = v.second;
             }
             //tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
-            tcb->Storage->SetItem("default_credentials/disable_brute_force_checks",true);
-            tcb->Storage->SetItem("testname", "name1");
-            tcb->Storage->SetItem("testname", "name2");
-            tcb->Storage->SetItem("testname1", "name3");
-            tcb->Storage->SetItem("testname1", "name4");
-            tcb->Storage->SetItem("testname1", "name5");
-            //tcb->Storage->AddService("www", 80);
-            tcb->Storage->AddService("www", 443);
+            tcb->Storage->SetItem("default_credentials/disable_brute_force_checks", true);
         }
+        tcb->TCPPorts = portsTCP;
+        tcb->UDPPorts = portsUDP;
         tcb->Task = this;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
@@ -148,7 +147,12 @@ void HostsTask::Execute() {
 }
 
 void HostsTask::ExecuteOneHost(TCB* tcb) {
-    //TODO find service
+    LOG("\n", tcb->Host, " start detect service");
+    TCPDetectService(tcb, tcb->TCPPorts, 6);
+    LOG(tcb->Host, " detect service complete...");
+    if (tcb->Exit) {
+        return;
+    }
     ExecuteScriptOnHost(tcb);
 }
 
@@ -156,12 +160,13 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
     Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
-    LOG("\nstart execute script");
+    LOG("start execute script");
     for (int i = 0; i < 11; i++) {
         for (auto v : mGroupedScripts[i]) {
             OVAContext ctx(v[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env, tcb->Storage);
             ctx.Nvti = v;
             ctx.Host = tcb->Host;
+            tcb->ScriptProgress++;
             if (!CheckScript(&ctx, v)) {
                 continue;
             }
@@ -182,15 +187,15 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
                     Engine.Execute(ctx.ScriptFileName.c_str(), false);
                 }
             }
-            tcb->ScriptCount++;
+            tcb->ExecutedScriptCount++;
         }
         if (tcb->Exit) {
             break;
         }
     }
     LOG("All script complete.... Total Count: ", mScriptCount,
-        " Executed count: ", tcb->ScriptCount);
-    std::cout<<"*********************************************"<<std::endl;
+        " Executed count: ", tcb->ExecutedScriptCount);
+    std::cout << "*********************************************" << std::endl;
     Value result = tcb->Storage->GetItemList("HostDetails*");
     for (auto v : result._map()) {
         std::cout << v.first.ToString() << " :" << v.second.ToString() << std::endl;
@@ -361,4 +366,73 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         }
     }
     return true;
+}
+
+class DetectServiceCallback : public DefaultExecutorCallback {
+protected:
+    HostsTask::TCB* tcb;
+    std::vector<int> ports;
+
+public:
+    DetectServiceCallback(FilePath folder, FileIO* IO, HostsTask::TCB* tcb, std::vector<int>& ports)
+            : DefaultExecutorCallback(folder, IO), tcb(tcb), ports(ports) {}
+    void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) {
+        if (tcb->Exit) {
+            return;
+        }
+        for (auto v : ports) {
+            std::vector<Value> params;
+            params.push_back(tcb->Host);
+            params.push_back(v);
+            vm->CallScriptFunction("detect_tcp_service", params, ctx);
+            if (tcb->Exit) {
+                break;
+            }
+        }
+    }
+};
+
+void HostsTask::DetectService(DetectServiceParamter* param) {
+    DetectServiceCallback callback(mPrefs["scripts_folder"].bytes, mIO, param->tcb, param->ports);
+    Interpreter::Executor Engine(&callback, NULL);
+    RegisgerModulesBuiltinMethod(&Engine);
+    OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);
+    ctx.Host = param->tcb->Host;
+    Engine.SetUserContext(&ctx);
+    Engine.Execute(ctx.ScriptFileName.c_str(), false);
+    if (param->tcb->Exit) {
+        return;
+    }
+}
+
+void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, int thread_count) {
+    std::vector<size_t> Threads;
+    std::vector<DetectServiceParamter*> Paramters;
+    std::vector<std::vector<int>> groups;
+    if (ports.size() < thread_count) {
+        thread_count = ports.size();
+    }
+    for (int i = 0; i < thread_count; i++) {
+        groups.push_back(std::vector<int>());
+    }
+    for (int i = 0; i < ports.size(); i++) {
+        groups[i % thread_count].push_back(ports[i]);
+    }
+    for (int i = 0; i < thread_count; i++) {
+        DetectServiceParamter* param = new DetectServiceParamter();
+        param->tcb = tcb;
+        param->ports = groups[i];
+        param->storage = tcb->Storage->Clone();
+        Paramters.push_back(param);
+        size_t thread = pixie_begin_thread(HostsTask::DetectServiceProxy, 0, param);
+        Threads.push_back(thread);
+    }
+
+    for (int i = 0; i < thread_count; i++) {
+        pixie_thread_join(Threads[i]);
+    }
+    for (int i = 0; i < thread_count; i++) {
+        tcb->Storage->Combine(Paramters[i]->storage);
+        delete (Paramters[i]);
+    }
 }
