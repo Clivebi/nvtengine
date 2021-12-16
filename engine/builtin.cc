@@ -22,6 +22,36 @@ Value len(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return Value(arg.Length());
 }
 
+Value Delete(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    switch (args[0].Type) {
+    case ValueType::kBytes:
+    case ValueType::kString:
+        if (args[1].IsInteger() && args[1].Integer < args[0].bytes.size()) {
+            std::string str = args[0].bytes.substr(0, args[1].Integer);
+            if (args[1].Integer + 1 < args[0].bytes.size()) {
+                str += args[0].bytes.substr(args[1].Integer + 1);
+            }
+            args[0].bytes = str;
+        }
+        break;
+    case ValueType::kArray: {
+        auto iter = args[0]._array().begin();
+        iter += (size_t)args[1].Integer;
+        args[0]._array().erase(iter);
+    }
+    case ValueType::kMap: {
+        auto iter = args[0]._map().find(args[1]);
+        if (iter != args[0]._map().end()) {
+            args[0]._map().erase(iter);
+        }
+    }
+    default:
+        break;
+    }
+    return Value();
+}
+
 Value TypeOf(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     Value& arg = args.front();
@@ -346,6 +376,7 @@ BuiltinMethod builtinFunction[] = {
         {"len", len},
         {"clone", Clone},
         {"append", append},
+        {"delete", Delete},
         {"require", Require},
         {"bytes", MakeBytes},
         {"close", close},

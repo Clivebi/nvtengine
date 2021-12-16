@@ -24,6 +24,6 @@ MAC、windows、linux、unix
 - [x] 无依赖服务发现  
 - [ ] 无依赖主机指纹识别  
 - [x] openvas基础(string,http) API  
-- [ ]  openvas数据包构造API  
-- [ ]  openvas WMI API  
-- [ ]  openvas SSH API  
+- [ ] openvas数据包构造API  
+- [ ] openvas WMI API  
+- [x] openvas SSH API  

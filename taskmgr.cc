@@ -197,6 +197,9 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
         " Executed count: ", tcb->ExecutedScriptCount);
     std::cout << "*********************************************" << std::endl;
     Value result = tcb->Storage->GetItemList("HostDetails*");
+    if (result.IsNULL()) {
+        return;
+    }
     for (auto v : result._map()) {
         std::cout << v.first.ToString() << " :" << v.second.ToString() << std::endl;
     }

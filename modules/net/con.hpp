@@ -9,6 +9,7 @@ protected:
     int mWriteTimeout;
     int mSocket;
     std::string mName;
+    std::map<std::string, void*> mUserData;
 
 public:
     BaseConn(int Socket, int ReadTimeout, int WriteTimeout, std::string name)
@@ -16,7 +17,16 @@ public:
               mWriteTimeout(WriteTimeout),
               mSocket(Socket),
               mName(name) {}
+    virtual int GetFD() { return mSocket; }
     virtual ~BaseConn() { Close(); }
+    void SetUserData(std::string key, void* data) { mUserData[key] = data; }
+    void* GetUserData(std::string key) {
+        auto iter = mUserData.find(key);
+        if (iter != mUserData.end()) {
+            return iter->second;
+        }
+        return NULL;
+    }
     virtual void SetReadTimeout(int timeout) { mReadTimeout = timeout; }
     virtual void SetWriteTimeout(int timeout) { mWriteTimeout = timeout; }
     bool IsAvaliable() { return mSocket != -1; }

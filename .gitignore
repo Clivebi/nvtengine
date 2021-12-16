@@ -6,4 +6,4 @@
 Interpreter.dSYM/
 Interpreter
 test/test1.sc
-test/builtin.sc
+script/test1.sc

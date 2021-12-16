@@ -99,7 +99,7 @@ std::string test_oids =
         "1.25623.1.0.802244;1.3.6.1.4.1.25623.1.0.807830;1.3.6.1.4.1.25623.1.0.810002;1.3.6.1.4.1."
         "25623.1.0.810549;1.3.6.1.4.1.25623.1.0.810550;1.3.6.1.4.1.25623.1.0.810554;1.3.6.1.4.1."
         "25623.1.0.9000001;1.3.6.1.4.1.25623.1.0.900602;1.3.6.1.4.1.25623.1.0.901121;1.3.6.1.4.1."
-        "25623.1.0.902447;1.3.6.1.4.1.25623.1.0.103680";
+        "25623.1.0.902447;1.3.6.1.4.1.25623.1.0.103680;1.3.6.1.4.1.25623.1.0.105937";
 
 void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::string>& result) {
     struct dirent* entry = NULL;
@@ -167,7 +167,7 @@ void NVTEngineTest() {
     HostsTask task("192.168.0.106", "22,80,443,5900", pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
-    list2.push_back("1.3.6.1.4.1.25623.1.0.900234");
+    list2.push_back("1.3.6.1.4.1.25623.1.0.10267");
     task.BeginTask(result, "10000");
     task.Join();
 }

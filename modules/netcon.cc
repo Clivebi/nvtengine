@@ -11,7 +11,8 @@ Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string port = GetString(args, 1);
     int timeout = GetInt(args, 2, 30);
     int isSSL = GetInt(args, 3, 0);
-    Resource* res = net::Dial("tcp", host, port, timeout, isSSL, true);
+    int enableCache = GetInt(args, 4, 1);
+    Resource* res = net::Dial("tcp", host, port, timeout, isSSL, enableCache);
     if (res == NULL) {
         return Value();
     }

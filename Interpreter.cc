@@ -47,7 +47,9 @@ bool ExecuteScript(std::string path) {
 
 int main(int argc, char* argv[]) {
     if (argc > 1) {
-        return ExecuteScript(argv[1]);
+        ExecuteScript(argv[1]);
+        std::cout << Interpreter::Status::ToString() << std::endl;
+        return 0;
     }
     return -1;
 }

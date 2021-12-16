@@ -11,10 +11,20 @@ if (NOT PKG_CONFIG_FOUND)
   message(FATAL_ERROR "pkg-config executable not found. Aborting.")
 endif (NOT PKG_CONFIG_FOUND)
 
+find_program(KRB5 krb5-config)
+
+if(KRB5-NOTFOUND)
+    message(FATAL_ERROR "krb5-config executable not found. Aborting. you need install libkrb5-dev")
+endif(KRB5-NOTFOUND)
+
+execute_process (COMMAND krb5-config --libs gssapi
+    OUTPUT_VARIABLE KRB5_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
-
+pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
 #https://github.com/google/brotli
 pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.9)
 
@@ -30,15 +40,16 @@ if(NOT ZLIB_FOUND)
     message(FATAL_ERROR "zlib>=1.1.0 not found")
 endif(NOT ZLIB_FOUND)
 
-message("${OPENSSL_LINK_LIBRARIES}")
-message("${BROTLI_LINK_LIBRARIES}")
-message("${ZLIB_LINK_LIBRARIES}")
-message("${SQLITE_LINK_LIBRARIES}")
+message("${OPENSSL_LIBRARY_DIRS}")
+message("${BROTLI_LIBRARY_DIRS}")
+message("${ZLIB_LIBRARY_DIRS}")
+message("${SQLITE_LIBRARY_DIRS}")
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${ZLIB_INCLUDE_DIRS} 
                      ${BROTLI_INCLUDE_DIRS}
-                     ${OPENSSL_INCLUDE_DIRS})
+                     ${OPENSSL_INCLUDE_DIRS}
+                     ${SSH_INCLUDE_DIRS})
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
@@ -64,10 +75,13 @@ set_source_files_properties(${GENSRC_DIR}/script.lex.cpp  PROPERTIES GENERATED T
 add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
 
+
+#this is for mac static 
 set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
 set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
 set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
 set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
+set(SSH_LDFLAGS "${CMAKE_BINARY_DIR}/libssh.a")
 
 add_executable(NVTEngine
     nvtengine.cc 
@@ -84,17 +98,21 @@ add_executable(Interpreter
 target_link_libraries(  NVTEngine  
                         engine  
                         masscan 
+                        "${KRB5_LDFLAGS}"
                         "-L${CMAKE_BINARY_DIR}"
                         ${OPENSSL_LDFLAGS} 
                         ${ZLIB_LDFLAGS}
                         ${BROTLI_LDFLAGS}
-                        ${SQLITE_LDFLAGS} )
+                        ${SQLITE_LDFLAGS} 
+                        ${SSH_LDFLAGS})
 
 target_link_libraries(  Interpreter  
                         engine  
                         masscan 
+                        "${KRB5_LDFLAGS}"
                         "-L${CMAKE_BINARY_DIR}"
                         ${OPENSSL_LDFLAGS} 
                         ${ZLIB_LDFLAGS}
                         ${BROTLI_LDFLAGS}
-                        ${SQLITE_LDFLAGS} )
+                        ${SQLITE_LDFLAGS}
+                        ${SSH_LDFLAGS} )

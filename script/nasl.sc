@@ -210,7 +210,7 @@ func send(socket,data){
 }
 
 func recv_line(socket,length){
-	var ret = ConnReadUntil(socket,"\r\n",length);
+	var ret = ConnReadUntil(socket,"\n",length);
 	if(!ret){
 		return "";
 	}
@@ -245,7 +245,7 @@ func script_get_preference_file_content(name,id=-1){
 }
 
 #open_sock_tcp(port, transport: ENCAPS_IP)
-func open_sock_tcp(port,buffsz,timeout, transport=nil,priority=0){
+func open_sock_tcp(port,buffsz=nil,timeout=nil, transport=nil,priority=0){
 	if(!timeout){
 		timeout = 15;
 	}
@@ -255,6 +255,7 @@ func open_sock_tcp(port,buffsz,timeout, transport=nil,priority=0){
 	}else{
 		isTLS = transport > 1;
 	}
+	Println(get_host_ip(),port,timeout,isTLS);
 	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,isTLS);
 	if(soc){
 		ConnSetReadTimeout(soc,5);
@@ -304,30 +305,176 @@ func http_post(port,item,data){
 	error("nasl:http_post not implement");
 }
 
-#ssh_connect(socket: soc)
-func ssh_connect(socket){
-	error("nasl:ssh_connect not implement");
+var _ssh_session_table = {};
+
+
+func _get_ssh_port(){
+	var port = get_kb_item("Services/ssh");
+	if(port){
+		return port;
+	}
+	return 22;
 }
 
+func nasl_close(socket){
+	var session = _ssh_session_table[socket];
+	if(session){
+		delete(_ssh_session_table,session);
+		delete(_ssh_session_table,socket);
+	}
+	close(socket);
+}
+
+#ssh_connect(socket: soc)
+#socket,timeout,ip,keytype,cschiphers,sscriphers
+#Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm)
+func ssh_connect(socket=nil,keytype="",ip=""){
+	var newSock;
+	if(ip == nil || len(ip) == 0){
+		ip = get_host_ip();
+	}
+	if(socket == nil){
+		newSock = TCPConnect(ip,_get_ssh_port(),15,false,false);
+		socket = newSock;
+	}
+	if(socket == nil){
+		return nil;
+	}
+	var session = SSHConnect(socket,15,ip,keytype,"","");
+	if(session == nil){
+		return nil;
+	}
+	if(!newSock){
+		_ssh_session_table[session] = socket;
+		_ssh_session_table[socket] = session;
+	}
+	return session;
+}
+
+func ssh_disconnect(session){
+	var socket = _ssh_session_table[session];
+	if(socket){
+		delete(_ssh_session_table,session);
+		delete(_ssh_session_table,socket);
+	}
+	close(session);
+}
+
+func ssh_session_id_from_sock(socket){
+	if(socket == nil){
+		return nil;
+	}
+	return _ssh_session_table[socket];
+}
+
+func ssh_get_sock(session){
+	if(session == nil){
+		return nil;
+	}
+	return _ssh_session_table[session];
+}
+
+#//session,username,password,privatekey,passphrase
 #ssh_userauth(session, login: NULL, password: NULL, privatekey: NULL, passphrase: NULL)
-func ssh_userauth(session,login,password, privatekey, passphrase){
-	error("nasl:ssh_userauth not implement");
+func ssh_userauth(session,login=nil,password=nil, privatekey=nil, passphrase=nil){
+	if (session == nil){
+		return -1;
+	}
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	if (password == nil){
+		password = get_kb_item("Secret/SSH/password");
+	}
+	if (privatekey == nil){
+		privatekey = get_kb_item("Secret/SSH/privatekey");
+	}
+	if (passphrase == nil){
+		privatekey = get_kb_item("Secret/SSH/passphrase");
+	}
+	return SSHAuth(session,ToString(login),ToString(password),ToString(privatekey),ToString(passphrase));
+}
+
+func ssh_login_interactive(session,login=nil){
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	return SSHLoginInteractive(session,ToString(login),"");
+}
+
+
+func ssh_login_interactive_pass(session,login=nil,password=""){
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	return SSHLoginInteractive(session,ToString(login),password);
+}
+
+#ssh_request_exec(sess, cmd: cmd, stdout: -1, stderr: -1)
+func ssh_request_exec(session, cmd,stdout=0,stderr=0){
+	var result = SSHExecute(session,cmd);
+	if(result == nil){
+		return nil;
+	}
+	if( (stdout==-1 && stderr == -1)|| stdout == 1 ){
+		return result["Stdout"];
+	}
+	if(stdout == 1 && stderr == 1){
+		return result["Stdout"]+result["StdErr"];
+	}
+	if(stderr == 1){
+		return result["StdErr"];
+	}
+	return result["Stdout"]+result["StdErr"];
+}
+#ssh_shell_open(sess, pty: TRUE)
+func ssh_shell_open(session,pty=1,login=nil){
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	return SSHShellOpen(session,ToString(login),pty);
 }
 
 #ssh_shell_write(sess, cmd: user + "\n" + pass + "\n" + "show sysinfo\n\nshow inventory\n")
 func ssh_shell_write(session, cmd){
-	error("nasl:ssh_shell_write not implement");
+	var size = SSHShellWrite(session,cmd);
+	if(size == len(cmd)){
+		return 0;
+	}
+	return -1;
 }
 
-#ssh_request_exec(sess, cmd: cmd, stdout: 1, stderr: 1)
-func ssh_request_exec(session, cmd,stdout,stderr){
-	error("nasl:ssh_request_exec not implement");
+func ssh_shell_read(session){
+	return SSHShellRead(session);
 }
 
-#ssh_shell_open(sess, pty: TRUE)
-func ssh_shell_open(session,pty){
-	error("nasl:ssh_shell_open not implement");
+func ssh_shell_close(session){
+	close(session);
 }
+
+func ssh_get_issue_banner(session,login=nil){
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	return SSHGetIssueBanner(session,ToString(login));
+}
+
+func ssh_get_server_banner(session){
+	return SSHGetServerBanner(session);
+}
+
+func ssh_get_auth_methods(session,login=nil){
+	if (login == nil){
+		login =  get_kb_item("Secret/SSH/login");
+	}
+	return SSHGetAuthMethod(session,login);
+}
+
+func ssh_get_host_key(session){
+	return SSHGetPUBKey(session);
+}
+
+
 
 #open_priv_sock_udp(dport: port, sport: port)
 func open_priv_sock_udp(dport, sport){
@@ -821,5 +968,7 @@ func cert_close(cert){
 func cert_query(cert,cmd,idx=0){
 	return X509Query(cert,cmd,idx);
 }
+
+
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

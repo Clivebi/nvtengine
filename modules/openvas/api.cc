@@ -4,6 +4,7 @@
 #include "./api/crypto.cc"
 #include "./api/net.cc"
 #include "./api/script.cc"
+#include "./api/ssh.cc"
 #include "./api/time.cc"
 #include "./api/util.cc"
 #include "ovacontext.cc"
@@ -76,6 +77,17 @@ BuiltinMethod ovaMethod[] = {
         {"TLS1PRF", TLS1PRF},
         {"X509Open", X509Open},
         {"X509Query", X509Query},
+        {"SSHConnect", SSHConnect},
+        {"SSHAuth", SSHAuth},
+        {"SSHLoginInteractive", SSHLoginInteractive},
+        {"SSHExecute", SSHExecute},
+        {"SSHGetIssueBanner", SSHGetIssueBanner},
+        {"SSHGetServerBanner", SSHGetServerBanner},
+        {"SSHGetPUBKey", SSHGetPUBKey},
+        {"SSHGetAuthMethod", SSHGetAuthMethod},
+        {"SSHShellOpen", SSHShellOpen},
+        {"SSHShellRead", SSHShellRead},
+        {"SSHShellWrite", SSHShellWrite},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
