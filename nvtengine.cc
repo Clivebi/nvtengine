@@ -159,12 +159,12 @@ void UpdateNVTI(std::string script_path, std::string home) {
     }
 }
 
-void NVTEngineTest() {
+void NVTEngineTest(char* folder, char* ip, char* port) {
     Value pref = Value::make_map();
     //pref[knowntext::kPref_load_dependencies] = false;
     FileIO IO;
-    pref["scripts_folder"] = "/Volumes/work/nvtscript";
-    HostsTask task("192.168.0.106", "22,80,443,5900", pref, &IO);
+    pref["scripts_folder"] = folder;
+    HostsTask task(ip, port, pref, &IO);
     std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
     list2.push_back("1.3.6.1.4.1.25623.1.0.10267");
@@ -176,13 +176,14 @@ int main(int argc, char* argv[]) {
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
 #endif
-    std::cout << Interpreter::Status::ToString() << std::endl;
-    if (argc >= 2) {
+    if (argc == 2) {
         UpdateNVTI(argv[1], "");
         std::cout << Interpreter::Status::ToString() << std::endl;
         return 0;
     }
-    NVTEngineTest();
-    std::cout << Interpreter::Status::ToString() << std::endl;
+    if (argc == 4) {
+        NVTEngineTest(argv[1], argv[2], argv[3]);
+        std::cout << Interpreter::Status::ToString() << std::endl;
+    }
     return 0;
 }

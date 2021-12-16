@@ -705,12 +705,18 @@ func eregmatch(pattern, string,icase=false){
 	return result;
 }
 
-func split(buffer, sep="\n",keep = false){
+func split(buffer, sep="\n",keep = -1){
+	if(keep==-1){
+		keep = true;
+	}
 	var list = SplitString(buffer,sep);
-	if(keep){
-		var i = 0;
-		for(var i = 0; i < len(list);i++){
+	for(var i = 0; i < len(list);i++){
+		if(keep){
 			list[i]+=sep;
+		}else{
+			if(sep=="\n"){
+				list[i] = TrimRightString(list[i]);
+			}
 		}
 	}
 	return list;
@@ -912,15 +918,15 @@ func resolve_hostname_to_multiple_ips(hostname){
 }
 
 func get_port_transport(port){
-	if(port==443){
+	if(ToInteger(port)==443){
 		return ENCAPS_TLSv12;
 	}
-	if(port==80){
+	if(ToInteger(port)==80){
 		return 1;
 	}
 	var kb = get_kb_item("Transports/TCP/"+port);
 	if(kb == nil){
-		var soc = TCPConnect(ip,ToInteger(port),15,true);
+		var soc = TCPConnect(get_host_ip(),ToInteger(port),15,true);
 		if(soc != nil){
 			replace_kb_item("Transports/TCP/"+port,ENCAPS_TLSv12);
 			return ENCAPS_TLSv12;

@@ -217,10 +217,16 @@ Value ToLowerBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 inline std::regex RegExp(const std::string& r, bool icase) {
-    if (icase) {
-        return std::regex(r, std::regex_constants::icase);
+    std::string msg = "";
+    try {
+        if (icase) {
+            return std::regex(r, std::regex_constants::icase);
+        }
+        return std::regex(r);
+    } catch (std::regex_error err) {
+        msg = err.what();
     }
-    return std::regex(r);
+    throw RuntimeException(r + " is not a valid regex expression " + msg);
 }
 
 //buffer,partten,bool icase

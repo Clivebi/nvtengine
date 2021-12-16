@@ -63,6 +63,7 @@ public:
     bool IsBreakAvaliable() { return mType == For || mType == Switch; }
     bool IsContinueAvaliable() { return mType == For; }
     bool IsInFunctionContext();
+    bool IsInFunctionContext(std::string&name);
 
     void AddVar(const std::string& name);
     void SetVarValue(const std::string& name, Value value);

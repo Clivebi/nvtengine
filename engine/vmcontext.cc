@@ -114,6 +114,18 @@ bool VMContext::IsInFunctionContext() {
     return false;
 }
 
+bool VMContext::IsInFunctionContext(std::string& name) {
+    VMContext* seek = this;
+    while (seek) {
+        if (seek->mType == Function) {
+            name = seek->mName;
+            return true;
+        }
+        seek = seek->mParent;
+    }
+    return false;
+}
+
 VMContext* VMContext::GetTopContext() {
     VMContext* ctx = this;
     while (ctx->mParent != NULL) {
@@ -141,6 +153,7 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
         throw RuntimeException("variable not changable,because name is builtin :" + name);
     }
     VMContext* ctx = this;
+    bool isInFunction = false;
     while (ctx != NULL) {
         std::map<std::string, Value>::iterator iter = ctx->mVars.find(name);
         if (iter != ctx->mVars.end()) {
@@ -148,12 +161,19 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
             return;
         }
         if (ctx->mType == Function) {
+            isInFunction = true;
             ctx = GetTopContext();
         } else {
             ctx = ctx->mParent;
         }
     }
-    mVars[name] = value;
+    if (isInFunction || NULL == mParent) {
+        mVars[name] = value;
+        return;
+    }
+    ctx = GetTopContext();
+    ctx->mVars[name] = value;
+    LOG("auto add var in the file context " + name, " File: ", ctx->mName);
 }
 
 bool VMContext::IsShadowName(const std::string& name) {
@@ -196,7 +216,9 @@ Value VMContext::GetVarValue(const std::string& name) {
     Value ret;
     if (!GetVarValue(name, ret)) {
         //DEBUG_CONTEXT();
-        LOG("variable not found :" + name);
+        std::string func;
+        IsInFunctionContext(func);
+        LOG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
     }
     return ret;
 }
@@ -275,7 +297,7 @@ std::string VMContext::DumpContext(bool var) {
         }
         o << "\n";
         if (var || ctx->mType == Function) {
-            o << prefix << "Vars:\n";
+            o << prefix << "VARS:\n";
             auto iter2 = ctx->mVars.begin();
             while (iter2 != ctx->mVars.end()) {
                 o << prefix << iter2->first << ":" << iter2->second.ToDescription() << "\n";
