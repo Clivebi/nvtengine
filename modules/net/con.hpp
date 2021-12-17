@@ -1,4 +1,6 @@
 #pragma once
+#include <errno.h>
+
 #include "../io.hpp"
 #include "socket.hpp"
 
@@ -8,16 +10,27 @@ protected:
     int mReadTimeout;
     int mWriteTimeout;
     int mSocket;
+    int mLastError;
     std::string mName;
     std::map<std::string, void*> mUserData;
+
+    void UpdateLastError() {
+#ifdef WIN32
+        mLastError = WSAGetLastError();
+#else
+        mLastError = errno;
+#endif
+    }
 
 public:
     BaseConn(int Socket, int ReadTimeout, int WriteTimeout, std::string name)
             : mReadTimeout(ReadTimeout),
               mWriteTimeout(WriteTimeout),
               mSocket(Socket),
-              mName(name) {}
+              mName(name),
+              mLastError(0) {}
     virtual int GetFD() { return mSocket; }
+    virtual int GetLastError() { return mLastError; }
     virtual ~BaseConn() { Close(); }
     void SetUserData(std::string key, void* data) { mUserData[key] = data; }
     void* GetUserData(std::string key) {
@@ -39,11 +52,13 @@ public:
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
             LOG("BaseConn read timeout:", mReadTimeout);
+            UpdateLastError();
             return -1;
         }
         int nSize = ::recv(mSocket, buffer, size, 0);
         if (nSize == -1) {
-            LOG("BaseConn recv error ", errno);
+            UpdateLastError();
+            LOG("BaseConn recv error ", mLastError);
         }
         return nSize;
     }
@@ -51,11 +66,13 @@ public:
     virtual int Write(const void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
             LOG("BaseConn write timeout:", mReadTimeout);
+            UpdateLastError();
             return -1;
         }
         int nSize = ::send(mSocket, buffer, size, 0);
         if (nSize == -1) {
-            LOG("BaseConn send error ", errno);
+            UpdateLastError();
+            LOG("BaseConn recv error ", mLastError);
         }
         return nSize;
     }

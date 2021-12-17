@@ -1,8 +1,6 @@
 #include "../../net/con.hpp"
 #include "../api.hpp"
 
-#define NOT_IMPLEMENT() throw RuntimeException("Not Implement:" + std::string(__FUNCTION__))
-
 Value open_priv_sock_tcp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     NOT_IMPLEMENT();
     return Value();
@@ -66,20 +64,31 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return con->Write(args[1].bytes.c_str(), length);
 }
 
-//socket_negotiate_ssl
-Value socket_negotiate_ssl(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    NOT_IMPLEMENT();
-    return Value();
-}
-//socket_get_cert
-Value socket_get_cert(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    NOT_IMPLEMENT();
-    return Value();
-}
-
 Value socket_get_error(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    NOT_IMPLEMENT();
-    return Value();
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_RESOURCE(0);
+    if (!net::Conn::IsConn(args[0].resource)) {
+        throw RuntimeException("get_source_port resource type mismatch");
+    }
+    net::Conn* con = (net::Conn*)args[0].resource.get();
+    int err = con->GetBaseConn()->GetLastError();
+
+    switch (err) {
+    case 0:
+        return 0;
+    case ETIMEDOUT:
+        return 1;
+    case EBADF:
+    case EPIPE:
+    case ECONNRESET:
+    case ENOTSOCK:
+        return 2;
+    case ENETUNREACH:
+    case EHOSTUNREACH:
+        return 3;
+    }
+
+    return err;
 }
 
 //这几个函数没有使用到，不实现
@@ -100,8 +109,18 @@ Value leave_multicast_group(std::vector<Value>& args, VMContext* ctx, Executor* 
 
 //get_source_port
 Value get_source_port(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    NOT_IMPLEMENT();
-    return Value();
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_RESOURCE(0);
+    if (!net::Conn::IsConn(args[0].resource)) {
+        throw RuntimeException("get_source_port resource type mismatch");
+    }
+    net::Conn* con = (net::Conn*)args[0].resource.get();
+    struct sockaddr_in ia;
+    socklen_t l = sizeof(ia);
+    if (getsockname(con->GetBaseConn()->GetFD(), (struct sockaddr*)&ia, &l) < 0) {
+        return Value();
+    }
+    return Value((long)ia.sin_port);
 }
 
 std::string SockAddressToString(struct sockaddr* addr) {

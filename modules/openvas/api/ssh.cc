@@ -1,4 +1,5 @@
 #include <libssh/libssh.h>
+#include <libssh/sftp.h>
 
 #include "../../net/con.hpp"
 #include "../api.hpp"
@@ -167,6 +168,10 @@ Value SSHAuth(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string privateKey = GetString(args, 3);
     std::string passphrase = GetString(args, 4);
     int rc = 0, methods = 0;
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return -1;
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !(methods = session->GetAuthMethod())) {
         return -1;
@@ -231,6 +236,10 @@ Value SSHLoginInteractive(std::vector<Value>& args, VMContext* ctx, Executor* vm
     std::string password = GetString(args, 2);
     int rc = 0;
     const char* s = NULL;
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return -1;
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
         return Value(-1);
@@ -316,6 +325,10 @@ Value SSHExecute(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_RESOURCE(0);
     std::string cmd = GetString(args, 1);
     std::string out, error;
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return Value();
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     int rc = exec_ssh_cmd(session->mSession, cmd, out, error);
     if (rc != SSH_OK) {
@@ -331,6 +344,10 @@ Value SSHGetIssueBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_RESOURCE(0);
     std::string username = GetString(args, 1);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return Value();
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
         LOG("invalid methods ", session->GetAuthMethod(), session->SetUserName(username));
@@ -348,6 +365,10 @@ Value SSHGetIssueBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
 Value SSHGetServerBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_RESOURCE(0);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return Value();
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     const char* banner = ssh_get_serverbanner(session->mSession);
     if (banner == NULL) {
@@ -361,6 +382,10 @@ Value SSHGetServerBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm)
 Value SSHGetPUBKey(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_RESOURCE(0);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return Value();
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     ssh_string key = ssh_get_pubkey(session->mSession);
     if (key == NULL) {
@@ -377,6 +402,10 @@ Value SSHGetAuthMethod(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_RESOURCE(0);
     std::string username = GetString(args, 1);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return "";
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
         LOG(ssh_get_error(session->mSession));
@@ -428,6 +457,10 @@ Value SSHShellOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_RESOURCE(0);
     std::string username = GetString(args, 1);
     int pty = GetInt(args, 2, 1);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "SSH") {
+        return -1;
+    }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
         return -1;
@@ -466,4 +499,22 @@ Value SSHShellWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     }
     scoped_refptr<SSHChannel> channel = (SSHChannel*)args[0].resource.get();
     return channel->write(args[1].bytes);
+}
+
+//channel
+Value SSHIsSFTPEnabled(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_RESOURCE(0);
+    CHECK_PARAMETER_STRING(1);
+    std::string name;
+    bool bEnabled = false;
+    if (!args[0].IsResource(name) || name != "SSH") {
+        return bEnabled;
+    }
+    scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
+
+    sftp_session sftp = sftp_new(session->mSession);
+    bEnabled = (sftp_init(sftp) == SSH_OK);
+    sftp_free(sftp);
+    return bEnabled;
 }

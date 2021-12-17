@@ -66,7 +66,7 @@ std::string GetHMAC(std::string hashMethod, const std::string& key, const std::s
         return "";
     }
     HMAC_CTX* hCtx = HMAC_CTX_new();
-    HMAC_Init_ex(hCtx, key.c_str(), key.size(), engine,NULL);
+    HMAC_Init_ex(hCtx, key.c_str(), key.size(), engine, NULL);
     HMAC_Update(hCtx, (BYTE*)input.c_str(), input.size());
     HMAC_Final(hCtx, buffer, &finalSize);
     HMAC_CTX_free(hCtx);
@@ -132,4 +132,103 @@ Value TLS1PRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_INTEGER(2);
     return Tls1PRF(args[0].bytes, args[1].bytes, args[2].Integer);
+}
+
+class SSLCipher : public Resource {
+protected:
+    EVP_CIPHER_CTX* mCtx;
+
+public:
+    explicit SSLCipher(const EVP_CIPHER* cipher, int pading, const std::string& key,
+                       const std::string& iv, int ForEnc) {
+        mCtx = EVP_CIPHER_CTX_new();
+        EVP_CipherInit(mCtx, cipher, (BYTE*)key.c_str(), (BYTE*)iv.c_str(), ForEnc);
+        EVP_CIPHER_CTX_set_padding(mCtx, pading);
+    }
+    std::string Update(const std::string& data) {
+        BYTE* out = new BYTE[data.size() + EVP_MAX_BLOCK_LENGTH];
+        int outSize = data.size() + EVP_MAX_BLOCK_LENGTH;
+        EVP_CipherUpdate(mCtx, out, &outSize, (const BYTE*)data.c_str(), data.size());
+        std::string ret = "";
+        ret.assign((char*)out, outSize);
+        delete[] out;
+        return ret;
+    }
+    std::string Final() {
+        BYTE out[EVP_MAX_BLOCK_LENGTH];
+        int outSize = EVP_MAX_BLOCK_LENGTH;
+        EVP_CipherFinal(mCtx, out, &outSize);
+        std::string ret = "";
+        ret.assign((char*)out, outSize);
+        return ret;
+    }
+    virtual void Close() {
+        if (mCtx) {
+            EVP_CIPHER_CTX_free(mCtx);
+            mCtx = NULL;
+        }
+    };
+    virtual bool IsAvaliable() { return mCtx != NULL; }
+    virtual std::string TypeName() { return "Cipher"; };
+};
+
+/*
+#define EVP_PADDING_PKCS7       1
+#define EVP_PADDING_ISO7816_4   2
+#define EVP_PADDING_ANSI923     3
+#define EVP_PADDING_ISO10126    4
+#define EVP_PADDING_ZERO        5
+*/
+
+Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(5);
+    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_INTEGER(1);
+    CHECK_PARAMETER_STRING(2);
+    CHECK_PARAMETER_STRING(3);
+    CHECK_PARAMETER_INTEGER(4);
+    OpenSSL_add_all_algorithms();
+    std::string cipherName = args[0].bytes;
+    std::string key = args[2].bytes;
+    std::string iv = args[3].bytes;
+    int padding = GetInt(args, 1, 1);
+    const EVP_CIPHER* cipher = EVP_get_cipherbyname(args[0].bytes.c_str());
+    if (cipher == NULL) {
+        LOG("invalid chiper name ", args[0].bytes.c_str());
+        return Value();
+    }
+    if (padding < 0 || padding > 5) {
+        LOG("invalid chiper name ", args[0].bytes.c_str());
+        return Value();
+    }
+    if (EVP_CIPHER_key_length(cipher) > key.size()) {
+        LOG("invalid key size  ");
+        return Value();
+    }
+    if (EVP_CIPHER_iv_length(cipher) > iv.size()) {
+        LOG("invalid iv size  ");
+        return Value();
+    }
+    return Value((Resource*)new SSLCipher(cipher, padding, key, iv, args[4].Integer));
+}
+
+Value CipherUpdate(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING(1);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "Cipher") {
+        return Value();
+    }
+    SSLCipher* cipher = (SSLCipher*)args[0].resource.get();
+    return cipher->Update(args[1].bytes);
+}
+
+Value CipherFinal(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    std::string resname;
+    if (!args[0].IsResource(resname) || resname != "Cipher") {
+        return Value();
+    }
+    SSLCipher* cipher = (SSLCipher*)args[0].resource.get();
+    return cipher->Final();
 }

@@ -48,8 +48,6 @@ BuiltinMethod ovaMethod[] = {
         {"socket_get_error", socket_get_error},
         {"recv", recv},
         {"send", send},
-        {"socket_negotiate_ssl", socket_negotiate_ssl},
-        {"socket_get_cert", socket_get_cert},
         {"join_multicast_group", join_multicast_group},
         {"leave_multicast_group", leave_multicast_group},
         {"get_source_port", get_source_port},
@@ -75,6 +73,9 @@ BuiltinMethod ovaMethod[] = {
         {"HMACMethod", HMACMethod},
         {"TLSPRF", TLSPRF},
         {"TLS1PRF", TLS1PRF},
+        {"CipherOpen", CipherOpen},
+        {"CipherUpdate", CipherUpdate},
+        {"CipherFinal", CipherFinal},
         {"X509Open", X509Open},
         {"X509Query", X509Query},
         {"SSHConnect", SSHConnect},
@@ -88,6 +89,7 @@ BuiltinMethod ovaMethod[] = {
         {"SSHShellOpen", SSHShellOpen},
         {"SSHShellRead", SSHShellRead},
         {"SSHShellWrite", SSHShellWrite},
+        {"SSHIsSFTPEnabled", SSHIsSFTPEnabled},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

@@ -93,6 +93,9 @@ inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal
         }                                                                    \
         EXCEPTION(std::string(__FUNCTION__) + check_error(i, "array", ctx)); \
     }
+
+#define NOT_IMPLEMENT() throw RuntimeException("Not Implement:" + std::string(__FUNCTION__))
+
 #endif
 
 #ifndef COUNT_OF

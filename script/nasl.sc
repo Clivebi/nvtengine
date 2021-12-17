@@ -474,6 +474,10 @@ func ssh_get_host_key(session){
 	return SSHGetPUBKey(session);
 }
 
+func sftp_enabled_check(session){
+	return SSHIsSFTPEnabled(session);
+}
+
 
 
 #open_priv_sock_udp(dport: port, sport: port)
@@ -531,7 +535,20 @@ func fwrite(data, file){
 
 #socket_negotiate_ssl(socket: soc)
 func socket_negotiate_ssl(socket){
-	error("nasl:socket_negotiate_ssl not implement");
+	if(soc == nil){
+		return -1;
+	}
+	if(ConnTLSHandshake(soc)){
+		return 0;
+	}
+	return -1;
+}
+
+func scanner_add_port(port=-1,proto="tcp"){
+	set_kb_item("Ports/"+proto+"/"+port,1);
+}
+
+func scanner_status(){
 }
 
 #gunzip(data: body)
@@ -576,6 +593,12 @@ func strcat(strlist...){
 	return ret;
 }
 func ord(obj){
+	if(typeof(obj) == "string" || typeof(obj) == "bytes"){
+		if(len(obj)){
+			return obj[0];
+		}
+		return '0';
+	}
 	if(obj > 255){
 		DisplayContext();
 		error("debug me");
@@ -836,6 +859,46 @@ func HMAC_SHA512(data,key){
 	return HMACMethod("sha512",key,data);
 }
 
+func rc4_encrypt(key,data){
+	var cipher = CipherOpen("rc4",1,key,"",true);
+	return CipherUpdate(cipher,data);
+}
+
+func aes128_cbc_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-128-cbc",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func aes256_cbc_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-256-cbc",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func aes128_ctr_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-128-ctr",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func aes256_ctr_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-256-ctr",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func aes128_gcm_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-128-gcm",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func aes256_gcm_encrypt(data,key,iv){
+	var cipher = CipherOpen("aes-256-gcm",1,key,iv,true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
+func DES(data,key){
+	var cipher = CipherOpen("des",1,key,"",true);
+	return CipherUpdate(cipher,data)+CipherFinal(cipher);
+}
+
 func get_port_state(port){
 	var key = ","+port;
 	var result = HostEnv();
@@ -975,6 +1038,17 @@ func cert_query(cert,cmd,idx=0){
 	return X509Query(cert,cmd,idx);
 }
 
+func plugin_run_find_service(){
+
+}
+
+func plugin_run_synscan(){
+
+}
+
+func plugin_run_openvas_tcp_scanner(){
+	
+}
 
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
