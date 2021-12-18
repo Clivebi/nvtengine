@@ -49,9 +49,9 @@ Value TrimLeftBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     size_t pos = 0;
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
-            pos = i + 1;
             continue;
         }
+        pos = i;
         break;
     }
     if (pos < p0.size()) {
@@ -69,15 +69,15 @@ Value TrimRightBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (p0.size() == 0) {
         return Value("");
     }
-    size_t length = p0.size();
-    for (size_t i = p0.size() - 1; i >= 0; i--) {
+    size_t remove_size = 0;
+    for (int i = p0.size() - 1; i > 0; i--) {
         if (ContainsByte(p1, p0[i])) {
-            length = i;
+            remove_size++;
             continue;
         }
         break;
     }
-    Value ret = Value::make_bytes(p0.substr(0, length));
+    Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
@@ -88,24 +88,25 @@ Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     size_t pos = 0;
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
-            pos = i + 1;
             continue;
         }
+        pos = i;
         break;
     }
-    size_t end = p0.size() - 1;
-    for (size_t i = p0.size() - 1; i >= 0; i--) {
+    p0 = p0.substr(pos);
+    if (p0.size() == 0) {
+        Value ret = Value::make_bytes("");
+        return p0;
+    }
+    size_t remove_size = 0;
+    for (int i = p0.size() - 1; i > 0; i--) {
         if (ContainsByte(p1, p0[i])) {
-            end = i;
+            remove_size++;
             continue;
         }
         break;
     }
-    Value ret = Value::make_bytes("");
-    if (pos > end) {
-        return ret;
-    }
-    ret.bytes = p0.substr(pos, end - pos);
+    Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
@@ -308,7 +309,6 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         result += str;
         result += "\n";
     }
-    std::cout << result << std::endl;
     return result;
 }
 

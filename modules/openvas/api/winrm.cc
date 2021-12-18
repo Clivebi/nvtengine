@@ -45,6 +45,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_STRING(2);
+    CHECK_PARAMETER_INTEGER(3);
     std::string resname;
     if (!args[0].IsResource(resname) || resname != "WINRM") {
         return Value();
@@ -53,7 +54,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string errOut;
     WINRMHandle* Handle = (WINRMHandle*)args[0].resource.get();
     WinRMExecute_return result = WinRMExecute(Handle->mHandle, (char*)args[1].bytes.c_str(),
-                                              (char*)args[2].bytes.c_str());
+                                              (char*)args[2].bytes.c_str(), args[3].Integer);
     Value ret = Value::make_map();
     if (result.r3 != NULL) {
         LOG("WinRMExecute have error :", result.r3);

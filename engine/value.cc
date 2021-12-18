@@ -680,7 +680,13 @@ bool IsVisableString(const std::string& src) {
         if (isprint(c) || c == '\r' || c == '\n' || c == '\t' || c == ' ') {
             continue;
         }
-        return false;
+        int d_size = 0;
+        int rune = utf8::DecodeRune(src.substr(i), d_size);
+        if (rune == utf8::RuneError || d_size == 1) {
+            return false;
+        }
+        i += d_size;
+        i--;
     }
     return true;
 }

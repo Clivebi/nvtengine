@@ -95,16 +95,3 @@ func wmi_query(handle,query){
     }
     return pts;
 }
-
-#host,port,login,password,ishttps,inscure,ca(base64 encode),cert(base64 encode),certkey,timeout( second).useNTLM
-var winrm = CreateWinRM("192.168.4.180",5985,"Lewis","Lewis123",false,true,"","","",15,true);
-if(winrm == nil){
-    Println("CreateWinRM failed...");
-    exit(0);
-}
-Println(wmi_query(winrm,"SELECT ProcessId,Name,ExecutablePath FROM Win32_Process"));
-#Println(wmi_query(winrm,"SELECT Name, TotalPhysicalMemory FROM Win32_Computersystem"));
-#Println(wmi_query(winrm,"SELECT * FROM Win32_Processor"));
-#Println(wmi_query(winrm,"SELECT DeviceID, Name, NumberOfCores FROM Win32_Processor"));
-#Println(wmi_query(winrm,"SELECT DeviceID, Manufacturer, Name FROM Win32_PNPEntity WHERE DeviceID LIKE '%PCI\\\\VEN_%' "));
-#Println(wmi_query(winrm,"SELECT Description, Index, IPAddress, MACAddress FROM Win32_NetworkAdapterConfiguration"));

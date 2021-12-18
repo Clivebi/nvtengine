@@ -66,11 +66,18 @@ func WinRMClose(h uintptr) {
 }
 
 //export WinRMExecute
-func WinRMExecute(handle uintptr, cmd *C.char, input *C.char) (StdOut *C.char, StdErr *C.char, ExitCode C.int, ErrorMsg *C.char) {
+func WinRMExecute(handle uintptr, cmd *C.char, input *C.char, ps C.int) (StdOut *C.char, StdErr *C.char, ExitCode C.int, ErrorMsg *C.char) {
+	var out, errOut string
+	var code int
+	var err error
 	client := cgo.Handle(handle).Value().(*winrm.Client)
 	cmdstr := C.GoString(cmd)
 	inputstr := C.GoString(input)
-	out, errOut, code, err := client.RunWithString(cmdstr, inputstr)
+	if ps == 1 {
+		out, errOut, code, err = client.RunPSWithString(cmdstr, inputstr)
+	} else {
+		out, errOut, code, err = client.RunWithString(cmdstr, inputstr)
+	}
 	if err != nil {
 		ErrorMsg = C.CString(err.Error())
 	} else {

@@ -2,6 +2,7 @@
 
 /* package command-line-arguments */
 
+
 #line 1 "cgo-builtin-export-prolog"
 
 #include <stddef.h> /* for ptrdiff_t below */
@@ -10,22 +11,22 @@
 #define GO_CGO_EXPORT_PROLOGUE_H
 
 #ifndef GO_CGO_GOSTRING_TYPEDEF
-typedef struct {
-    const char* p;
-    ptrdiff_t n;
-} _GoString_;
+typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 #endif
 
 #endif
 
 /* Start of preamble from import "C" comments.  */
 
+
 #line 3 "winrm.go"
 #include <stdio.h>
 
 #line 1 "cgo-generated-wrapper"
 
+
 /* End of preamble from import "C" comments.  */
+
 
 /* Start of boilerplate cgo prologue.  */
 #line 1 "cgo-gcc-export-header-prolog"
@@ -53,22 +54,15 @@ typedef double _Complex GoComplex128;
   static assertion to make sure the file is being used on architecture
   at least with matching size of GoInt.
 */
-typedef char _check_for_64_bit_pointer_matching_GoInt[sizeof(void*) == 64 / 8 ? 1 : -1];
+typedef char _check_for_64_bit_pointer_matching_GoInt[sizeof(void*)==64/8 ? 1:-1];
 
 #ifndef GO_CGO_GOSTRING_TYPEDEF
 typedef _GoString_ GoString;
 #endif
-typedef void* GoMap;
-typedef void* GoChan;
-typedef struct {
-    void* t;
-    void* v;
-} GoInterface;
-typedef struct {
-    void* data;
-    GoInt len;
-    GoInt cap;
-} GoSlice;
+typedef void *GoMap;
+typedef void *GoChan;
+typedef struct { void *t; void *v; } GoInterface;
+typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 
 #endif
 
@@ -78,19 +72,17 @@ typedef struct {
 extern "C" {
 #endif
 
-extern GoUintptr WinRMOpen(char* host, int port, char* login, char* key, int isHttps, int Inscure,
-                           char* base64CA, char* base64Cert, char* certKey, int timeout_second,
-                           int useNTLM);
+extern GoUintptr WinRMOpen(char* host, int port, char* login, char* key, int isHttps, int Inscure, char* base64CA, char* base64Cert, char* certKey, int timeout_second, int useNTLM);
 extern void WinRMClose(GoUintptr h);
 
 /* Return type for WinRMExecute */
 struct WinRMExecute_return {
-    char* r0; /* StdOut */
-    char* r1; /* StdErr */
-    int r2;   /* ExitCode */
-    char* r3; /* ErrorMsg */
+	char* r0; /* StdOut */
+	char* r1; /* StdErr */
+	int r2; /* ExitCode */
+	char* r3; /* ErrorMsg */
 };
-extern struct WinRMExecute_return WinRMExecute(GoUintptr handle, char* cmd, char* input);
+extern struct WinRMExecute_return WinRMExecute(GoUintptr handle, char* cmd, char* input, int ps);
 
 #ifdef __cplusplus
 }
