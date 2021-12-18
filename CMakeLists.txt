@@ -54,26 +54,12 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
 
-#set(CXX_FLAGS_DEBUG "${CXX_GCC_FLAGS} -Werror -ggdb3 -O0 -gdwarf-2")
-#set(CXX_FLAGS_RELEASE "${CXX_FLAGS_RELEASE} ${CXX_GCC_FLAGS} -O2 -fPIC -gdwarf-2 -DNDEBUG -Wall")
-
-set(GENSRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-
-add_custom_command(
-    OUTPUT ${GENSRC_DIR}/script.tab.hpp  ${GENSRC_DIR}/script.tab.cpp
-    COMMAND bison --defines --output=${GENSRC_DIR}/script.tab.cpp ${CMAKE_CURRENT_SOURCE_DIR}/script.y
-    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/script.y)
-set_source_files_properties(${GENSRC_DIR}/script.tab.cpp PROPERTIES GENERATED TRUE)
-
-add_custom_command(
-    OUTPUT ${GENSRC_DIR}/script.lex.cpp ${GENSRC_DIR}/script.lex.hpp
-    COMMAND flex --header-file=${GENSRC_DIR}/script.lex.hpp --outfile=${GENSRC_DIR}/script.lex.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/script.l
-    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/script.l)
-set_source_files_properties(${GENSRC_DIR}/script.lex.cpp  PROPERTIES GENERATED TRUE)
 
 add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
+
+SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
+
 
 
 #this is for mac static 
@@ -82,6 +68,9 @@ set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
 set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
 set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
 set(SSH_LDFLAGS "${CMAKE_BINARY_DIR}/libssh.a")
+
+set(WINRM_LDFLAGS "${CMAKE_BINARY_DIR}/winrm.a")
+set(EXTENAL_LDFLAGS "-framework CoreFoundation -framework Security")
 
 add_executable(NVTEngine
     nvtengine.cc 
@@ -95,11 +84,30 @@ add_executable(Interpreter
 )
 
 
+message(${CMAKE_CURRENT_SOURCE_DIR})
+add_custom_command(TARGET NVTEngine
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
+
+
+add_custom_command(TARGET Interpreter
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+
+
 target_link_libraries(  NVTEngine  
                         engine  
                         masscan 
+                        ${WINRM_LDFLAGS}
                         "${KRB5_LDFLAGS}"
                         "-L${CMAKE_BINARY_DIR}"
+                        ${EXTENAL_LDFLAGS}
                         ${OPENSSL_LDFLAGS} 
                         ${ZLIB_LDFLAGS}
                         ${BROTLI_LDFLAGS}
@@ -109,6 +117,8 @@ target_link_libraries(  NVTEngine
 target_link_libraries(  Interpreter  
                         engine  
                         masscan 
+                        ${WINRM_LDFLAGS}
+                        ${EXTENAL_LDFLAGS}
                         "${KRB5_LDFLAGS}"
                         "-L${CMAKE_BINARY_DIR}"
                         ${OPENSSL_LDFLAGS} 

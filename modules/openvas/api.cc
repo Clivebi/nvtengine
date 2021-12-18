@@ -7,6 +7,7 @@
 #include "./api/ssh.cc"
 #include "./api/time.cc"
 #include "./api/util.cc"
+#include "./api/winrm.cc"
 #include "ovacontext.cc"
 
 BuiltinMethod ovaMethod[] = {
@@ -90,6 +91,8 @@ BuiltinMethod ovaMethod[] = {
         {"SSHShellRead", SSHShellRead},
         {"SSHShellWrite", SSHShellWrite},
         {"SSHIsSFTPEnabled", SSHIsSFTPEnabled},
+        {"CreateWinRM", CreateWinRM},
+        {"WinRMCommand", WinRMCommand},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
