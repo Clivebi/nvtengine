@@ -36,8 +36,6 @@ public:
 
 std::list<std::string> split(const std::string& text, char split_char);
 
-std::string HTMLEscape(const std::string& src);
-
 std::string ToString(double val);
 
 std::string ToString(int64_t val);
@@ -50,7 +48,7 @@ std::string ToString(long val);
 
 std::string ToString(unsigned int val);
 
-std::string HexEncode(const char* buf, int count, std::string prefix = "");
+std::string HexEncode(const char* buf, size_t count, std::string prefix = "");
 
 std::string DecodeJSONString(const std::string& src);
 

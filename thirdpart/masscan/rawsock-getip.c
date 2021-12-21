@@ -56,7 +56,7 @@ rawsock_get_adapter_ip(const char *ifname)
 
 /*****************************************************************************
  *****************************************************************************/
-#elif defined(WIN32)
+#elif defined(_WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #ifdef _MSC_VER

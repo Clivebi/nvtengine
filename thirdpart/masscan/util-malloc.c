@@ -101,7 +101,7 @@ REALLOC(void *p, size_t size)
 char *
 STRDUP(const char *str)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
     char *p = _strdup(str);
 #else
     char *p = strdup(str);

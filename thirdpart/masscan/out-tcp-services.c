@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <netdb.h>
 #else
 #include <WinSock2.h>

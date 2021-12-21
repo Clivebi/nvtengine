@@ -1123,7 +1123,7 @@ template_set_target_ipv4(
     }
 }
 
-#if defined(WIN32) || defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN32)
 #define AF_INET6 23
 #else
 #include <sys/socket.h>

@@ -393,7 +393,7 @@ int rawsock_get_default_interface(char *ifname, size_t sizeof_ifname)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include "massip-parse.h"

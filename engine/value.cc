@@ -210,7 +210,7 @@ std::string ToString(int64_t val) {
     return buffer;
 }
 
-std::string HexEncode(const char* buf, int count, std::string prefix) {
+std::string HexEncode(const char* buf, size_t count, std::string prefix) {
     char buffer[6] = {0};
     std::string result = "";
     for (size_t i = 0; i < count; i++) {
@@ -766,7 +766,7 @@ Value::INTVAR Value::ToInteger() const {
         return strtoll(bytes.c_str(), NULL, 0);
     }
     default:
-        return (__LONG_LONG_MAX__);
+        return (-1ll);
     }
 }
 
@@ -831,7 +831,7 @@ const Value Value::operator[](const Value& key) const {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
-        if (key.Integer < 0 || key.Integer >= bytes.size()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= bytes.size()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("index of string(bytes) out of range");
         }
@@ -842,7 +842,7 @@ const Value Value::operator[](const Value& key) const {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
-        if (key.Integer < 0 || key.Integer >= Length()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {
@@ -910,7 +910,7 @@ Value& Value::operator[](const Value& key) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
-        if (key.Integer < 0 || key.Integer >= Length()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {
@@ -939,7 +939,7 @@ void Value::SetValue(const Value& key, const Value& val) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
-        if (key.Integer < 0 || key.Integer >= bytes.size()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= bytes.size()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
@@ -951,7 +951,7 @@ void Value::SetValue(const Value& key, const Value& val) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
-        if (key.Integer < 0 || key.Integer >= Length()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG("set index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {

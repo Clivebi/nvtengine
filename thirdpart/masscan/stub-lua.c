@@ -1,7 +1,7 @@
 #define LUAAPI
 #include "stub-lua.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #pragma warning(disable: 4133 4113 4047)
@@ -29,7 +29,7 @@ int stublua_init(void)
             "liblua.dylib",
             0
         };
-#elif defined(WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
+#elif defined(_WIN32) || defined(WIN64) || defined(_WIN32) || defined(_WIN64)
         static const char *possible_names[] = {
             "lua53.dll",
             "lua.dll",
@@ -45,7 +45,7 @@ int stublua_init(void)
 #endif
         unsigned i;
         for (i=0; possible_names[i]; i++) {
-#if defined(WIN32)
+#if defined(_WIN32)
             lib = LoadLibraryA(possible_names[i]);
 #else
             lib = dlopen(possible_names[i], RTLD_LAZY);
@@ -63,7 +63,7 @@ int stublua_init(void)
         }
     }
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #define DOLINK(name) \
     name = (void (*)())GetProcAddress(lib, #name); \
     if (name == NULL) fprintf(stderr, "liblua: %s: failed\n", #name);

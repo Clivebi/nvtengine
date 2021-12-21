@@ -52,9 +52,9 @@
  *****************************************************************************/
 static int64_t ftell_x(FILE *fp)
 {
-#if defined(WIN32) && defined(__GNUC__)
+#if defined(_WIN32) && defined(__GNUC__)
     return ftello64(fp);
-#elif defined(WIN32) && defined(_MSC_VER)
+#elif defined(_WIN32) && defined(_MSC_VER)
     return _ftelli64(fp);
 #else
     return ftello(fp);

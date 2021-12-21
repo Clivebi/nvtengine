@@ -80,7 +80,7 @@ rawsock_get_adapter_ipv6(const char *ifname)
 
 /*****************************************************************************
  *****************************************************************************/
-#elif defined(WIN32)
+#elif defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <WS2tcpip.h>

@@ -2,7 +2,7 @@
 #define PIXIE_FILE_H
 #include <stdio.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <io.h>
 #define access _access
 #else

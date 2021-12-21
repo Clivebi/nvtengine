@@ -15,7 +15,7 @@ protected:
     std::map<std::string, void*> mUserData;
 
     void UpdateLastError() {
-#ifdef WIN32
+#ifdef _WIN32
         mLastError = WSAGetLastError();
 #else
         mLastError = errno;

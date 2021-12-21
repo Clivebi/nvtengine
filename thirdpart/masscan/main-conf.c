@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <limits.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #define getcwd _getcwd
 #else
@@ -137,7 +137,7 @@ print_version()
 
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
     os = "Windows";
 #elif defined(__linux__)
     os = "Linux";

@@ -11,7 +11,7 @@
 char global_self[512] = "";
 
 
-#if defined(__GLIBC__) && !defined(WIN32)
+#if defined(__GLIBC__) && !defined(_WIN32)
 #include <unistd.h>
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -95,7 +95,7 @@ pixie_backtrace_init(const char *self)
 {
 }
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 #include <Windows.h>
 
 typedef struct _SYMBOL_INFO {
@@ -163,7 +163,7 @@ void printStack( void )
      for( i = 0; i < frames; i++ ) {
          Dbg.SymFromAddr( process, ( DWORD64 )( stack[ i ] ), 0, symbol );
 
-         printf( "%u: %s - 0x%0X\n", frames - i - 1, symbol->Name, symbol->Address );
+         printf( "%u: %s - 0x%llX\n", frames - i - 1, symbol->Name, symbol->Address );
      }
 
      free( symbol );

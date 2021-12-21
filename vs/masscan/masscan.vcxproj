@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{d123973f-208b-4b09-b476-fed2d4345aa0}</ProjectGuid>
+    <RootNamespace>masscan</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\thirdpart\masscan\crypto-base64.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\crypto-blackrock2.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\event-timeout.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\hostscan.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\in-binary.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\in-filter.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\in-report.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\logger.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-conf.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-dedup.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-listscan.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-ptrace.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-readrange.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-status.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\main-throttle.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\masscan-app.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\massip-addr.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\massip-parse.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\massip-rangesv4.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\massip-rangesv6.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\massip.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\misc-rstfilter.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-binary.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-certs.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-grepable.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-hostonly.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-json.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-ndjson.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-null.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-redis.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-tcp-services.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-text.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-unicornscan.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\out-xml.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\output.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\pixie-backtrace.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\pixie-file.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\pixie-threads.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\pixie-timer.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-arp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-banner1.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-banout.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-coap.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-dns.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ftp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-http.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-icmp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-imap4.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-interactive.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-memcached.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-netbios.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ntlmssp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ntp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-oproto.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-pop3.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-preprocess.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-sctp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-smb.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-smtp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-snmp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ssh.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ssl-test.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-ssl.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-tcp-rdp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-tcp-telnet.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-tcp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-udp.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-vnc.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-x509.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\proto-zeroaccess.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rand-blackrock.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rand-lcg.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rand-primegen.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-getif.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-getip.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-getip6.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-getmac.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-getroute.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock-pcapfile.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rawsock.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\read-service-probes.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\rte-ring.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\scripting-banner.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\scripting-masscan.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\scripting.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\siphash24.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\smack1.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\smackqueue.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stack-arpv4.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stack-if.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stack-ndpv6.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stack-queue.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stack-src.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\string_s.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stub-lua.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stub-pcap.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\stub-pfring.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\syn-cookie.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\templ-payloads.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\templ-pkt.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\util-checksum.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\util-malloc.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\versioning.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\vulncheck-heartbleed.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\vulncheck-ntp-monlist.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\vulncheck-sslv3.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\vulncheck.c" />
+    <ClCompile Include="..\..\thirdpart\masscan\xring.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\thirdpart\masscan\crypto-base64.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\event-timeout.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\hostscan.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\in-binary.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\in-filter.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\in-report.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\logger.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-dedup.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-globals.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-ptrace.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-readrange.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-status.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\main-throttle.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\masscan-app.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\masscan-status.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\masscan-version.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\masscan.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip-addr.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip-parse.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip-port.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip-rangesv4.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip-rangesv6.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\massip.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\misc-rstfilter.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\out-record.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\out-tcp-services.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\output.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\pixie-backtrace.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\pixie-file.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\pixie-sockets.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\pixie-threads.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\pixie-timer.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-arp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-banner1.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-banout.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-coap.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-dns-parse.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-dns.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-ftp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-http.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-icmp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-imap4.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-interactive.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-memcached.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-netbios.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-ntlmssp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-ntp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-oproto.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-pop3.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-preprocess.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-sctp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-smb.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-smtp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-snmp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-spnego.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-ssh.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-ssl.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-tcp-rdp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-tcp-telnet.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-tcp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-udp.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-vnc.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-x509.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\proto-zeroaccess.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rand-blackrock.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rand-lcg.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rand-primegen.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rawsock-adapter.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rawsock-pcapfile.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rawsock.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\read-service-probes.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\rte-ring.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\scripting.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\siphash24.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\smack.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\smackqueue.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stack-arpv4.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stack-ndpv6.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stack-queue.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stack-src.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\string_s.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stub-lua.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stub-pcap-dlt.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stub-pcap.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\stub-pfring.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\syn-cookie.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\templ-payloads.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\templ-pkt.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\unusedparm.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\util-bool.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\util-checksum.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\util-malloc.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\versioning.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\vulncheck.h" />
+    <ClInclude Include="..\..\thirdpart\masscan\xring.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

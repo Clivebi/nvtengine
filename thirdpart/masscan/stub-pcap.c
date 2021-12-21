@@ -36,7 +36,7 @@
 #include "stub-pcap.h"
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
@@ -283,7 +283,7 @@ static const pcap_if_t *null_PCAP_DEV_NEXT(const pcap_if_t *dev)
 /*
  * Some Windows-specific functions to improve speed
  */
-#if defined(WIN32)
+#if defined(_WIN32)
 static pcap_send_queue *null_PCAP_SENDQUEUE_ALLOC(size_t size)
 {
 	UNUSEDPARM(size);
@@ -306,7 +306,7 @@ static int null_PCAP_SENDQUEUE_QUEUE(pcap_send_queue *queue,
 	my_null(4, queue, pkt_header, pkt_data);
 	return 0;
 }
-#endif /*WIN32*/
+#endif /*_WIN32*/
 
 
 /**
@@ -318,7 +318,7 @@ static int null_PCAP_SENDQUEUE_QUEUE(pcap_send_queue *queue,
 int pcap_init(void)
 {
     struct PcapFunctions *pl = &PCAP;
-#ifdef WIN32
+#ifdef _WIN32
     void * hPacket;
     void * hLibpcap;
     
@@ -359,7 +359,7 @@ if (pl->datalink == NULL) pl->func_err=1, pl->datalink = null_##PCAP_DATALINK;
 #endif
     
     
-#ifndef WIN32
+#ifndef _WIN32
 #ifndef STATICPCAP
     void *hLibpcap;
     
@@ -429,7 +429,7 @@ pl->func_err=0, pl->datalink = null_##PCAP_DATALINK;
     pl->dev_next = null_PCAP_DEV_NEXT;
 
     /* windows-only functions that might improve speed */
-#if defined(WIN32)
+#if defined(_WIN32)
 	DOLINK(PCAP_SENDQUEUE_ALLOC		, sendqueue_alloc);
 	DOLINK(PCAP_SENDQUEUE_TRANSMIT	, sendqueue_transmit);
 	DOLINK(PCAP_SENDQUEUE_DESTROY	, sendqueue_destroy);

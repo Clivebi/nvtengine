@@ -1,5 +1,5 @@
 #pragma once
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsocks.h>
 #else
 #include <arpa/inet.h>
@@ -33,7 +33,7 @@ public:
             return;
         }
         shutdown(fd, SHUT_RDWR);
-#ifdef WIN32
+#ifdef _WIN32
         closesocket(fd);
 #else
         close(fd);

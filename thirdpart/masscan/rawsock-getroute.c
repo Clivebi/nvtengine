@@ -423,7 +423,7 @@ int rawsock_get_default_gateway(const char *ifname, unsigned *ipv4)
 #endif
 
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <winsock2.h>
 #include <iphlpapi.h>
 #ifdef _MSC_VER

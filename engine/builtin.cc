@@ -27,9 +27,9 @@ Value Delete(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     switch (args[0].Type) {
     case ValueType::kBytes:
     case ValueType::kString:
-        if (args[1].IsInteger() && args[1].Integer < args[0].bytes.size()) {
+        if (args[1].IsInteger() && (size_t)args[1].Integer < args[0].bytes.size()) {
             std::string str = args[0].bytes.substr(0, args[1].Integer);
-            if (args[1].Integer + 1 < args[0].bytes.size()) {
+            if ((size_t)args[1].Integer + 1 < args[0].bytes.size()) {
                 str += args[0].bytes.substr(args[1].Integer + 1);
             }
             args[0].bytes = str;
@@ -275,7 +275,7 @@ Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             DEBUG_CONTEXT();
             throw RuntimeException("HexDecodeString parameter string is not a valid hex string");
         }
-        unsigned char val = strtol(buf, NULL, 16);
+        unsigned char val = (BYTE)strtol(buf, NULL, 16);
         result.append(1, val);
     }
     return Value::make_bytes(result);

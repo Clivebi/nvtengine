@@ -15,7 +15,7 @@
 /**
  * fopen_s
  */
-#if !defined(WIN32) || _MSC_VER == 1200
+#if !defined(_WIN32) || _MSC_VER == 1200
 errno_t fopen_s(FILE **pFile, const char *filename, const char *mode)
 {
     if (pFile == NULL || filename == NULL || mode == NULL)
@@ -47,7 +47,7 @@ memcasecmp(const void *lhs, const void *rhs, int length)
 /**
  * strcpy
  */
-#if !defined(WIN32)
+#if !defined(_WIN32)
 errno_t strcpy_s(char *dst, size_t sizeof_dst, const char *src)
 {
     size_t i;

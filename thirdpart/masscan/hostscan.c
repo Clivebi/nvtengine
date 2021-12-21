@@ -82,7 +82,7 @@
 #include "util-malloc.h"
 #include "vulncheck.h" /* checking vulns like monlist, poodle, heartblee */
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <WinSock.h>
 #if defined(_MSC_VER)
 #pragma comment(lib, "Ws2_32.lib")
@@ -859,7 +859,7 @@ struct ARPItem* resolve_mac_address(const char* host, unsigned* item, unsigned t
     while (!task->send_done) {
         pixie_mssleep(250);
     }
-    for (int i = 0; i < timeout_second * 1000 / 250; i++) {
+    for (unsigned i = 0; i < timeout_second * 1000 / 250; i++) {
         if (task->recv_done) {
             break;
         }

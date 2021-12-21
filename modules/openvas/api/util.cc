@@ -39,7 +39,7 @@ Value Rand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value USleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
-#ifdef WIN32
+#ifdef _WIN32
     Sleep(args[0].Integer);
 #else
     usleep(args[0].Integer);
@@ -50,7 +50,7 @@ Value USleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
-#ifdef WIN32
+#ifdef _WIN32
     Sleep(args[0].Integer * 1000);
 #else
     sleep(args[0].Integer);

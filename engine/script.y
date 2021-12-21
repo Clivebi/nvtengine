@@ -25,11 +25,11 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 };
 
 %token  <identifier>VAR FUNCTION FOR IF ELIF ELSE ADD SUB MUL DIV MOD ASSIGN
-        EQ NE GT GE LT LE LP RP LC RC SEMICOLON IDENT
+        EQ NE GT GE LT LE LPTOKEN RPTOKEN LC RC SEMICOLON IDENT
         BREAK CONTINUE RETURN COMMA STRING_LITERAL COLON ADDASSIGN SUBASSIGN
-        MULASSIGN DIVASSIGN INC DEC NOT LB RB IN SWITCH CASE DEFAULT
+        MULASSIGN DIVASSIGN INC DEC NOT LB RB INTOKEN SWITCH CASE DEFAULT
         BOR BAND BXOR BNG LSHIFT RSHIFT  BORASSIGN BANDASSIGN BXORASSIGN 
-        LSHIFTASSIGN RSHIFTASSIGN OR AND POINT MOREVAL URSHIFT URSHIFTASSIGN MODASSIGN
+        LSHIFTASSIGN RSHIFTASSIGN OR AND POINTTOKEN MOREVAL URSHIFT URSHIFTASSIGN MODASSIGN
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
@@ -53,7 +53,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %left  ADD SUB
 %left  MUL DIV MOD
 %left  COLON
-%left LP RP 
+%left LPTOKEN RPTOKEN 
 %right NOT INC DEC BNG 
 
 %nonassoc '|' UMINUS 
@@ -100,7 +100,7 @@ IDENTIFIER:IDENT
         {
                 $$= $1;
         }
-        |IN 
+        |INTOKEN 
         {
                 $$="in";
         }|DEFAULT
@@ -153,7 +153,7 @@ condition_statement:if_expresion
         }
         ;
 
-if_expresion: IF LP rvalue RP block
+if_expresion: IF LPTOKEN rvalue RPTOKEN block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -169,7 +169,7 @@ elseif_expresionlist:elseif_expresionlist  elseif_expresion
         }
         ;
 
-elseif_expresion: ELIF LP rvalue RP block
+elseif_expresion: ELIF LPTOKEN rvalue RPTOKEN block
         {
                 $$=parser->CreateConditionExpresion($3,$5);
         }
@@ -220,7 +220,7 @@ for_update:assign_expression_list
         ;
 
 
-for_statement: FOR LP for_init SEMICOLON for_condition SEMICOLON for_update RP block
+for_statement: FOR LPTOKEN for_init SEMICOLON for_condition SEMICOLON for_update RPTOKEN block
         {
                 $$=parser->CreateForStatement($3,$5,$7,$9);
         }
@@ -230,11 +230,11 @@ for_statement: FOR LP for_init SEMICOLON for_condition SEMICOLON for_update RP b
         }
         ;
 
-for_in_statement:FOR IDENTIFIER COMMA IDENTIFIER IN rvalue block
+for_in_statement:FOR IDENTIFIER COMMA IDENTIFIER INTOKEN rvalue block
         {
                 $$=parser->CreateForInStatement($2,$4,$6,$7);
         }
-        | FOR IDENTIFIER IN rvalue block
+        | FOR IDENTIFIER INTOKEN rvalue block
         {
                 $$=parser->CreateForInStatement("",$2,$4,$5);
         }
@@ -279,15 +279,15 @@ return_expression: RETURN rvalue
         }
         ;
 
-func_declaration:FUNCTION IDENTIFIER LP formal_parameterlist RP block
+func_declaration:FUNCTION IDENTIFIER LPTOKEN formal_parameterlist RPTOKEN block
         {
                 $$=parser->CreateFunction($2,$4,$6);
         }
-        | FUNCTION IDENTIFIER LP RP block
+        | FUNCTION IDENTIFIER LPTOKEN RPTOKEN block
         {
                 $$=parser->CreateFunction($2,NULL,$5);
         }
-        | FUNCTION IDENTIFIER LP IDENTIFIER MOREVAL RP block
+        | FUNCTION IDENTIFIER LPTOKEN IDENTIFIER MOREVAL RPTOKEN block
         {
                 Instruction* obj =parser->VarDeclarationExpresion($4,NULL);
                 obj= parser->CreateList(KnownListName::kDeclMore,obj); 
@@ -295,14 +295,14 @@ func_declaration:FUNCTION IDENTIFIER LP formal_parameterlist RP block
         }
         ;
 
-func_call_expression: IDENTIFIER LP value_list RP
+func_call_expression: IDENTIFIER LPTOKEN value_list RPTOKEN
         {
                 $$=parser->CreateFunctionCall($1,$3);
         }
-        | IDENTIFIER LP named_value_list RP{
+        | IDENTIFIER LPTOKEN named_value_list RPTOKEN{
                 $$=parser->CreateFunctionCall($1,$3);
         }
-        | IDENTIFIER LP RP
+        | IDENTIFIER LPTOKEN RPTOKEN
         {
                 $$=parser->CreateFunctionCall($1,NULL);
         }
@@ -355,7 +355,7 @@ named_value_list:named_value_list COMMA named_value
                 $$=parser->CreateList(KnownListName::kNamedValue,$1);
         };
 
-rvalue: LP rvalue RP
+rvalue: LPTOKEN rvalue RPTOKEN
         {
                 $$=$2;
         }
@@ -384,11 +384,11 @@ value_indexer_path:LB rvalue RB
         }
         ;
 
-object_indexer: POINT IDENTIFIER
+object_indexer: POINTTOKEN IDENTIFIER
         {
                 $$=parser->CreateObjectIndexer($2);
         }
-        | object_indexer POINT IDENTIFIER
+        | object_indexer POINTTOKEN IDENTIFIER
         {
                 $$=parser->AddObjectIndexer($1,$3);
         }
@@ -657,11 +657,11 @@ case_item_list:case_item_list case_item
         }
         ;
 
-switch_case_statement: SWITCH LP rvalue RP LC case_item_list DEFAULT COLON block RC
+switch_case_statement: SWITCH LPTOKEN rvalue RPTOKEN LC case_item_list DEFAULT COLON block RC
         {
                 $$=parser->CreateSwitchCaseStatement($3,$6,$9);
         }
-        |SWITCH LP rvalue RP LC case_item_list RC
+        |SWITCH LPTOKEN rvalue RPTOKEN LC case_item_list RC
         {
                 $$=parser->CreateSwitchCaseStatement($3,$6,NULL);
         }

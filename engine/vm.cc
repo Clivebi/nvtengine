@@ -98,7 +98,7 @@ scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error)
     yyscan_t scanner;
     yylex_init(&scanner);
     scoped_refptr<Parser> parser = new Parser(scanner);
-    bp = yy_scan_bytes((char*)data, size, scanner);
+    bp = yy_scan_bytes((char*)data, (int)size, scanner);
     yy_switch_to_buffer(bp, scanner);
     parser->Start(name);
     int err = yyparse(parser.get());

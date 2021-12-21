@@ -25,7 +25,7 @@
 
 static int is_pcap_file = 0;
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <winsock.h>
 #include <iphlpapi.h>
 
@@ -61,7 +61,7 @@ unsigned adapter_name_count = 0;
 
 /***************************************************************************
  ***************************************************************************/
-#ifdef WIN32
+#ifdef _WIN32
 int pcap_setdirection(pcap_t *pcap, pcap_direction_t direction)
 {
     static int (*real_setdirection)(pcap_t *, pcap_direction_t) = 0;
@@ -92,7 +92,7 @@ int pcap_setdirection(pcap_t *pcap, pcap_direction_t direction)
 void
 rawsock_init(void)
 {
-#ifdef WIN32
+#ifdef _WIN32
     /* Declare and initialize variables */
     
     // It is possible for an adapter to have multiple
@@ -850,7 +850,7 @@ rawsock_init_adapter(const char *adapter_name,
      * to roughly 300-kpps.
      *----------------------------------------------------------------*/
     adapter->sendq = 0;
-#if defined(WIN32)
+#if defined(_WIN32)
     if (is_sendq)
         adapter->sendq = PCAP.sendqueue_alloc(SENDQ_SIZE);
 #endif

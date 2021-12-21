@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #pragma warning(disable:4996)
 #define strncasecmp _strnicmp
 #endif

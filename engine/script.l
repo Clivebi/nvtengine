@@ -41,8 +41,8 @@ int yywrap( yyscan_t yyscanner)
 <INITIAL>">="        return GE;
 <INITIAL>"<"         return LT;
 <INITIAL>"<="        return LE;
-<INITIAL>"("         return LP;
-<INITIAL>")"         return RP;
+<INITIAL>"("         return LPTOKEN;
+<INITIAL>")"         return RPTOKEN;
 <INITIAL>"{"         return LC;
 <INITIAL>"}"         return RC;
 <INITIAL>";"         return SEMICOLON;
@@ -63,7 +63,7 @@ int yywrap( yyscan_t yyscanner)
 <INITIAL>"["         return LB;
 <INITIAL>"]"         return RB;
 <INITIAL>":"         return COLON;
-<INITIAL>"in"        return IN;
+<INITIAL>"in"        return INTOKEN;
 <INITIAL>"switch"    return SWITCH;
 <INITIAL>"case"      return CASE;
 <INITIAL>"default"   return DEFAULT;
@@ -80,7 +80,7 @@ int yywrap( yyscan_t yyscanner)
 <INITIAL>">>="       return RSHIFTASSIGN;
 <INITIAL>"||"        return OR;
 <INITIAL>"&&"        return AND;
-<INITIAL>"."         return POINT;
+<INITIAL>"."         return POINTTOKEN;
 <INITIAL>"..."       return MOREVAL;
 <INITIAL>">>>"       return URSHIFT;
 <INITIAL>">>>="      return URSHIFTASSIGN;

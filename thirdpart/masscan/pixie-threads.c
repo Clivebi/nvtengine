@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 #include "pixie-threads.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <Windows.h>
 #include <process.h>
 #endif
@@ -30,7 +30,7 @@
 void
 pixie_cpu_raise_priority(void)
 {
-#if defined WIN32
+#if defined _WIN32
 DWORD_PTR result;
     result = SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
     if (result == 0) {
@@ -62,7 +62,7 @@ DWORD_PTR result;
 void
 pixie_cpu_set_affinity(unsigned processor)
 {
-#if defined WIN32
+#if defined _WIN32
     DWORD_PTR mask;
     DWORD_PTR result;
     if (processor > 0)
@@ -98,7 +98,7 @@ pixie_cpu_set_affinity(unsigned processor)
 unsigned
 pixie_cpu_get_count(void)
 {
-#if defined WIN32
+#if defined _WIN32
     /* WINDOWS - use GetProcessAffinityMask() function */
     size_t x;
 #if defined _M_X64
@@ -188,7 +188,7 @@ pixie_begin_thread(
     unsigned flags,
     void *worker_data)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
     UNUSEDPARM(flags);
     return _beginthread(worker_thread, 0, worker_data);
 #else
@@ -207,7 +207,7 @@ pixie_begin_thread(
  ****************************************************************************/
 void pixie_thread_join(size_t thread_handle)
 {
-#if defined(WIN32)
+#if defined(_WIN32)
     WaitForSingleObject((HANDLE)thread_handle, INFINITE);
     CloseHandle((HANDLE)thread_handle);
 #else

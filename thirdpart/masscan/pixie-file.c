@@ -1,6 +1,6 @@
 #include "pixie-file.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <Windows.h>
 #include <io.h>
 #include <fcntl.h>
@@ -17,7 +17,7 @@ pixie_fopen_shareable(FILE **in_fp, const char *filename, unsigned is_append)
 
     *in_fp = NULL;
 
-#if defined(WIN32)
+#if defined(_WIN32)
     /* PORTABILITY: WINDOWS
      *  This bit of code deals with the fact that on Windows, fopen() opens
      *  a file so that it can't be moved. This code opens it a different

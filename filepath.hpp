@@ -3,7 +3,7 @@
 class FilePath {
 protected:
     std::string _full;
-#ifdef WIN32
+#ifdef _WIN32
     static const char s_separator = '\\';
 #else
     static const char s_separator = '/';

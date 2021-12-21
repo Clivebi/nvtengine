@@ -1,4 +1,7 @@
 #pragma once
+#ifdef _WIN32
+#include<Windows.h>
+#endif
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
     TypeName(const TypeName&);             \
     void operator=(const TypeName&)
@@ -56,7 +59,7 @@ protected:
     ~CRefCountedThreadSafeBase() {}
 
     void AddRef() const {
-#ifdef WIN32
+#ifdef _WIN32
         InterlockedIncrement(&ref_count_);
 #else
         __sync_fetch_and_add(&ref_count_, 1);
@@ -65,8 +68,8 @@ protected:
 
     // Returns true if the object should self-delete.
     bool Release() const {
-#ifdef WIN32
-        InterlockedDecrement(&ref_count_);
+#ifdef _WIN32
+       return 0== InterlockedDecrement(&ref_count_);
 #else
         if (!__sync_sub_and_fetch(&ref_count_, 1)) {
             return true;
