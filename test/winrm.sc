@@ -7,6 +7,30 @@ func _filter_item(item,keys){
     return ret;
 }
 
+func _split_keys_from_query_string(query){
+    query = TrimString(query,"\t ");
+    var index = IndexString(query," ");
+    if(index==-1){
+        return "";
+    }
+    query = query[index:];
+    index = IndexString(query," from");
+    if (index == -1){
+        index = IndexString(query," FROM");
+    }
+    if(index==-1){
+        return "";
+    }
+    query = query[:index];
+    query = TrimString(query," \t");
+    var list = SplitString(query,",");
+    var keys =[];
+    for v in list{
+        keys = append(keys,TrimString(v," \t"));
+    }
+    return keys;
+}
+
 # "root\rsop\computer"
 # Get-WmiObject -Query {SELECT Name from Win32_Processor}| Format-List -Property *
 func WMIQuery(handle,query,namespace=nil){
@@ -23,11 +47,16 @@ func WMIQuery(handle,query,namespace=nil){
     var out = TrimString(result.Stdout,"\r\n\t ");
     var lines = SplitString(out,"\n");
     var item = {};
-    for line in lines{
+    for li,line in lines{
         line = TrimString(line,"\r\n\t ");
         var pos = IndexString(line,":");
         if(pos ==-1){
             continue;
+        }
+        if(li+1 < len(lines)){
+            if(HasPrefixString(lines[li+1],"       ")){
+                line += TrimString(lines[li+1],"\r\n\t ");
+            }
         }
         var key =   line[:pos];
         var value = line[pos+1:];
@@ -108,7 +137,7 @@ func wmi_query(handle,query,namespace=nil){
     var pros = TrimString(result[0]["Properties"],"{}");
     var keys = [];
     if(!ContainsBytes(pros,"...")){
-        keys = SplitString(pros,", ");
+        keys = _split_keys_from_query_string(query);
     }else{
         if (len(result)) {
             for k,v in result[0]{
@@ -502,30 +531,30 @@ func win_cmd_exec(host="",username,password,cmd){
 }
 
 #host,port,login,password,ishttps,inscure,ca(base64 encode),cert(base64 encode),certkey,timeout( second).useNTLM
-var winrm = CreateWinRM("192.168.4.180",5985,"Lewis","Lewis123",false,true,"","","",15,true);
+var winrm = CreateWinRM("192.168.4.180",5985,"","",false,true,"","","",15,true);
 if(winrm == nil){
     Println("CreateWinRM failed...");
     exit(0);
 }
-Println(RegGetValue(winrm,"HKLM\\Software\\Microsoft\\Driver Signing","Policy"));
-Println(wmi_reg_get_bin_val(winrm,"Software\\Microsoft\\Driver Signing","Policy"));
-Println(wmi_reg_get_bin_val(winrm,"System\\CurrentControlSet\\Control\\Lsa","fullprivilegeauditing"));
-Println(wmi_reg_enum_key(winrm,"Software\\7-Zip"));
-Println(wmi_reg_enum_value(winrm,"Software\\7-Zip"));
-Println(wmi_reg_get_sz(winrm,"Software\\7-Zip","Path"));
-Println(wmi_reg_get_dword_val(winrm,"Software\\7-Zip","Test1"));
-Println(wmi_reg_get_ex_string_val(winrm,"Software\\7-Zip","Test5"));
-Println(wmi_reg_get_mul_string_val(winrm,"Software\\7-Zip","Test3"));
-Println(wmi_reg_get_bin_val(winrm,"Software\\7-Zip","Test4"));
+#Println(RegGetValue(winrm,"HKLM\\Software\\Microsoft\\Driver Signing","Policy"));
+#Println(wmi_reg_get_bin_val(winrm,"Software\\Microsoft\\Driver Signing","Policy"));
+#Println(wmi_reg_get_bin_val(winrm,"System\\CurrentControlSet\\Control\\Lsa","fullprivilegeauditing"));
+#Println(wmi_reg_enum_key(winrm,"Software\\7-Zip"));
+#Println(wmi_reg_enum_value(winrm,"Software\\7-Zip"));
+#Println(wmi_reg_get_sz(winrm,"Software\\7-Zip","Path"));
+#Println(wmi_reg_get_dword_val(winrm,"Software\\7-Zip","Test1"));
+#Println(wmi_reg_get_ex_string_val(winrm,"Software\\7-Zip","Test5"));
+#Println(wmi_reg_get_mul_string_val(winrm,"Software\\7-Zip","Test3"));
+#Println(wmi_reg_get_bin_val(winrm,"Software\\7-Zip","Test4"));
 
-Println(RegEnumKey(winrm,"HKLM\\Software\\7-Zip"));
-Println(RegEnumValue(winrm,"HKLM\\Software\\7-Zip"));
-Println(RegGetValue(winrm,"HKLM\\Software\\7-Zip","Path"));
+#Println(RegEnumKey(winrm,"HKLM\\Software\\7-Zip"));
+#Println(RegEnumValue(winrm,"HKLM\\Software\\7-Zip"));
+#Println(RegGetValue(winrm,"HKLM\\Software\\7-Zip","Path"));
 #Println(RegAddKey(winrm,"HKLM\\Software\\7-Zip\\Scaned\""));
 #Println(RegAddValue(winrm,"HKLM\\Software\\7-Zip\\Scaned\"",{"name":"Test\"","type":"REG_SZ","value":"TestValue"}));
 Println(wmi_query(winrm,"SELECT ProcessId,Name,ExecutablePath FROM Win32_Process"));
-Println(wmi_query(winrm,"SELECT Name, TotalPhysicalMemory FROM Win32_Computersystem"));
-Println(wmi_query(winrm,"SELECT * FROM Win32_Processor"));
+#Println(wmi_query(winrm,"SELECT Name, TotalPhysicalMemory FROM Win32_Computersystem"));
+#Println(wmi_query(winrm,"SELECT * FROM Win32_Processor"));
 Println(wmi_query(winrm,"SELECT DeviceID, Name, NumberOfCores FROM Win32_Processor"));
 Println(wmi_query(winrm,"SELECT DeviceID, Manufacturer, Name FROM Win32_PNPEntity WHERE DeviceID LIKE '%PCI\\\\VEN_%' "));
 Println(wmi_query(winrm,"SELECT Description, Index, IPAddress, MACAddress FROM Win32_NetworkAdapterConfiguration"));

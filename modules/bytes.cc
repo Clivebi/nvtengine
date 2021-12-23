@@ -86,6 +86,7 @@ Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
             head_remove++;
+            continue;
         }
         break;
     }
