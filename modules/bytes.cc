@@ -46,20 +46,17 @@ Value TrimLeftBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
-    size_t pos = 0;
+    size_t head_remove = 0;
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
-            continue;
+            head_remove++;
         }
-        pos = i;
         break;
     }
-    if (pos < p0.size()) {
-        Value ret = Value::make_bytes(p0.substr(pos));
-        return ret;
+    if(head_remove == p0.size()){
+        return Value::make_bytes("");
     }
-    Value ret = Value::make_bytes("");
-    return ret;
+    return Value::make_bytes(p0.substr(head_remove));
 }
 
 Value TrimRightBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -85,19 +82,17 @@ Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
-    size_t pos = 0;
+    size_t head_remove = 0;
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
-            continue;
+            head_remove++;
         }
-        pos = i;
         break;
     }
-    p0 = p0.substr(pos);
-    if (p0.size() == 0) {
-        Value ret = Value::make_bytes("");
-        return p0;
+    if(head_remove == p0.size()){
+        return Value::make_bytes("");
     }
+    p0 = p0.substr(head_remove);
     size_t remove_size = 0;
     for (int i = p0.size() - 1; i > 0; i--) {
         if (ContainsByte(p1, p0[i])) {
@@ -169,24 +164,29 @@ Value ReplaceAllBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-std::vector<Value> Split(std::string& src, std::string& slip) {
-    size_t i = std::string::npos;
-    std::string part = src;
-    std::vector<Value> result;
-    if (src.size() == 0 || slip.size() == 0) {
+std::list<std::string> Split(const std::string& src, const std::string& slip) {
+    std::list<std::string> result;
+    if (src.size() == 0) {
         return result;
     }
-    while (true) {
-        i = part.find(slip);
-        if (i != std::string::npos) {
-            result.push_back(part.substr(0, i));
-            part = part.substr(i + slip.size());
-        } else {
-            if (part.size()) {
-                result.push_back(part);
-            }
+    if (slip.size() == 0) {
+        result.push_back(src);
+        return result;
+    }
+    size_t pos = 0;
+    size_t start = 0;
+    while (start < src.size()) {
+        pos = src.find(slip, start);
+        if (pos == std::string::npos) {
             break;
         }
+        result.push_back(src.substr(start, pos - start));
+        start = pos + slip.size();
+    }
+    if (start < src.size()) {
+        result.push_back(src.substr(start));
+    } else if (start == src.size()) {
+        result.push_back("");
     }
     return result;
 }
@@ -195,12 +195,12 @@ Value SplitBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
-    std::vector<Value> result = Split(p0, p1);
-    std::vector<Value>::iterator iter = result.begin();
-    while (iter != result.end()) {
-        iter++;
+    std::list<std::string> result = Split(p0, p1);
+    Value ret = Value::make_array();
+    for (auto iter : result) {
+        ret._array().push_back(iter);
     }
-    return Value(result);
+    return ret;
 }
 
 Value ToUpperBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

@@ -5,7 +5,8 @@ NASL脚本可以通过自动化转换工具(NaslToOther)转换后由本引擎执
 ## 与openvas的区别
 1. 跨平台，去掉了原来的多进程逻辑，改为多线程
 2. 减少了依赖（主要用于解决跨平台），去掉了一些老旧的依赖库
-3. c++实现更好的代码可维护性
+3. c++实现更好的代码可维护性  
+4. c++代码大量减少了业务相关的代码，比如，比如API内置host这种，转由中间脚本nasl.sc实现
 
 ## 语法兼容性
 1. 禁止了原nasl匿名参数和命名参数混用的的语法，这种混用的语法给后续维护人员造成了很大困扰，而且容易存在参数无法完整检查带来的bug，新语法通过默认参数+命名参数实现同等功能。
@@ -25,5 +26,5 @@ MAC、windows、linux、unix
 - [ ] 无依赖主机指纹识别  
 - [x] openvas基础(string,http) API  
 - [ ] openvas数据包构造API  
-- [ ] openvas WMI API  
+- [x] openvas WMI API  
 - [x] openvas SSH API  

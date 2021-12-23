@@ -62,7 +62,7 @@ SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
 
 
 
-#this is for mac static 
+#开发机静态选项
 set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
 set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
 set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
@@ -85,20 +85,20 @@ add_executable(Interpreter
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
-add_custom_command(TARGET NVTEngine
-    PRE_LINK
-    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-    COMMAND echo "build winrm complete" 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+#add_custom_command(TARGET NVTEngine
+#    PRE_LINK
+#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+#    COMMAND echo "build winrm complete" 
+#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
+#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
 
 
-add_custom_command(TARGET Interpreter
-    PRE_LINK
-    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-    COMMAND echo "build winrm complete" 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+#add_custom_command(TARGET Interpreter
+#    PRE_LINK
+#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+#    COMMAND echo "build winrm complete" 
+#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
 
 target_link_libraries(  NVTEngine  

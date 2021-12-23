@@ -153,8 +153,11 @@ grepable_out_status(struct Output *out, FILE *fp, time_t timestamp,
         service = udp_service_name(port);
     else
         service = oproto_service_name(ip_proto);
-    
+#ifdef _WIN32
     fprintf(fp, "Timestamp: %llu", timestamp);
+#else
+     fprintf(fp, "Timestamp: %lu", timestamp);
+#endif
 
     fmt = ipaddress_fmt(ip);
     fprintf(fp, "\tHost: %s ()", fmt.string);

@@ -32,16 +32,18 @@ BuiltinMethod ovaMethod[] = {
         {"script_bugtraq_id", script_bugtraq_id},
         {"script_xref", script_xref},
         {"script_tag", script_tag},
+        {"get_script_oid", get_script_oid},
+
         {"set_kb_item", set_kb_item},
         {"get_kb_item", get_kb_item},
         {"get_kb_list", get_kb_list},
         {"replace_kb_item", replace_kb_item},
         {"get_preference", get_preference},
-        {"get_script_oid", get_script_oid},
+        
         {"security_message", security_message},
         {"log_message", log_message},
         {"error_message", error_message},
-        {"get_script_oid", get_script_oid},
+        
         {"ResolveHostName", ResolveHostName},
         {"ResolveHostNameToList", ResolveHostNameToList},
         {"open_priv_sock_tcp", open_priv_sock_tcp},
