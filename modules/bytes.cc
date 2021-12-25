@@ -4,28 +4,30 @@
 #include "../engine/check.hpp"
 using namespace Interpreter;
 
-Value ContainsBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value ContainsBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
-        return Value(args[0].bytes.find(args[1].bytes) != std::string::npos);
+    if (args[0].IsNULL()) {
+        return Value();
     }
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     return Value(p0.find(p1) != std::string::npos);
 }
 
-Value HasPrefixBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value HasPrefixBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
-        return Value(args[0].bytes.find(args[1].bytes) == 0);
-    }
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     return Value(p0.find(p1) == 0);
 }
 
-Value HasSuffixBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value HasSuffixBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     if (p0.size() < p1.size()) {
@@ -42,25 +44,37 @@ bool ContainsByte(std::string& str, unsigned char c) {
     return str.find(c) != std::string::npos;
 }
 
-Value TrimLeftBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value TrimLeftBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     size_t head_remove = 0;
     for (size_t i = 0; i < p0.size(); i++) {
         if (ContainsByte(p1, p0[i])) {
             head_remove++;
+            continue;
         }
         break;
     }
-    if(head_remove == p0.size()){
+    if (head_remove == p0.size()) {
+        if (args[0].IsString()) {
+            return "";
+        }
         return Value::make_bytes("");
+    } else {
+        if (args[0].IsString()) {
+            return p0.substr(head_remove);
+        }
+        return Value::make_bytes(p0.substr(head_remove));
     }
-    return Value::make_bytes(p0.substr(head_remove));
 }
 
-Value TrimRightBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value TrimRightBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     if (p0.size() == 0) {
@@ -74,12 +88,17 @@ Value TrimRightBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         }
         break;
     }
+    if (args[0].IsString()) {
+        return p0.substr(0, p0.size() - remove_size);
+    }
     Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
-Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value TrimBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     size_t head_remove = 0;
@@ -90,7 +109,10 @@ Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         }
         break;
     }
-    if(head_remove == p0.size()){
+    if (head_remove == p0.size()) {
+        if (args[0].IsString()) {
+            return "";
+        }
         return Value::make_bytes("");
     }
     p0 = p0.substr(head_remove);
@@ -102,33 +124,34 @@ Value TrimBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         }
         break;
     }
+    if (args[0].IsString()) {
+        return p0.substr(0, p0.size() - remove_size);
+    }
     Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
-Value IndexBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value IndexBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
-        return Value(args[0].bytes.find(args[1].bytes));
-    }
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     size_t pos = p0.find(p1);
     return Value((long)pos);
 }
 
-Value LastIndexBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value LastIndexBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    if (args[0].IsStringOrBytes() && args[1].IsStringOrBytes()) {
-        return Value(args[0].bytes.rfind(args[1].bytes));
-    }
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     size_t pos = p0.rfind(p1);
     return Value((long)pos);
 }
 
-Value RepeatBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value RepeatBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     int count = GetInt(args, 1);
     std::string p0 = GetString(args, 0);
@@ -136,33 +159,40 @@ Value RepeatBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     for (size_t i = 0; i < count; i++) {
         result.append(p0);
     }
-    Value ret = Value::make_bytes(result);
-    return ret;
+    if (args[0].IsString()) {
+        return result;
+    }
+    return Value::make_bytes(result);
 }
 
-Value ReplaceBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value ReplaceBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
+    CHECK_PARAMETER_STRING_OR_BYTES(2);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     std::string p2 = GetString(args, 2);
     int count = GetInt(args, 3, -1);
     std::string result = p0;
     result = replace_str(result, p1, p2, count);
-    Value ret = Value::make_bytes(result);
-    ret.bytes = result;
-    return ret;
+    if (args[0].IsString()) {
+        return result;
+    }
+    return Value::make_bytes(result);
 }
 
-Value ReplaceAllBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value ReplaceAllBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     std::string p2 = GetString(args, 2);
     std::string result = p0;
     result = replace_str(result, p1, p2, -1);
-    Value ret = Value::make_bytes(result);
-    ret.bytes = result;
-    return ret;
+    if (args[0].IsString()) {
+        return result;
+    }
+    return Value::make_bytes(result);
 }
 
 std::list<std::string> Split(const std::string& src, const std::string& slip) {
@@ -192,8 +222,10 @@ std::list<std::string> Split(const std::string& src, const std::string& slip) {
     return result;
 }
 
-Value SplitBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value SplitBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     std::list<std::string> result = Split(p0, p1);
@@ -204,18 +236,24 @@ Value SplitBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return ret;
 }
 
-Value ToUpperBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value ToUpperBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     std::string p0 = GetString(args, 0);
     transform(p0.begin(), p0.end(), p0.begin(), toupper);
-    return p0;
+    if (args[0].IsString()) {
+        return p0;
+    }
+    return Value::make_bytes(p0);
 }
 
-Value ToLowerBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value ToLowerBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     std::string p0 = GetString(args, 0);
     transform(p0.begin(), p0.end(), p0.begin(), tolower);
-    return p0;
+    if (args[0].IsString()) {
+        return p0;
+    }
+    return Value::make_bytes(p0);
 }
 
 inline std::regex RegExp(const std::string& r, bool icase) {
@@ -234,6 +272,9 @@ inline std::regex RegExp(const std::string& r, bool icase) {
 //buffer,partten,bool icase
 Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
+    if (args[0].IsNULL()) {
+        return Value();
+    }
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     bool icase = true;
@@ -283,8 +324,9 @@ Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
-    size_t n = args[0].Length();
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    std::string src = GetString(args, 0);
+    size_t n = src.size();
     size_t i = 0;
     std::string result = "";
     while (i < n) {
@@ -293,10 +335,10 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         char buffer[6] = {0};
         for (int j = 0; j < 16; j++, i++) {
             if (i < n) {
-                sprintf(buffer, "%02X ", (BYTE)args[0].bytes[i]);
+                sprintf(buffer, "%02X ", (BYTE)src[i]);
                 hex += buffer;
-                if (isprint(args[0].bytes[i])) {
-                    str += (char)args[0].bytes[i];
+                if (isprint(src[i])) {
+                    str += (char)src[i];
                 } else {
                     str += ".";
                 }
@@ -313,34 +355,34 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return result;
 }
 
-BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytes},
-                               {"HasPrefixBytes", HasPrefixBytes},
-                               {"HasSuffixBytes", HasSuffixBytes},
-                               {"TrimLeftBytes", TrimLeftBytes},
-                               {"TrimRightBytes", TrimRightBytes},
-                               {"TrimBytes", TrimBytes},
-                               {"IndexBytes", IndexBytes},
-                               {"LastIndexBytes", LastIndexBytes},
-                               {"RepeatBytes", RepeatBytes},
-                               {"ReplaceBytes", ReplaceBytes},
-                               {"ReplaceAllBytes", ReplaceAllBytes},
-                               {"SplitBytes", SplitBytes},
-                               {"ToLowerBytes", ToLowerBytes},
-                               {"ToUpperBytes", ToUpperBytes},
-                               {"ContainsString", ContainsBytes},
-                               {"HasPrefixString", HasPrefixBytes},
-                               {"HasSuffixString", HasSuffixBytes},
-                               {"TrimLeftString", TrimLeftBytes},
-                               {"TrimRightString", TrimRightBytes},
-                               {"TrimString", TrimBytes},
-                               {"IndexString", IndexBytes},
-                               {"LastIndexString", LastIndexBytes},
-                               {"RepeatString", RepeatBytes},
-                               {"ReplaceString", ReplaceBytes},
-                               {"ReplaceAllString", ReplaceAllBytes},
-                               {"SplitString", SplitBytes},
-                               {"ToLowerString", ToLowerBytes},
-                               {"ToUpperString", ToUpperBytes},
+BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytesOrString},
+                               {"HasPrefixBytes", HasPrefixBytesOrString},
+                               {"HasSuffixBytes", HasSuffixBytesOrString},
+                               {"TrimLeftBytes", TrimLeftBytesOrString},
+                               {"TrimRightBytes", TrimRightBytesOrString},
+                               {"TrimBytes", TrimBytesOrString},
+                               {"IndexBytes", IndexBytesOrString},
+                               {"LastIndexBytes", LastIndexBytesOrString},
+                               {"RepeatBytes", RepeatBytesOrString},
+                               {"ReplaceBytes", ReplaceBytesOrString},
+                               {"ReplaceAllBytes", ReplaceAllBytesOrString},
+                               {"SplitBytes", SplitBytesOrString},
+                               {"ToLowerBytes", ToLowerBytesOrString},
+                               {"ToUpperBytes", ToUpperBytesOrString},
+                               {"ContainsString", ContainsBytesOrString},
+                               {"HasPrefixString", HasPrefixBytesOrString},
+                               {"HasSuffixString", HasSuffixBytesOrString},
+                               {"TrimLeftString", TrimLeftBytesOrString},
+                               {"TrimRightString", TrimRightBytesOrString},
+                               {"TrimString", TrimBytesOrString},
+                               {"IndexString", IndexBytesOrString},
+                               {"LastIndexString", LastIndexBytesOrString},
+                               {"RepeatString", RepeatBytesOrString},
+                               {"ReplaceString", ReplaceBytesOrString},
+                               {"ReplaceAllString", ReplaceAllBytesOrString},
+                               {"SplitString", SplitBytesOrString},
+                               {"ToLowerString", ToLowerBytesOrString},
+                               {"ToUpperString", ToUpperBytesOrString},
                                {"IsMatchRegexp", IsMatchRegexp},
                                {"SearchRegExp", SearchRegExp},
                                {"RegExpReplace", RegExpReplace},

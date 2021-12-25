@@ -400,52 +400,117 @@ std::string MapObject::ToDescription() const {
     return o.str();
 }
 
-Value::Value(char val) : Type(ValueType::kByte), Byte(val), bytes(), resource(NULL), object(NULL) {
+//Value 众多的构造函数
+Value::Value(char val)
+        : Type(ValueType::kByte), Byte(val), bytesView(), text(), resource(NULL), object(NULL) {
     Integer = 0;
     Byte = val;
 }
 Value::Value(unsigned char val)
-        : Type(ValueType::kByte), Byte(val), bytes(), resource(NULL), object(NULL) {
+        : Type(ValueType::kByte), Byte(val), bytesView(), text(), resource(NULL), object(NULL) {
     Integer = 0;
     Byte = val;
 }
 
-Value::Value() : Type(ValueType::kNULL), Integer(0), bytes(), resource(NULL), object(NULL) {}
+Value::Value()
+        : Type(ValueType::kNULL), Integer(0), bytesView(), text(), resource(NULL), object(NULL) {}
 
 Value::Value(bool val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(long val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(int val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(INTVAR val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(unsigned int val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(size_t val)
-        : Type(ValueType::kInteger), Integer(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kInteger),
+          Integer(val),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
 Value::Value(double val)
-        : Type(ValueType::kFloat), Float(val), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kFloat), Float(val), bytesView(), text(), resource(NULL), object(NULL) {}
 Value::Value(const char* str)
-        : Type(ValueType::kString), Integer(0), bytes(str), resource(NULL), object(NULL) {}
-Value::Value(std::string val)
-        : Type(ValueType::kString), Integer(0), bytes(val), resource(NULL), object(NULL) {}
+        : Type(ValueType::kString),
+          Integer(0),
+          bytesView(),
+          text(str),
+          resource(NULL),
+          object(NULL) {}
+Value::Value(std::string str)
+        : Type(ValueType::kString),
+          Integer(0),
+          bytesView(),
+          text(str),
+          resource(NULL),
+          object(NULL) {}
 
 Value::Value(const Instruction* f)
-        : Type(ValueType::kFunction), Function(f), bytes(), resource(NULL), object(NULL) {}
+        : Type(ValueType::kFunction),
+          Function(f),
+          bytesView(),
+          text(),
+          resource(NULL),
+          object(NULL) {}
+Value::Value(Resource* res)
+        : Type(ValueType::kResource),
+          Integer(0),
+          bytesView(),
+          text(),
+          resource(res),
+          object(NULL) {}
+Value::Value(const std::vector<Value>& val) : Integer(0), bytesView(), text(), resource(NULL) {
+    Type = ValueType::kArray;
+    scoped_refptr<ArrayObject> ptr = new ArrayObject();
+    ptr->_array = val;
+    object = ptr.get();
+}
 Value::Value(RUNTIME_FUNCTION f)
         : Type(ValueType::kRuntimeFunction),
           RuntimeFunction(f),
-          bytes(),
+          bytesView(),
+          text(),
           resource(NULL),
           object(NULL) {}
 
 Value::Value(const Value& val) {
     switch (val.Type) {
     case ValueType::kBytes:
+        Integer = 0;
+        bytesView = val.bytesView;
+        break;
     case ValueType::kString:
         Integer = 0;
-        bytes = val.bytes;
+        text = val.text;
         break;
     case ValueType::kResource:
         Integer = 0;
@@ -478,12 +543,16 @@ Value::Value(const Value& val) {
     }
     Type = val.Type;
 }
+
 Value& Value::operator=(const Value& val) {
     switch (val.Type) {
     case ValueType::kBytes:
+        Integer = 0;
+        bytesView = val.bytesView;
+        break;
     case ValueType::kString:
         Integer = 0;
-        bytes = val.bytes;
+        text = val.text;
         break;
     case ValueType::kResource:
         Integer = 0;
@@ -536,6 +605,8 @@ MapObject* MapObject::Clone() {
 
 Value Value::Clone() const {
     switch (Type) {
+    case ValueType::kBytes:
+        return Value::make_bytes(bytesView.ToString());
     case ValueType::kArray: {
         Value ret = Value();
         ret.Type = ValueType::kArray;
@@ -554,24 +625,23 @@ Value Value::Clone() const {
     }
 }
 
-Value::Value(Resource* res)
-        : Type(ValueType::kResource), Integer(0), bytes(), resource(res), object(NULL) {}
-Value::Value(const std::vector<Value>& val) : Integer(0), bytes(), resource(NULL) {
-    Type = ValueType::kArray;
-    scoped_refptr<ArrayObject> ptr = new ArrayObject();
-    ptr->_array = val;
-    object = ptr.get();
-}
-
 Value Value::make_array() {
     Value ret = Value();
     ret.Type = ValueType::kArray;
     ret.object = new ArrayObject();
     return ret;
 }
-Value Value::make_bytes(std::string val) {
-    Value ret = Value(val);
+Value Value::make_bytes(size_t Len) {
+    Value ret = Value();
     ret.Type = ValueType::kBytes;
+    ret.bytesView = BytesView(Len);
+    return ret;
+}
+Value Value::make_bytes(std::string src) {
+    Value ret = Value();
+    ret.Type = ValueType::kBytes;
+    ret.bytesView = BytesView(src.size());
+    ret.bytesView.CopyFrom(src);
     return ret;
 }
 Value Value::make_map() {
@@ -585,8 +655,8 @@ Value& Value::operator+=(const Value& right) {
     if (right.IsNULL()) {
         return *this;
     }
-    if (IsSameType(right) && IsStringOrBytes()) {
-        bytes += right.bytes; //string + string
+    if (IsSameType(right) && IsString()) {
+        text += right.text; //string + string
         return *this;
     }
     if (IsNumber() && right.IsNumber()) { //number + number
@@ -598,44 +668,28 @@ Value& Value::operator+=(const Value& right) {
         }
         return *this;
     }
-    if (right.IsStringOrBytes()) { // other + string
+    if (right.IsString()) { // other + string
         std::string result = "";
         switch (Type) {
         case ValueType::kByte:
             result += (char)Byte;
             break;
-        case ValueType::kFloat:
-        case ValueType::kInteger:
-            if (right.Type == ValueType::kBytes) {
-                result += (unsigned char)ToInteger();
-            } else {
-                result += ToString();
-            }
-            break;
         default:
             result = ToString();
         }
-        result += right.bytes;
+        result += right.text;
         Type = right.Type;
         Integer = 0;
-        bytes = result;
+        text = result;
         return *this;
     }
-    if (IsStringOrBytes()) { //string + other
+    if (IsString()) { //string + other
         switch (right.Type) {
         case ValueType::kByte:
-            bytes += (char)right.Byte;
-            break;
-        case ValueType::kFloat:
-        case ValueType::kInteger:
-            if (right.Type == ValueType::kBytes) {
-                bytes += (unsigned char)right.ToInteger();
-            } else {
-                bytes += right.ToString();
-            }
+            text += (char)right.Byte;
             break;
         default:
-            bytes = right.ToString();
+            text += right.ToString();
         }
         return *this;
     }
@@ -656,8 +710,9 @@ std::string Value::ToString() const {
     case ValueType::kObject:
         return object->ToString();
     case ValueType::kBytes:
+        return bytesView.ToString();
     case ValueType::kString:
-        return bytes;
+        return text;
     case ValueType::kNULL:
         return "";
     case ValueType::kInteger:
@@ -665,8 +720,8 @@ std::string Value::ToString() const {
     case ValueType::kFloat:
         return Interpreter::ToString(Float);
     case ValueType::kByte: {
-        std::string ret;
-        ret.append((char)Byte, 1);
+        std::string ret="";
+        ret.append(1,(char)Byte);
         return ret;
     }
     default:
@@ -699,11 +754,12 @@ std::string Value::ToDescription() const {
     case ValueType::kObject:
         return object->ToDescription();
     case ValueType::kBytes:
+        return bytesView.ToDescription();
     case ValueType::kString: {
-        if (IsVisableString(bytes)) {
-            return bytes;
+        if (IsVisableString(text)) {
+            return text;
         }
-        return ValueType::ToString(Type) + "(" + HexEncode(bytes.c_str(), bytes.size()) + ")";
+        return ValueType::ToString(Type) + "(" + HexEncode(text.c_str(), text.size()) + ")";
     }
     case ValueType::kNULL:
         return "nil";
@@ -728,8 +784,9 @@ std::string Value::ToJSONString(bool escape) const {
     case ValueType::kObject:
         return object->ToJSONString();
     case ValueType::kBytes:
+        return "\"" + bytesView.ToJSONString() + "\"";
     case ValueType::kString:
-        return "\"" + EncodeJSONString(bytes, escape) + "\"";
+        return "\"" + EncodeJSONString(text, escape) + "\"";
     case ValueType::kInteger:
     case ValueType::kByte:
     case ValueType::kFloat:
@@ -747,9 +804,9 @@ double Value::ToFloat() const {
     case ValueType::kFloat:
         return Float;
     case ValueType::kString:
-    case ValueType::kBytes: {
-        return strtod(bytes.c_str(), NULL);
-    }
+        return strtod(text.c_str(), NULL);
+    case ValueType::kBytes:
+        return strtod(bytesView.ToString().c_str(), NULL);
     default:
         return 0.0;
     }
@@ -762,8 +819,9 @@ Value::INTVAR Value::ToInteger() const {
     case ValueType::kFloat:
         return (Value::INTVAR)Float;
     case ValueType::kString:
+        return strtoll(text.c_str(), NULL, 0);
     case ValueType::kBytes: {
-        return strtoll(bytes.c_str(), NULL, 0);
+        return strtoll(bytesView.ToString().c_str(), NULL, 0);
     }
     default:
         return (-1ll);
@@ -776,8 +834,9 @@ std::string Value::MapKey() const {
     }
     switch (Type) {
     case ValueType::kBytes:
+        return bytesView.ToString();
     case ValueType::kString:
-        return bytes;
+        return text;
     case ValueType::kNULL:
         return "nil@nil";
     case ValueType::kInteger:
@@ -792,8 +851,11 @@ std::string Value::MapKey() const {
     }
 }
 size_t Value::Length() const {
-    if (IsStringOrBytes()) {
-        return bytes.size();
+    if (IsBytes()) {
+        return bytesView.Length();
+    }
+    if (IsString()) {
+        return text.size();
     }
     if (Type == ValueType::kArray) {
         return Array()->_array.size();
@@ -814,28 +876,42 @@ bool Value::ToBoolean() const {
     if (IsInteger()) {
         return ToInteger() != 0;
     }
-    if (IsStringOrBytes()) {
-        if (bytes.size() == 0) {
+    if (IsString()) {
+        if (text.size() == 0) {
             return false;
         }
-        if (bytes.size() == 1) {
-            return bytes == "0";
+        if (text.size() == 1) {
+            return text == "0";
         }
+    }
+    if (IsBytes()) {
+        return bytesView.Length() > 0;
     }
     return true;
 }
 
 const Value Value::operator[](const Value& key) const {
-    if (IsStringOrBytes()) {
+    if (IsBytes()) {
         if (!key.IsInteger()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
-        if (key.Integer < 0 || (size_t)key.Integer >= bytes.size()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             DEBUG_CONTEXT();
-            throw Interpreter::RuntimeException("index of string(bytes) out of range");
+            throw Interpreter::RuntimeException("index of bytes out of range");
         }
-        return Value(bytes[key.Integer]);
+        return Value((char)bytesView.GetAt(key.Integer));
+    }
+    if (IsString()) {
+        if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("the index key type must a Integer");
+        }
+        if (key.Integer < 0 || (size_t)key.Integer >= text.size()) {
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("index of string out of range");
+        }
+        return Value(text[key.Integer]);
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
@@ -861,49 +937,6 @@ const Value Value::operator[](const Value& key) const {
                                         ToString() + "> not support index operation");
 }
 
-Value Value::Slice(const Value& f, const Value& t) const {
-    size_t from = 0, to = 0;
-    if (!IsStringOrBytes() && Type != ValueType::kArray) {
-        DEBUG_CONTEXT();
-        throw Interpreter::RuntimeException("the value type must slice able");
-    }
-    if (f.Type == ValueType::kNULL) {
-        from = 0;
-    } else if (f.Type == ValueType::kInteger) {
-        from = f.Integer;
-    } else {
-        DEBUG_CONTEXT();
-        throw Interpreter::RuntimeException("the index key type must a Integer");
-    }
-    if (t.Type == ValueType::kNULL) {
-        to = Length();
-    } else if (t.Type == ValueType::kInteger) {
-        to = t.Integer;
-    } else {
-        DEBUG_CONTEXT();
-        throw Interpreter::RuntimeException("the index key type must a Integer");
-    }
-    if (to > Length() || from > Length()) {
-        DEBUG_CONTEXT();
-        throw Interpreter::RuntimeException("index out of range");
-    }
-
-    if (Type == ValueType::kString) {
-        std::string sub = bytes.substr(from, to - from);
-        return Value(sub);
-    }
-    if (Type == ValueType::kBytes) {
-        std::string sub = bytes.substr(from, to - from);
-        return make_bytes(sub);
-    }
-    Value ret = make_array();
-    std::vector<Value> result;
-    std::vector<Value>& array = Array()->_array;
-    for (size_t i = from; i < to; i++) {
-        ret.Array()->_array.push_back(array[i]);
-    }
-    return ret;
-}
 Value& Value::operator[](const Value& key) {
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
@@ -929,21 +962,43 @@ Value& Value::operator[](const Value& key) {
                            "> not have value[index]= val operation");
 }
 
+Value Value::GetValue(const Value& key) const {
+    return (*this)[key];
+}
+
 void Value::SetValue(const Value& key, const Value& val) {
-    if (IsStringOrBytes()) {
+    if (IsBytes()) {
         if (!val.IsInteger()) {
             DEBUG_CONTEXT();
-            Interpreter::RuntimeException("set the value must a integer");
+            throw Interpreter::RuntimeException("set the value must a integer");
         }
         if (!key.IsInteger()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
-        if (key.Integer < 0 || (size_t)key.Integer >= bytes.size()) {
+        if (key.Integer < 0 || (size_t)key.Integer >= bytesView.Length()) {
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("set index of bytes out of range");
+        }
+        if (val.IsInteger()) {
+            bytesView.SetAt(key.Integer, (int)val.ToInteger());
+            return;
+        }
+    }
+    if (IsString()) {
+        if (!val.IsInteger()) {
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("set the value must a integer");
+        }
+        if (!key.IsInteger()) {
+            DEBUG_CONTEXT();
+            throw Interpreter::RuntimeException("set the index key type must a Integer");
+        }
+        if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
-        bytes[key.Integer] = val.ToInteger() & 0xFF;
+        text[key.Integer] = val.ToInteger() & 0xFF;
         return;
     }
     if (Type == ValueType::kArray) {
@@ -972,6 +1027,53 @@ void Value::SetValue(const Value& key, const Value& val) {
                            "> not have value[index]= val operation");
 }
 
+Value Value::Slice(const Value& f, const Value& t) const {
+    size_t from = 0, to = 0;
+    if (!(IsBytes() || IsString()) && Type != ValueType::kArray) {
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("the value type must slice able");
+    }
+    if (f.Type == ValueType::kNULL) {
+        from = 0;
+    } else if (f.Type == ValueType::kInteger) {
+        from = f.Integer;
+    } else {
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("the index key type must a Integer");
+    }
+    if (t.Type == ValueType::kNULL) {
+        to = Length();
+    } else if (t.Type == ValueType::kInteger) {
+        to = t.Integer;
+    } else {
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("the index key type must a Integer");
+    }
+    if (to > Length() || from > Length()) {
+        DEBUG_CONTEXT();
+        throw Interpreter::RuntimeException("index out of range");
+    }
+
+    if (Type == ValueType::kString) {
+        std::string sub = text.substr(from, to - from);
+        return Value(sub);
+    }
+    if (Type == ValueType::kBytes) {
+        BytesView view = bytesView.Slice(from, to);
+        Value ret;
+        ret.bytesView = view;
+        ret.Type = ValueType::kBytes;
+        return ret;
+    }
+    Value ret = make_array();
+    std::vector<Value> result;
+    std::vector<Value>& array = Array()->_array;
+    for (size_t i = from; i < to; i++) {
+        ret.Array()->_array.push_back(array[i]);
+    }
+    return ret;
+}
+
 Value operator+(const Value& left, const Value& right) {
     Value result = left;
     result += right;
@@ -979,9 +1081,9 @@ Value operator+(const Value& left, const Value& right) {
 }
 
 Value operator-(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        std::string result = left.bytes;
-        return replace_str(result, right.bytes, "", 1);
+    if (left.IsString() && right.IsString()) {
+        std::string result = left.text;
+        return replace_str(result, right.text, "", 1);
     }
     if (!left.IsNumber() || !right.IsNumber()) {
         DEBUG_CONTEXT();
@@ -1026,8 +1128,8 @@ Value operator%(const Value& left, const Value& right) {
 }
 
 bool operator<(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        return left.bytes < right.bytes;
+    if ((left.IsString() || left.IsBytes()) && (right.IsString() || right.IsBytes())) {
+        return left.ToString() < right.ToString();
     }
     if (left.IsNULL() && !right.IsNULL()) {
         return true;
@@ -1040,8 +1142,8 @@ bool operator<(const Value& left, const Value& right) {
     return left.ToFloat() < right.ToFloat();
 }
 bool operator<=(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        return left.bytes <= right.bytes;
+    if ((left.IsString() || left.IsBytes()) && (right.IsString() || right.IsBytes())) {
+        return left.ToString() <= right.ToString();
     }
     if (left.IsNULL() && right.IsNULL()) {
         return true;
@@ -1054,8 +1156,8 @@ bool operator<=(const Value& left, const Value& right) {
     return left.ToFloat() <= right.ToFloat();
 }
 bool operator>(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        return left.bytes > right.bytes;
+    if ((left.IsString() || left.IsBytes()) && (right.IsString() || right.IsBytes())) {
+        return left.ToString() > right.ToString();
     }
     if (left.IsNULL() && !right.IsNULL()) {
         return false;
@@ -1068,8 +1170,8 @@ bool operator>(const Value& left, const Value& right) {
     return left.ToFloat() > right.ToFloat();
 }
 bool operator>=(const Value& left, const Value& right) {
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        return left.bytes >= right.bytes;
+    if ((left.IsString() || left.IsBytes()) && (right.IsString() || right.IsBytes())) {
+        return left.ToString() >= right.ToString();
     }
     if (left.IsNULL() && right.IsNULL()) {
         return true;
@@ -1088,8 +1190,8 @@ bool operator==(const Value& left, const Value& right) {
         return left.ToFloat() == right.ToFloat();
     }
     //string == string
-    if (left.IsStringOrBytes() && right.IsStringOrBytes()) {
-        return left.bytes == right.bytes;
+    if ((left.IsString() || left.IsBytes()) && (right.IsString() || right.IsBytes())) {
+        return left.ToString() == right.ToString();
     }
     if (left.IsNULL()) {
         return false == right.ToBoolean();
@@ -1097,22 +1199,22 @@ bool operator==(const Value& left, const Value& right) {
     if (right.IsNULL()) {
         return false == left.ToBoolean();
     }
-    if (left.IsStringOrBytes() && right.IsInteger()) {
+    if (left.IsString() && right.IsInteger()) {
         if (right.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
             LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
                 right.ToDescription());
         }
 
-        return left.bytes == right.ToString();
+        return left.text == right.ToString();
     }
-    if (right.IsStringOrBytes() && left.IsInteger()) {
+    if (right.IsString() && left.IsInteger()) {
         if (left.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
             LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
                 right.ToDescription());
         }
-        return right.bytes == left.ToString();
+        return right.text == left.ToString();
     }
     if (!left.IsSameType(right)) {
         LOG("compare value not same type may be have bug <always false> ", left.ToDescription(),

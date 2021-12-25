@@ -214,12 +214,16 @@ func recv_line(socket,length){
 	if(!ret){
 		return "";
 	}
-	return ret;
+	return string(ret);
 }
 
 
 func recv(socket,length,timeout,min){
-	return ova_recv(socket,length,timeout,min);
+	var ret = ova_recv(socket,length,timeout,min);
+	if(typeof(ret)=="bytes"){
+		return string(ret);
+	}
+	return ret;
 }
 
 func replace_kb_item(name, value){
@@ -536,24 +540,21 @@ func gunzip(data){
 	return DeflateBytes(data);
 }
 
-
-func string(x...){
-	var ret="";
-	for v in x {
-		if(v==nil){
-			continue;
-		}
-		ret += v;
-	}
-	return ret;
-}
-
 func raw_string(x...){
-	var ret = bytes();
+	var helper = MakeBytes(4096);
+	var i = 0;
 	for v in x {
-		ret = append(ret,bytes(v));
+		if (typeof(v) == "string"){
+			for j in v{
+				helper[i]= j;
+				i++;
+			}
+		}else{
+			helper[i] = v;
+			i++;
+		}
 	}
-	return ret;
+	return string(helper[:i]);
 }
 
 func isnull(val){
@@ -573,7 +574,7 @@ func strcat(strlist...){
 	return ret;
 }
 func ord(obj){
-	if(typeof(obj) == "string" || typeof(obj) == "bytes"){
+	if(typeof(obj) == "string"){
 		if(len(obj)){
 			return obj[0];
 		}
@@ -599,6 +600,9 @@ func hexstr(str){
 }
 
 func strstr(str1,str2){
+	if(!str1){
+		return nil;
+	}
 	var pos = IndexString(str1,str2);
 	if(pos == -1){
 		return nil;
@@ -654,6 +658,9 @@ func strlen(str){
 }
 
 func egrep(pattern, string,icase=false){
+	if(!string){
+		return nil;
+	}
 	var text_group = SplitString(string,"\n");
 	var result = "";
 	for v in text_group {
@@ -661,6 +668,9 @@ func egrep(pattern, string,icase=false){
 			result +=v;
 			result +="\n";
 		}
+	}
+	if (len(result) == 0){
+		return nil;
 	}
 	return ToString(result);
 }
@@ -726,6 +736,9 @@ func split(buffer, sep="\n",keep = -1){
 }
 
 func chomp(str){
+	if(!str){
+		return nil;
+	}
 	return TrimRightString(str," \t\n\r");
 }
 
@@ -733,7 +746,10 @@ func int(other){
 	return ToInteger(other);
 }
 
-func stridx(str,sub){
+func stridx(str,sub,pos = 0){
+	if(pos > 0){
+		str = str[pos:];
+	}
 	return IndexString(str,sub);
 }
 

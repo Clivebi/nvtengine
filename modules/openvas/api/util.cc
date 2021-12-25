@@ -15,20 +15,20 @@
 
 Value match(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
     CHECK_PARAMETER_STRING(1);
     bool icase = false;
     if (args.size() > 2 && args[2].ToBoolean()) {
         icase = true;
     }
+    std::string src = GetString(args, 0);
     if (icase) {
-        std::string src = args[0].bytes;
-        std::string pattern = args[1].bytes;
+        std::string pattern = args[1].text;
         std::transform(src.begin(), src.end(), src.begin(), tolower);
         std::transform(pattern.begin(), pattern.end(), pattern.begin(), tolower);
         return Interpreter::IsMatchString(src, pattern);
     }
-    return Interpreter::IsMatchString(args[0].bytes, args[1].bytes);
+    return Interpreter::IsMatchString(src, args[1].text);
 }
 
 Value Rand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -345,7 +345,7 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
     if (cmd == "image") {
         std::string der = X509DER(x509);
-        return Value::make_bytes(der);
+        return Value(der);
     }
 
     if (cmd == "algorithm-name") {

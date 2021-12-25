@@ -4,7 +4,7 @@
 
 #ifndef _CHECK_HPP_
 #define _CHECK_HPP_
-inline std::string check_error(int i, const char* type, Interpreter::VMContext* ctx) {
+inline std::string check_error(int i, std::string type, Interpreter::VMContext* ctx) {
     std::stringstream s;
     LOG(ctx->DumpContext(true));
     s << " : the #" << i << " argument must be an " << type << std::endl;
@@ -27,7 +27,7 @@ inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal
     return (int)arg.ToInteger();
 }
 
-#define ERROR_RETURN_NULL
+//#define ERROR_RETURN_NULL
 #ifdef ERROR_RETURN_NULL
 #define EXCEPTION(a) \
     LOG(a);          \
@@ -53,21 +53,39 @@ inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal
         EXCEPTION(std::string(__FUNCTION__) + check_error(i, "resource", ctx)); \
     }
 
-#define CHECK_PARAMETER_STRING(i)                                                      \
-    if (!args[i].IsStringOrBytes()) {                                                  \
-        for (auto v : args) {                                                          \
-            std::cerr << v.ToString() << std::endl;                                    \
-        }                                                                              \
-        EXCEPTION(std::string(__FUNCTION__) + check_error(i, "string or bytes", ctx)); \
+#define CHECK_PARAMETER_STRING(i)                                             \
+    if (!args[i].IsString()) {                                                \
+        for (auto v : args) {                                                 \
+            std::cerr << v.ToString() << std::endl;                           \
+        }                                                                     \
+        EXCEPTION(std::string(__FUNCTION__) + check_error(i, "string", ctx)); \
     }
-#define CHECK_PARAMETER_STRINGS()                                                          \
-    for (size_t i = 0; i < args.size(); i++) {                                             \
-        if (args[i].Type != ValueType::kBytes && args[i].Type != ValueType::kString) {     \
-            for (auto v : args) {                                                          \
-                std::cerr << v.ToString() << std::endl;                                    \
-            }                                                                              \
-            EXCEPTION(std::string(__FUNCTION__) + check_error(i, "string or bytes", ctx)); \
-        }                                                                                  \
+
+#define CHECK_PARAMETER_STRING_OR_BYTES(i)                                                   \
+    if (!args[i].IsString() && !args[i].IsBytes()) {                                         \
+        for (auto v : args) {                                                                \
+            std::cerr << v.ToString() << std::endl;                                          \
+        }                                                                                    \
+        EXCEPTION(std::string(__FUNCTION__) +                                                \
+                  check_error(i, "string or bytes <" + args[i].ToDescription() + ">", ctx)); \
+    }
+
+#define CHECK_PARAMETER_BYTES(i)                                             \
+    if (!args[i].IsBytes()) {                                                \
+        for (auto v : args) {                                                \
+            std::cerr << v.ToString() << std::endl;                          \
+        }                                                                    \
+        EXCEPTION(std::string(__FUNCTION__) + check_error(i, "bytes", ctx)); \
+    }
+
+#define CHECK_PARAMETER_STRINGS()                                                 \
+    for (size_t i = 0; i < args.size(); i++) {                                    \
+        if (!args[i].IsString()) {                                                \
+            for (auto v : args) {                                                 \
+                std::cerr << v.ToString() << std::endl;                           \
+            }                                                                     \
+            EXCEPTION(std::string(__FUNCTION__) + check_error(i, "string", ctx)); \
+        }                                                                         \
     }
 
 #define CHECK_PARAMETER_INTEGER(i)                                             \

@@ -47,8 +47,8 @@ Value ConnRead(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         delete[] buffer;
         return Value();
     }
-    Value ret = Value::make_bytes("");
-    ret.bytes.assign((char*)buffer, size);
+    Value ret = Value::make_bytes(size);
+    ret.bytesView.CopyFrom(buffer,size);
     delete[] buffer;
     return ret;
 }

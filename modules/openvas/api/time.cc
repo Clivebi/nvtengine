@@ -446,7 +446,7 @@ Value ISOTimeIsValid(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         return Value(false);
     }
     my_isotime_t timebuf = {0};
-    memcpy(timebuf, args[0].bytes.c_str(), args[0].bytes.size());
+    memcpy(timebuf, args[0].text.c_str(), args[0].text.size());
     if (isotime_p(timebuf) || isotime_human_p(timebuf)) {
         return Value(true);
     }
@@ -460,7 +460,7 @@ Value ISOTimeScan(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args[0].Length() < ISOTIME_SIZE - 1) {
         return Value();
     }
-    memcpy(timebuf, args[0].bytes.c_str(), ISOTIME_SIZE - 1);
+    memcpy(timebuf, args[0].text.c_str(), ISOTIME_SIZE - 1);
     timebuf[ISOTIME_SIZE - 1] = 0;
     if (!string2isotime(timebuf, timebuf)) {
         return Value();
@@ -471,7 +471,7 @@ Value ISOTimeScan(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ISOTimePrint(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
-    const char* string = args[0].bytes.c_str();
+    const char* string = args[0].text.c_str();
     char helpbuf[20];
     if (args[0].Length() < 15 || check_isotime(string)) {
         strcpy(helpbuf, "[none]");
@@ -491,7 +491,7 @@ Value ISOTimeAdd(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_INTEGER(3);
 
     my_isotime_t timebuf;
-    const char* string = args[0].bytes.c_str();
+    const char* string = args[0].text.c_str();
     int nyears = GetInt(args, 1, 0), ndays = GetInt(args, 2, 0), nseconds = GetInt(args, 3, 0);
     memcpy(timebuf, string, ISOTIME_SIZE - 1);
     timebuf[ISOTIME_SIZE - 1] = 0;

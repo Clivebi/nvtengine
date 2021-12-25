@@ -7,40 +7,43 @@
 
 Value Md5Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    std::string p0 = GetString(args, 0);
     BYTE hash[MD5_DIGEST_LENGTH] = {0};
     MD5_CTX shCtx = {0};
     MD5_Init(&shCtx);
-    MD5_Update(&shCtx, args[0].bytes.c_str(), args[0].bytes.size());
+    MD5_Update(&shCtx, p0.c_str(), p0.size());
     MD5_Final(hash, &shCtx);
-    Value ret = Value::make_bytes("");
-    ret.bytes.assign((char*)hash, MD5_DIGEST_LENGTH);
+    Value ret = Value::make_bytes(sizeof(hash));
+    ret.bytesView.CopyFrom(hash, sizeof(hash));
     return ret;
 }
 
 Value SHA1Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    std::string p0 = GetString(args, 0);
     BYTE hash[SHA_DIGEST_LENGTH] = {0};
     SHA_CTX shCtx = {0};
     SHA1_Init(&shCtx);
-    SHA1_Update(&shCtx, args[0].bytes.c_str(), args[0].bytes.size());
+    SHA1_Update(&shCtx, args[0].text.c_str(), args[0].text.size());
     SHA1_Final(hash, &shCtx);
-    Value ret = Value::make_bytes("");
-    ret.bytes.assign((char*)hash, SHA_DIGEST_LENGTH);
+    Value ret = Value::make_bytes(sizeof(hash));
+    ret.bytesView.CopyFrom(hash, sizeof(hash));
     return ret;
 }
 
 Value SHA256Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
-    CHECK_PARAMETER_STRING(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    std::string p0 = GetString(args, 0);
     BYTE hash[SHA256_DIGEST_LENGTH] = {0};
     SHA256_CTX shCtx = {0};
     SHA256_Init(&shCtx);
-    SHA256_Update(&shCtx, args[0].bytes.c_str(), args[0].bytes.size());
+    SHA256_Update(&shCtx, p0.c_str(), p0.size());
     SHA256_Final(hash, &shCtx);
-    Value ret = Value::make_bytes("");
-    ret.bytes.assign((char*)hash, SHA256_DIGEST_LENGTH);
+    Value ret = Value::make_bytes(sizeof(hash));
+    ret.bytesView.CopyFrom(hash, sizeof(hash));
     return ret;
 }
 
@@ -114,7 +117,7 @@ Value HMACMethod(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_STRING(2);
-    return GetHMAC(args[0].bytes, args[1].bytes, args[2].bytes);
+    return GetHMAC(args[0].text, args[1].text, args[2].text);
 }
 
 Value TLSPRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -123,7 +126,7 @@ Value TLSPRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_STRING(2);
     CHECK_PARAMETER_INTEGER(3);
-    return TlsPRF(args[0].bytes, args[1].bytes, args[2].bytes, args[3].Integer);
+    return TlsPRF(args[0].text, args[1].text, args[2].text, args[3].Integer);
 }
 
 Value TLS1PRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -131,7 +134,7 @@ Value TLS1PRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_INTEGER(2);
-    return Tls1PRF(args[0].bytes, args[1].bytes, args[2].Integer);
+    return Tls1PRF(args[0].text, args[1].text, args[2].Integer);
 }
 
 class SSLCipher : public Resource {
@@ -184,21 +187,21 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(5);
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_INTEGER(1);
-    CHECK_PARAMETER_STRING(2);
-    CHECK_PARAMETER_STRING(3);
+    CHECK_PARAMETER_STRING_OR_BYTES(2);
+    CHECK_PARAMETER_STRING_OR_BYTES(3);
     CHECK_PARAMETER_INTEGER(4);
     OpenSSL_add_all_algorithms();
-    std::string cipherName = args[0].bytes;
-    std::string key = args[2].bytes;
-    std::string iv = args[3].bytes;
+    std::string cipherName = GetString(args, 0);
+    std::string key = GetString(args, 2);
+    std::string iv = GetString(args, 3);
     int padding = GetInt(args, 1, 1);
-    const EVP_CIPHER* cipher = EVP_get_cipherbyname(args[0].bytes.c_str());
+    const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipherName.c_str());
     if (cipher == NULL) {
-        LOG("invalid chiper name ", args[0].bytes.c_str());
+        LOG("invalid chiper name ", cipherName);
         return Value();
     }
     if (padding < 0 || padding > 5) {
-        LOG("invalid chiper name ", args[0].bytes.c_str());
+        LOG("invalid chiper name ", cipherName);
         return Value();
     }
     if (EVP_CIPHER_key_length(cipher) > key.size()) {
@@ -214,13 +217,13 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
 Value CipherUpdate(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string resname;
     if (!args[0].IsResource(resname) || resname != "Cipher") {
         return Value();
     }
     SSLCipher* cipher = (SSLCipher*)args[0].resource.get();
-    return cipher->Update(args[1].bytes);
+    return cipher->Update(GetString(args, 1));
 }
 
 Value CipherFinal(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

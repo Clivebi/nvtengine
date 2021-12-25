@@ -47,11 +47,11 @@ Value script_require_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm
 Value script_mandatory_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     CHECK_PARAMETER_STRINGS();
-    if (args.back().bytes.find("=") != std::string::npos) {
-        std::list<std::string> list = split(args.back().bytes, '=');
+    if (args.back().text.find("=") != std::string::npos) {
+        std::list<std::string> list = split(args.back().text, '=');
         std::vector<Value> result;
         for (auto v : args) {
-            if (v.bytes == list.front()) {
+            if (v.text == list.front()) {
                 continue;
             }
             result.push_back(v);
@@ -110,7 +110,7 @@ Value script_get_preference_file_content(std::vector<Value>& args, VMContext* ct
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_INTEGER(1);
     Value ret = "";
-    script->GetPreferenceFile(args[1], args[0], ret.bytes);
+    script->GetPreferenceFile(args[1], args[0], ret.text);
     return ret;
 }
 
@@ -175,7 +175,7 @@ Value set_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->SetKbItem(args[0].bytes, args[1]);
+    script->SetKbItem(args[0].text, args[1]);
     return Value();
 }
 
@@ -183,14 +183,14 @@ Value get_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    return script->GetKbItem(args[0].bytes);
+    return script->GetKbItem(args[0].text);
 }
 
 Value get_kb_list(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    return script->GetKbList(args[0].bytes);
+    return script->GetKbList(args[0].text);
 }
 
 Value get_preference(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -209,7 +209,7 @@ Value replace_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    script->Storage->ReplaceItem(args[0].bytes, args[1]);
+    script->Storage->ReplaceItem(args[0].text, args[1]);
     return Value();
 }
 

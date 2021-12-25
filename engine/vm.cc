@@ -346,7 +346,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
     ctx->GetVarValue(name, oldVal);
     if (oldVal.IsNULL()) {
         oldVal.Type = ValueType::kInteger;
-        if (val.IsStringOrBytes()) {
+        if (val.IsString()) {
             oldVal.Type = val.Type;
         }
     }
@@ -759,11 +759,24 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
     }
     switch (objVal.Type) {
     case ValueType::kString: {
-        for (size_t i = 0; i < objVal.bytes.size(); i++) {
+        for (size_t i = 0; i < objVal.Length(); i++) {
             if (key.size() > 0) {
                 ctx->SetVarValue(key, Value((long)i));
             }
-            ctx->SetVarValue(val, Value((long)objVal.bytes[i]));
+            ctx->SetVarValue(val, Value((long)objVal.text[i]));
+            Execute(body, ctx);
+            ctx->CleanContinueFlag();
+            if (ctx->IsExecutedInterupt()) {
+                break;
+            }
+        }
+    } break;
+    case ValueType::kBytes: {
+        for (size_t i = 0; i < objVal.Length(); i++) {
+            if (key.size() > 0) {
+                ctx->SetVarValue(key, Value((long)i));
+            }
+            ctx->SetVarValue(val, Value((long)objVal.text[i]));
             Execute(body, ctx);
             ctx->CleanContinueFlag();
             if (ctx->IsExecutedInterupt()) {
@@ -855,10 +868,10 @@ Value Executor::ExecuteSlice(const Instruction* ins, VMContext* ctx) {
 
 Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                               Instructions::Type opCode) {
-    Value oldVal = toObject[index];
+    Value oldVal = toObject.GetValue(index);
     if (oldVal.IsNULL()) {
         oldVal.Type = ValueType::kInteger;
-        if (val.IsStringOrBytes()) {
+        if (val.IsString()) {
             oldVal.Type = val.Type;
         }
     }
@@ -1011,7 +1024,11 @@ Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
     for (size_t i = 0; i < indexer.size() - 1; i++) {
         toObject = toObject[indexer[i]];
     }
-    return UpdateValueAt(toObject, indexer.back(), val, ins->OpCode);
+    val = UpdateValueAt(toObject, indexer.back(), val, ins->OpCode);
+    if (root.IsString()) {
+        ctx->SetVarValue(ref->Name, root);
+    }
+    return val;
 }
 // name ,indexer
 Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {

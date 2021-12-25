@@ -27,13 +27,6 @@ Value Delete(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     switch (args[0].Type) {
     case ValueType::kBytes:
     case ValueType::kString:
-        if (args[1].IsInteger() && (size_t)args[1].Integer < args[0].bytes.size()) {
-            std::string str = args[0].bytes.substr(0, args[1].Integer);
-            if ((size_t)args[1].Integer + 1 < args[0].bytes.size()) {
-                str += args[0].bytes.substr(args[1].Integer + 1);
-            }
-            args[0].bytes = str;
-        }
         break;
     case ValueType::kArray: {
         auto iter = args[0]._array().begin();
@@ -88,20 +81,12 @@ bool IsByteArray(const std::vector<Value>& values) {
 bool IsStringArray(const std::vector<Value>& values) {
     std::vector<Value>::const_iterator iter = values.begin();
     while (iter != values.end()) {
-        if (!iter->IsStringOrBytes()) {
+        if (!iter->IsString()) {
             return false;
         }
         iter++;
     }
     return true;
-}
-
-void AppendIntegerArrayToBytes(Value& val, const std::vector<Value>& values) {
-    std::vector<Value>::const_iterator iter = values.begin();
-    while (iter != values.end()) {
-        val.bytes.append(1, (unsigned char)(iter->Integer & 0xFF));
-        iter++;
-    }
 }
 
 Value append(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -116,29 +101,17 @@ Value append(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         }
         return to;
     }
-    if (to.Type == ValueType::kBytes) {
+    if (to.IsBytes()) {
         std::vector<Value>::iterator iter = args.begin();
         iter++;
         while (iter != args.end()) {
             switch (iter->Type) {
             case ValueType::kBytes:
-            case ValueType::kString:
-                to.bytes += iter->bytes;
-                break;
-            case ValueType::kInteger:
-            case ValueType::kByte:
-                to.bytes.append(1, (unsigned char)iter->Integer);
-                break;
-            case ValueType::kArray:
-                if (!IsByteArray(iter->_array())) {
-                    DEBUG_CONTEXT();
-                    throw RuntimeException("only integer array (0~0xFF) can append to bytes");
-                }
-                AppendIntegerArrayToBytes(to, iter->_array());
+                to.bytesView = to.bytesView + iter->bytesView;
                 break;
             default:
                 DEBUG_CONTEXT();
-                throw RuntimeException(iter->ToString() + " can't append to bytes");
+                throw RuntimeException(iter->ToDescription() + " can't append to bytes");
             }
             iter++;
         }
@@ -171,74 +144,23 @@ Value Require(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         throw RuntimeException("require must called in top context");
     }
     Value name = args.front();
-    if (!name.IsStringOrBytes()) {
+    if (!name.IsString()) {
         throw RuntimeException("require parameter must a string");
     }
-    vm->RequireScript(name.bytes, ctx);
+    vm->RequireScript(name.text, ctx);
     return Value();
 }
 
 Value MakeBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    if (args.size() == 0) {
-        return Value::make_bytes("");
-    }
-    Value ret = Value::make_bytes("");
-
-    for (auto arg : args) {
-        if (arg.IsStringOrBytes()) {
-            ret.bytes += arg.bytes;
-            continue;
-        }
-        if (arg.Type == ValueType::kInteger) {
-            ret.bytes += (BYTE)(arg.Integer & 0xFF);
-            continue;
-        }
-        if (arg.Type == ValueType::kByte) {
-            ret.bytes += (BYTE)arg.Byte;
-            continue;
-        }
-        if (arg.Type == ValueType::kArray) {
-            if (!IsByteArray(arg._array())) {
-                DEBUG_CONTEXT();
-                throw RuntimeException("convert to bytes must use integer array(0~0xFF)");
-            }
-            AppendIntegerArrayToBytes(ret, arg._array());
-            continue;
-        }
-    }
-    return ret;
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_INTEGER(0);
+    return Value::make_bytes((size_t)args[0].Integer);
 }
 
-Value MakeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    if (args.size() == 0) {
-        return Value("");
-    }
-    Value ret = Value::make_bytes("");
-    ret.Type = ValueType::kString;
-
-    for (auto arg : args) {
-        if (arg.IsStringOrBytes()) {
-            ret.bytes += arg.bytes;
-            continue;
-        }
-        if (arg.Type == ValueType::kInteger) {
-            ret.bytes += arg.ToString();
-            continue;
-        }
-        if (arg.Type == ValueType::kByte) {
-            ret.bytes += (char)arg.Byte;
-            continue;
-        }
-        if (arg.Type == ValueType::kArray) {
-            if (!IsByteArray(arg._array())) {
-                DEBUG_CONTEXT();
-                throw RuntimeException("convert to string must use integer array (0~0xFF)");
-            }
-            AppendIntegerArrayToBytes(ret, arg._array());
-            continue;
-        }
-    }
-    return ret;
+Value ToBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING(0);
+    return Value::make_bytes(args[0].text);
 }
 
 bool IsHexChar(char c) {
@@ -257,7 +179,7 @@ bool IsHexChar(char c) {
 Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     Value& arg = args.front();
-    if (!arg.IsStringOrBytes()) {
+    if (!arg.IsString()) {
         DEBUG_CONTEXT();
         throw RuntimeException("HexDecodeString parameter must a string");
     }
@@ -268,9 +190,9 @@ Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     size_t i = 0;
     char buf[3] = {0};
     std::string result = "";
-    for (; i < arg.bytes.size(); i += 2) {
-        buf[0] = arg.bytes[i];
-        buf[1] = arg.bytes[i + 1];
+    for (; i < arg.text.size(); i += 2) {
+        buf[0] = arg.text[i];
+        buf[1] = arg.text[i + 1];
         if (!IsHexChar(buf[0]) || !IsHexChar(buf[1])) {
             DEBUG_CONTEXT();
             throw RuntimeException("HexDecodeString parameter string is not a valid hex string");
@@ -286,9 +208,12 @@ Value HexEncode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     Value& arg = args.front();
     switch (arg.Type) {
-    case ValueType::kBytes:
+    case ValueType::kBytes: {
+        std::string data = arg.ToString();
+        return Value(HexEncode(data.c_str(), data.size()));
+    }
     case ValueType::kString:
-        return Value(HexEncode(arg.bytes.c_str(), arg.bytes.size()));
+        return Value(HexEncode(arg.text.c_str(), arg.text.size()));
     case ValueType::kInteger:
         snprintf(buf, 16, "%llX", arg.Integer);
         return Value(buf);
@@ -378,11 +303,13 @@ BuiltinMethod builtinFunction[] = {
         {"append", append},
         {"delete", Delete},
         {"require", Require},
-        {"bytes", MakeBytes},
+        {"bytes", ToBytes},
+        {"MakeBytes", MakeBytes},
         {"close", close},
         {"typeof", TypeOf},
         {"error", Error},
         {"Println", Println},
+        {"string", ToString},
         {"ToString", ToString},
         {"ToInteger", ToInteger},
         {"ToFloat", ToFloat},

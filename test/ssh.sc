@@ -59,4 +59,4 @@ func SSH_test(ip,login,password){
    SSH_shell_test(session);
    ssh_disconnect(session);
 }
-SSH_test("192.168.3.72","xxx","xxx");
+SSH_test("192.168.3.72","debian","debian");

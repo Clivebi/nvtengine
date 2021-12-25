@@ -157,13 +157,13 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
-    DefaultExecutorCallback callback(mPrefs["scripts_folder"].bytes, mIO);
+    DefaultExecutorCallback callback(mPrefs["scripts_folder"].ToString(), mIO);
     Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
     LOG("start execute script");
     for (int i = 0; i < 11; i++) {
         for (auto v : mGroupedScripts[i]) {
-            OVAContext ctx(v[knowntext::kNVTI_filename].bytes, mPrefs, tcb->Env, tcb->Storage);
+            OVAContext ctx(v[knowntext::kNVTI_filename].ToString(), mPrefs, tcb->Env, tcb->Storage);
             ctx.Nvti = v;
             ctx.Host = tcb->Host;
             tcb->ScriptProgress++;
@@ -224,14 +224,14 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             //return false;
             continue;
         }
-        if (loaded.find(nvti[knowntext::kNVTI_filename].bytes) != loaded.end()) {
+        if (loaded.find(nvti[knowntext::kNVTI_filename].ToString()) != loaded.end()) {
             continue;
         }
         Value pref = prefsDB.Get(v);
         if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
-        loaded[nvti[knowntext::kNVTI_filename].bytes] = loaded.size();
+        loaded[nvti[knowntext::kNVTI_filename].ToString()] = loaded.size();
         if (!loadDep) {
             loadOrder.push_back(nvti);
             continue;
@@ -243,7 +243,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             continue;
         }
         for (auto x : dp._array()) {
-            deps.push_back(x.bytes);
+            deps.push_back(x.ToString());
         }
         if (!InitScripts(nvtiDB, prefsDB, deps, loadOrder, loaded)) {
             return false;
@@ -270,7 +270,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
             LOG("load " + v + " failed");
             return false;
         }
-        Value pref = prefsDB.Get(nvti[knowntext::kNVTI_oid].bytes);
+        Value pref = prefsDB.Get(nvti[knowntext::kNVTI_oid].ToString());
         if (pref.IsObject()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
@@ -282,7 +282,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
             continue;
         }
         for (auto x : dp._array()) {
-            deps.push_back(x.bytes);
+            deps.push_back(x.ToString());
         }
         if (!InitScripts(nvtiDB, prefsDB, deps, loadOrder, loaded)) {
             return false;
@@ -296,8 +296,8 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     Value mandatory_keys = nvti[knowntext::kNVTI_mandatory_keys];
     if (mandatory_keys.IsObject()) {
         for (auto v : mandatory_keys._array()) {
-            if (v.bytes.find("=") != std::string::npos) {
-                std::list<std::string> group = split(v.bytes, '=');
+            if (v.ToString().find("=") != std::string::npos) {
+                std::list<std::string> group = split(v.ToString(), '=');
                 Value val = ctx->Storage->GetItem(group.front(), -1);
                 if (val.IsNULL()) {
                     std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
@@ -305,7 +305,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                     return false;
                 }
                 std::regex re = std::regex(group.back(), std::regex_constants::icase);
-                bool found = std::regex_search(val.bytes.begin(), val.bytes.end(), re);
+                bool found = std::regex_search(val.text.begin(), val.text.end(), re);
                 if (!found) {
                     std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                               << " because mandatory key is missing :" << v.ToString() << std::endl;
@@ -313,7 +313,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 }
 
             } else {
-                Value val = ctx->Storage->GetItem(v.bytes, true);
+                Value val = ctx->Storage->GetItem(v.text, true);
                 if (val.IsNULL()) {
                     std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                               << " because mandatory key is missing :" << v.ToString() << std::endl;
@@ -326,7 +326,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     Value require_keys = nvti[knowntext::kNVTI_require_keys];
     if (require_keys.IsObject()) {
         for (auto v : require_keys._array()) {
-            Value val = ctx->Storage->GetItem(v.bytes, true);
+            Value val = ctx->Storage->GetItem(v.text, true);
             if (val.IsNULL()) {
                 std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because require key is missing :" << v.ToString() << std::endl;
@@ -360,7 +360,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
     Value exclude_keys = nvti[knowntext::kNVTI_exclude_keys];
     if (exclude_keys.IsObject()) {
         for (auto v : exclude_keys._array()) {
-            Value val = ctx->Storage->GetItem(v.bytes, true);
+            Value val = ctx->Storage->GetItem(v.text, true);
             if (!val.IsNULL()) {
                 std::cout << "skip script " << nvti[knowntext::kNVTI_filename].ToString()
                           << " because exclude_keys is exist :" << v.ToString() << std::endl;
@@ -396,7 +396,8 @@ public:
 };
 
 void HostsTask::DetectService(DetectServiceParamter* param) {
-    DetectServiceCallback callback(mPrefs["scripts_folder"].bytes, mIO, param->tcb, param->ports);
+    DetectServiceCallback callback(mPrefs["scripts_folder"].ToString(), mIO, param->tcb,
+                                   param->ports);
     Interpreter::Executor Engine(&callback, NULL);
     RegisgerModulesBuiltinMethod(&Engine);
     OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);

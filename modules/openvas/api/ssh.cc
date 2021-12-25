@@ -498,7 +498,7 @@ Value SSHShellWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         return Value();
     }
     scoped_refptr<SSHChannel> channel = (SSHChannel*)args[0].resource.get();
-    return channel->write(args[1].bytes);
+    return channel->write(args[1].text);
 }
 
 //channel

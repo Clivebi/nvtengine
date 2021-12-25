@@ -144,7 +144,7 @@ public:
     virtual std::string ObjectType() const = 0;
     virtual std::string MapKey() const { return Interpreter::ToString((int64_t)this); }
     virtual std::string ToString() const = 0;
-    virtual std::string ToDescription() const =0;
+    virtual std::string ToDescription() const = 0;
     virtual std::string ToJSONString() const = 0;
 };
 
@@ -195,6 +195,112 @@ class VMContext;
 class Executor;
 typedef Value (*RUNTIME_FUNCTION)(std::vector<Value>& values, VMContext* ctx, Executor* vm);
 class Instruction;
+
+//bytes type backend
+class Bytes : public CRefCountedThreadSafe<Bytes> {
+protected:
+    friend class BytesView;
+    BYTE* mData;
+    size_t mLen;
+    DISALLOW_COPY_AND_ASSIGN(Bytes);
+
+public:
+    explicit Bytes(size_t size) {
+        mLen = size;
+        mData = new BYTE[mLen];
+        memset(mData, 0, mLen);
+    }
+    ~Bytes() { delete[] mData; }
+};
+
+class BytesView {
+protected:
+    scoped_refptr<Bytes> mBackend;
+    size_t mViewStart;
+    size_t mViewSize;
+
+protected:
+    const BYTE* GetDataPtr() const { return mBackend->mData + mViewStart; }
+
+public:
+    BytesView() : mBackend(NULL), mViewStart(0), mViewSize(0) {}
+    BytesView(size_t Len) {
+        mBackend = new Bytes(Len);
+        mViewStart = 0;
+        mViewSize = Len;
+    }
+    BytesView(const BytesView& view) {
+        mBackend = view.mBackend;
+        mViewStart = view.mViewStart;
+        mViewSize = view.mViewSize;
+    }
+    BytesView& operator=(const BytesView& view) {
+        mBackend = view.mBackend;
+        mViewStart = view.mViewStart;
+        mViewSize = view.mViewSize;
+        return *this;
+    }
+
+    size_t Length() const { return mViewSize; }
+
+    BytesView Slice(size_t left, size_t right) const {
+        if (right == 0 || right > mViewSize) {
+            right = mViewSize;
+        }
+        if (left > mViewSize) {
+            throw RuntimeException("Bytes slice out of range");
+        }
+        BytesView view(*this);
+        view.mViewStart = mViewStart + left;
+        view.mViewSize = right - left;
+        return view;
+    }
+
+    BytesView operator+(const BytesView& right) const {
+        size_t Total = Length() + right.Length();
+        BytesView ret(Total);
+        memcpy(ret.mBackend->mData, GetDataPtr(), Length());
+        memcpy(ret.mBackend->mData + Length(), right.GetDataPtr(), right.Length());
+        return ret;
+    }
+
+    BYTE GetAt(size_t index) const {
+        if (index >= Length()) {
+            throw RuntimeException("Bytes GetAt index out of range");
+        }
+        return GetDataPtr()[index];
+    }
+
+    void CopyFrom(const void* from, size_t size) {
+        BYTE* ptr = mBackend->mData + mViewStart;
+        size_t n = size;
+        ;
+        if (n > Length()) {
+            n = Length();
+        }
+        memcpy(ptr, from, n);
+    }
+
+    void CopyFrom(std::string& src) { return CopyFrom(src.c_str(), src.size()); }
+
+    void SetAt(size_t index, int Val) {
+        if (index >= Length()) {
+            throw RuntimeException("Bytes GetAt index out of range");
+        }
+        mBackend->mData[mViewStart + index] = (BYTE)(Val & 0xFF);
+    }
+
+    std::string ToString() const {
+        std::string ret = "";
+        ret.assign((char*)GetDataPtr(), Length());
+        return ret;
+    }
+    std::string ToDescription() const {
+        return "bytes(" + HexEncode((char*)GetDataPtr(), Length()) + ")";
+    }
+    std::string ToJSONString() const { return EncodeJSONString(ToString(), true); }
+};
+
 class Value {
 public:
     typedef int64_t INTVAR;
@@ -206,7 +312,8 @@ public:
         const Instruction* Function;
         RUNTIME_FUNCTION RuntimeFunction;
     };
-    std::string bytes;
+    BytesView bytesView;
+    std::string text;
     RESOURCE resource;
     OBJECTPTR object;
 
@@ -231,7 +338,8 @@ public:
     Value& operator=(const Value& right);
 
     static Value make_array();
-    static Value make_bytes(std::string val);
+    static Value make_bytes(size_t size);
+    static Value make_bytes(std::string src);
     static Value make_map();
 
 public:
@@ -240,7 +348,9 @@ public:
     bool IsNumber() const {
         return Type == ValueType::kInteger || Type == ValueType::kFloat || Type == ValueType::kByte;
     }
-    bool IsStringOrBytes() const { return Type == ValueType::kString || Type == ValueType::kBytes; }
+    bool IsString() const { return Type == ValueType::kString; }
+    bool IsBytes() const { return Type == ValueType::kBytes; }
+    //bool IsStringOrBytes() const { return Type == ValueType::kString || Type == ValueType::kBytes; }
     bool IsSameType(const Value& right) const { return Type == right.Type; }
     bool IsObject() const {
         return Type == ValueType::kObject || Type == ValueType::kArray || Type == ValueType::kMap;
@@ -375,6 +485,7 @@ public:
     bool ToBoolean() const;
     Value Slice(const Value& from, const Value& to) const;
     void SetValue(const Value& key, const Value& val);
+    Value GetValue(const Value& key) const;
 };
 
 Value operator+(const Value& left, const Value& right);

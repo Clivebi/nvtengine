@@ -72,9 +72,9 @@ void OVAContext::AddTag(const Value& name, const Value& value) {
 bool OVAContext::IsPortInOpenedRange(Value& port, bool tcp) {
     std::string portList;
     if (tcp) {
-        portList = Env[knowntext::kENV_opened_tcp].bytes;
+        portList = Env[knowntext::kENV_opened_tcp].text;
     } else {
-        portList = Env[knowntext::kENV_opened_udp].bytes;
+        portList = Env[knowntext::kENV_opened_udp].text;
     }
     std::string key = "," + port.ToString();
     if (portList.find(key) != std::string::npos) {

@@ -637,7 +637,7 @@ Value URLQueryEncode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         if (result.size()) {
             result += "&";
         }
-        result += escape(iter->first.bytes, encodeQueryComponent);
+        result += escape(iter->first.text, encodeQueryComponent);
         result += "=";
         result += escape(iter->second.ToString(), encodeQueryComponent);
         iter++;
@@ -659,19 +659,23 @@ Value ReadHttpResponse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value DeflateBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     std::string src = GetString(args, 0);
-    Value ret = Value::make_bytes("");
-    ret.Type = args[0].Type;
-    DeflateStream(src, ret.bytes);
-    return ret;
+    std::string res = "";
+    DeflateStream(src, res);
+    if (args[0].IsString()) {
+        return res;
+    }
+    return Value::make_bytes(res);
 }
 
 Value BrotliDecompressBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     std::string src = GetString(args, 0);
-    Value ret = Value::make_bytes("");
-    ret.Type = args[0].Type;
-    BrotliDecompress(src, ret.bytes);
-    return ret;
+    std::string res = "";
+    BrotliDecompress(src, res);
+    if (args[0].IsString()) {
+        return res;
+    }
+    return Value::make_bytes(res);
 }
 
 Value URLParse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -703,7 +707,7 @@ void BuildRequestHeader(Value val, std::string& forHost, std::string& port,
             if (iter->first.Type != ValueType::kString && iter->first.Type != ValueType::kBytes) {
                 throw RuntimeException("the httpheader map key must string or bytes");
             }
-            result[iter->first.bytes] = iter->second.ToString();
+            result[iter->first.text] = iter->second.ToString();
             iter++;
         }
     }
@@ -817,7 +821,7 @@ Value HttpPostForm(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         BuildRequestHeader(Value(), host, port, headers);
     }
     headers["Content-Type"] = "application/x-www-form-urlencoded";
-    headers["Content-Length"] = Value(query.bytes.size()).ToString();
+    headers["Content-Length"] = Value(query.text.size()).ToString();
     std::stringstream o;
     o << "POST " << escape(path, encodePath);
     if (uq.size()) {
@@ -830,7 +834,7 @@ Value HttpPostForm(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         iter++;
     }
     o << "\r\n";
-    o << query.bytes;
+    o << query.text;
 
     std::string req = o.str();
     std::cout << req << std::endl;

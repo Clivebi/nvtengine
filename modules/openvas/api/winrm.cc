@@ -31,10 +31,10 @@ Value CreateWinRM(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_INTEGER(9); //timeout
     CHECK_PARAMETER_INTEGER(10) //useNTLM
     GoUintptr Handle =
-            WinRMOpen((char*)args[0].bytes.c_str(), args[1].Integer, (char*)args[2].bytes.c_str(),
-                      (char*)args[3].bytes.c_str(), args[4].Integer, args[5].Integer,
-                      (char*)args[6].bytes.c_str(), (char*)args[7].bytes.c_str(),
-                      (char*)args[8].bytes.c_str(), args[9].Integer, args[10].Integer);
+            WinRMOpen((char*)args[0].text.c_str(), args[1].Integer, (char*)args[2].text.c_str(),
+                      (char*)args[3].text.c_str(), args[4].Integer, args[5].Integer,
+                      (char*)args[6].text.c_str(), (char*)args[7].text.c_str(),
+                      (char*)args[8].text.c_str(), args[9].Integer, args[10].Integer);
     if (Handle == 0) {
         return Value();
     }
@@ -53,8 +53,8 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string out;
     std::string errOut;
     WINRMHandle* Handle = (WINRMHandle*)args[0].resource.get();
-    WinRMExecute_return result = WinRMExecute(Handle->mHandle, (char*)args[1].bytes.c_str(),
-                                              (char*)args[2].bytes.c_str(), args[3].Integer);
+    WinRMExecute_return result = WinRMExecute(Handle->mHandle, (char*)args[1].text.c_str(),
+                                              (char*)args[2].text.c_str(), args[3].Integer);
     Value ret = Value::make_map();
     if (result.r3 != NULL) {
         LOG("WinRMExecute have error :", result.r3);

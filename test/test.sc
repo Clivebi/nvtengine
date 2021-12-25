@@ -29,7 +29,7 @@ assertEqual(4*(1+2),12);
 assertEqual(4*5/5,4);
 assertEqual(0-1000,-1000);
 assertEqual(5*(-10),-50);
-assertNotEqual(nil,false);
+assertEqual(nil,false);
 assertNotEqual(true,nil);
 assertNotEqual(true,false);
 func test_basic_convert(){
@@ -47,23 +47,14 @@ func test_basic_convert(){
 
     #convert string to bytes
     var buf = bytes("hello");
-    var buf2 = bytes("world");
+    var buf2 = bytes(" world");
 
     assertEqual(typeof(buf),"bytes");
     assertEqual(typeof(buf2),"bytes");
 
-    #convert Integer array to bytes
-    var buf3 = bytes(0x68,0x65,0x6C,0x6C,0x6F);
-    var buf4 = bytes([0x77,0x6F,0x72,0x6C,0x64]);
-
-    assertEqual(typeof(buf3),"bytes");
-    assertEqual(typeof(buf4),"bytes");
-    assertEqual(buf,buf3);
-    assertEqual(buf2,buf4);
-
     #convert hex string to bytes
     var buf5= HexDecodeString("68656C6C6F20776F726C64");
-    var buf6= append(buf,0x20,buf4);
+    var buf6= append(buf,buf2);
 
     assertEqual(buf5,buf6);
     Println(buf6);
@@ -83,16 +74,12 @@ func test_basic_convert(){
     assertEqual(HexEncode(0xEEFFBB),"EEFFBB");
     assertEqual(100+"200","100200");
     assertEqual("100"+200,"100200");
-    assertEqual(bytes("hell")+'o',"hello");
-    assertEqual("hello"+'o',"helloo");
 }
 
 test_basic_convert();
 
 func asciiCodeToChar(code){
-    var test = bytes();
-    test = append(test,code);
-    return ToString(test);
+    return ToString(byte(code));
 }
 
 assertEqual(asciiCodeToChar('A'),"A");
@@ -254,91 +241,19 @@ map_test_ex();
 test_array_map();
 
 # ByteOrder test
-
-func reverse_bytes(blob){
-    var result = bytes();
-    for(var i = len(blob)-1;i>=0;i--){
-        result += blob[i];
+func blob_test(){
+    var blob = MakeBytes(10);
+    for (var i = 0; i< 10;i++){
+        blob[i] = '0'+i;
     }
-    return result;
+    assertEqual(len(blob[:2]),2);
+    assertEqual(string(blob[:2]),"01");
+    var x = blob[4:];
+    assertEqual(len(x),6);
+    assertEqual(string(x[:2]),"45");
 }
 
-assertEqual(reverse_bytes(bytes(0x01,0x2,0x03,0x4)),bytes(0x04,0x03,0x02,0x1));
-
-#0xFFAABBCC -> 0xCCBBAAFF
-func Swap32(val){
-    var a = (val&0xFF),b=(val>>8)&0xFF,c=(val>>16)&0xFF,d=(val>>24)&0xFF;
-    return (a <<24)|(b<<16)|(c<<8)|d;
-}
-
-#0xFFAA -> 0xAAFF
-func Swap16(val){
-    var a = (val&0xFF),b=(val>>8)&0xFF;
-    return (a<<8)|b;
-}
-
-#0xFFEEDDCCBBAA9988->0x8899AABBCCDDEEFF
-func Swap64(val){
-    var a = (val&0xFF),b=(val>>8)&0xFF,c=(val>>16)&0xFF,d=(val>>24)&0xFF;
-    var e =(val>>32)&0xFF,f =(val>>40)&0xFF,g =(val>>48)&0xFF,h =(val>>56)&0xFF;
-    return (a <<56)|(b<<48)|(c<<40)|(d<<32)|(e<<24)|(f<<16)|(g<<8)|h; 
-}
-
-func IsBigEndianOS(){
-    var env = VMEnv();
-    return env["ByteOrder"] == "BigEndian";
-}
-
-func AppendUInt32ToBuffer(buf,val,isBigEndian){
-    if(isBigEndian){
-        return append(buf,(val>>24)&0xFF,(val>>16)&0xFF,(val>>8)&0xFF,val&0xFF);
-    }
-    return append(buf,val&0xFF,(val>>8)&0xFF,(val>>16)&0xFF,(val>>24)&0xFF);
-}
-
-func ReadUInt32FromBuffer(buf,isBigEndian){
-    var val ;
-    if(isBigEndian){
-        val = ((buf[0]&0xFF)<<24)|((buf[1]&0xFF)<<16) |((buf[2]&0xFF)<<8) |buf[3]&0xFF;
-    }else{
-        val = ((buf[3]&0xFF)<<24)|((buf[2]&0xFF)<<16) |((buf[1]&0xFF)<<8) |buf[0]&0xFF;
-    }
-    return val &0xFFFFFFFF;
-}
-
-func AppendUInt16ToBuffer(buf,val,isBigEndian){
-    if(isBigEndian){
-        return append(buf,(val>>8)&0xFF,val&0xFF);
-    }
-    return append(buf,val&0xFF,(val>>8)&0xFF);
-}
-
-func ReadUInt16FromBuffer(buf,isBigEndian){
-    var val ;
-    if(isBigEndian){
-        val = ((buf[0]&0xFF)<<8) |buf[1]&0xFF;
-    }else{
-        val = ((buf[1]&0xFF)<<8) |buf[0]&0xFF;
-    }
-    return val&0xFFFF;
-}
-
-func test_bin_pack(){
-    var val32 = 0xFFEECCDD,val16 = 0xFFEE;
-    buf = bytes();
-    buf = AppendUInt32ToBuffer(buf,val32,true);
-    assertEqual(buf[0]&0xFF,0xFF);
-    assertEqual(buf[1]&0xFF,0xEE);
-    assertEqual(ReadUInt32FromBuffer(buf,true),val32);
-    buf = bytes();
-    buf = AppendUInt16ToBuffer(buf,val16,true);
-    assertEqual(buf[0]&0xFF,0xFF);
-    assertEqual(buf[1]&0xFF,0xEE);
-    assertEqual(ReadUInt16FromBuffer(buf,true),val16);
-    assertEqual(Swap32(val32),0xDDCCEEFF);
-}
-
-test_bin_pack();
+blob_test();
 
 func byteslib_test(){
     var str = "!!! hello world !!!!!";

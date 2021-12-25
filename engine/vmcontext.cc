@@ -228,7 +228,7 @@ void VMContext::AddFunction(const Instruction* obj) {
         throw RuntimeException("function declaration must in the top block name:" + obj->Name);
     }
     if (!IsFunctionOverwriteEnabled(obj->Name)) {
-        throw RuntimeException("exit function can't overwrite");
+        throw RuntimeException(obj->Name + " function can't overwrite");
     }
     //LOG("add function:"+obj->Name);
     std::map<std::string, const Instruction*>::iterator iter = mFunctions.find(obj->Name);

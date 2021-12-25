@@ -50,7 +50,8 @@ Value recv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     CHECK_PARAMETER_RESOURCE(0);
-    CHECK_PARAMETER_STRING(1);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
+    std::string data = GetString(args, 1);
     int length = GetInt(args, 2, 0);
     int option = GetInt(args, 3, 0);
     if (length <= 0 || length > args[1].Length()) {
@@ -61,7 +62,7 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     }
     //LOG("send:", length, HexEncode(args[1].bytes.c_str(), length, "\\x"));
     net::Conn* con = (net::Conn*)args[0].resource.get();
-    return con->Write(args[1].bytes.c_str(), length);
+    return con->Write(data.c_str(), length);
 }
 
 Value socket_get_error(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -193,13 +194,13 @@ std::vector<std::string> ResolveHostNameToList(const std::string& host, int fami
 Value ResolveHostName(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(0);
     CHECK_PARAMETER_STRING(0);
-    return ResolveHostName(args[0].bytes, AF_UNSPEC);
+    return ResolveHostName(args[0].text, AF_UNSPEC);
 }
 
 Value ResolveHostNameToList(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
-    std::vector<std::string> res = ResolveHostNameToList(args[0].bytes, AF_UNSPEC);
+    std::vector<std::string> res = ResolveHostNameToList(args[0].text, AF_UNSPEC);
     if (res.size() == 0) {
         return Value();
     }
