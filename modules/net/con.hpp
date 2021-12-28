@@ -51,28 +51,28 @@ public:
     }
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-            LOG("BaseConn read timeout:", mReadTimeout);
+            LOG_DEBUG("BaseConn read timeout:", mReadTimeout);
             UpdateLastError();
             return -1;
         }
         int nSize = ::recv(mSocket, buffer, size, 0);
         if (nSize == -1) {
             UpdateLastError();
-            LOG("BaseConn recv error ", mLastError);
+            LOG_DEBUG("BaseConn recv error ", mLastError);
         }
         return nSize;
     }
 
     virtual int Write(const void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-            LOG("BaseConn write timeout:", mReadTimeout);
+            LOG_DEBUG("BaseConn write timeout:", mReadTimeout);
             UpdateLastError();
             return -1;
         }
         int nSize = ::send(mSocket, buffer, size, 0);
         if (nSize == -1) {
             UpdateLastError();
-            LOG("BaseConn recv error ", mLastError);
+            LOG_DEBUG("BaseConn recv error ", mLastError);
         }
         return nSize;
     }

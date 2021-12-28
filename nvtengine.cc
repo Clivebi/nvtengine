@@ -176,6 +176,7 @@ int main(int argc, char* argv[]) {
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
 #endif
+    g_LogLevel = LEVEL_WARNING;
     if (argc == 2) {
         UpdateNVTI(argv[1], "");
         std::cout << Interpreter::Status::ToString() << std::endl;

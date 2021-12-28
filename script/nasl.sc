@@ -149,7 +149,7 @@ func safe_checks(){
 }
 
 func set_kb_item(name, value){
-	Println(name,"-->",value);
+	#Println(name,"-->",value);
 	return ova_set_kb_item(name,value);
 }
 
@@ -259,7 +259,7 @@ func open_sock_tcp(port,buffsz=nil,timeout=nil, transport=nil,priority=0){
 	}else{
 		isTLS = transport > 1;
 	}
-	Println(get_host_ip(),port,timeout,isTLS);
+	#Println(get_host_ip(),port,timeout,isTLS);
 	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,isTLS);
 	if(soc){
 		ConnSetReadTimeout(soc,5);
@@ -611,6 +611,9 @@ func strstr(str1,str2){
 }
 
 func substr(str,start,end=-1){
+	if(!str){
+		return nil;
+	}
 	if(end == -1 || end >= len(str)){
 		end = len(str)-1;
 	}
@@ -639,10 +642,16 @@ func insstr(str1,str2,i1,i2=-1){
 }
 
 func tolower(str){
+	if(!str){
+		return nil;
+	}
 	return ToLowerString(str);
 }
 
 func toupper(str){
+	if(!str){
+		return nil;
+	}
 	return ToUpperString(str);
 }
 
@@ -676,6 +685,9 @@ func egrep(pattern, string,icase=false){
 }
 
 func ereg(pattern, string,multiline=false,icase=false){
+	if(!string){
+		return nil;
+	}
 	var text = string;
 	if(!multiline){
 		var lines = SplitString(string,"\n");
@@ -685,6 +697,9 @@ func ereg(pattern, string,multiline=false,icase=false){
 }
 
 func ereg_replace(pattern, string,replace,icase=false){
+	if(!string){
+		return nil;
+	}
 	if(-1== IndexString(replace,"\\")){
         return RegExpReplace(string,pattern,replace,icase);
     }
@@ -711,6 +726,9 @@ func ereg_replace(pattern, string,replace,icase=false){
 }
 
 func eregmatch(pattern, string,icase=false){
+	if(!string){
+		return nil;
+	}
 	var result = SearchRegExp(string,pattern,icase);
 	if(result != nil && len(result)==0){
 		return nil;
@@ -721,6 +739,9 @@ func eregmatch(pattern, string,icase=false){
 func split(buffer, sep="\n",keep = -1){
 	if(keep==-1){
 		keep = true;
+	}
+	if(!buffer){
+		return nil;
 	}
 	var list = SplitString(buffer,sep);
 	for(var i = 0; i < len(list);i++){
@@ -749,6 +770,11 @@ func int(other){
 func stridx(str,sub,pos = 0){
 	if(pos > 0){
 		str = str[pos:];
+		var idx = IndexString(str,sub);
+		if(idx>=0){
+			idx += pos;
+		}
+		return idx;
 	}
 	return IndexString(str,sub);
 }

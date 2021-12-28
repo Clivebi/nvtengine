@@ -49,7 +49,7 @@ public:
         if (error.find("syntax error") != std::string::npos) {
             mSyntaxError = true;
         }
-        LOG(std::string(name) + " " + msg);
+        LOG_ERROR(std::string(name) + " " + msg);
     }
 };
 

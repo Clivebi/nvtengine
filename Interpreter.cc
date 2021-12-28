@@ -30,7 +30,7 @@ public:
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
         std::string error = msg;
-        LOG(std::string(name) + " " + msg);
+        LOG_ERROR(std::string(name) + " " + msg);
     }
 };
 
@@ -46,6 +46,7 @@ bool ExecuteScript(std::string path) {
 }
 
 int main(int argc, char* argv[]) {
+    g_LogLevel = LEVEL_DEBUG;
     if (argc > 1) {
         ExecuteScript(argv[1]);
         std::cout << Interpreter::Status::ToString() << std::endl;

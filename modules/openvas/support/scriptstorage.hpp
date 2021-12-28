@@ -53,7 +53,7 @@ public:
             if (Interpreter::IsMatchString(iter->first, partten)) {
                 auto iter2 = iter->second.begin();
                 if (iter->second.size() > 1) {
-                    LOG("Check Key", iter->first, " this have more than one value");
+                    LOG_DEBUG("Check Key", iter->first, " this have more than one value");
                 }
                 while (iter2 != iter->second.end()) {
                     ret[iter->first] = (*iter2);

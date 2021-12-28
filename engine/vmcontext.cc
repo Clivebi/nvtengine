@@ -22,7 +22,7 @@ VMContext* VMContext::sLastContext = NULL;
 
 void DebugContext() {
     if (VMContext::sLastContext != NULL) {
-        LOG(VMContext::sLastContext->DumpContext(false));
+        LOG_DEBUG(VMContext::sLastContext->DumpContext(false));
     }
 }
 #endif
@@ -139,7 +139,7 @@ void VMContext::AddVar(const std::string& name) {
         throw RuntimeException("variable name is builtin :" + name);
     }
     if (mIsEnableWarning && IsShadowName(name)) {
-        LOG("variable name shadow :" + name);
+        LOG_WARNING("variable name shadow :" + name);
     }
     std::map<std::string, Value>::iterator iter = mVars.find(name);
     if (iter == mVars.end()) {
@@ -173,7 +173,7 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
     }
     ctx = GetTopContext();
     ctx->mVars[name] = value;
-    LOG("auto add var in the file context " + name, " File: ", ctx->mName);
+    LOG_DEBUG("auto add var in the file context " + name, " File: ", ctx->mName);
 }
 
 bool VMContext::IsShadowName(const std::string& name) {
@@ -218,7 +218,7 @@ Value VMContext::GetVarValue(const std::string& name) {
         //DEBUG_CONTEXT();
         std::string func;
         IsInFunctionContext(func);
-        LOG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
+        LOG_DEBUG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
     }
     return ret;
 }

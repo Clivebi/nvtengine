@@ -57,7 +57,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
                                               (char*)args[2].text.c_str(), args[3].Integer);
     Value ret = Value::make_map();
     if (result.r3 != NULL) {
-        LOG("WinRMExecute have error :", result.r3);
+        LOG_WARNING("WinRMExecute have error :", result.r3);
         free(result.r3);
         return Value();
     } else {

@@ -51,7 +51,7 @@ public:
         ret._map()["status"] = Value(strtol(Status.c_str(), NULL, 0));
         ret._map()["reason"] = Reason;
         ret._map()["raw_header"] = RawHeader;
-        ret._map()["body"] = Value::make_bytes(Body);
+        ret._map()["body"] = Body;
         Value h = Value::make_map();
         std::vector<HeaderValue*>::iterator iter = Header.begin();
         while (iter != Header.end()) {
@@ -256,7 +256,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     while (true) {
         int size = stream->Read(buffer.data(), buffer.size());
         if (size <= 0) {
-            LOG("Read Error " + ToString(size));
+            LOG_DEBUG("Read Error " + ToString(size));
             return false;
         }
         if (!matched) {
@@ -270,7 +270,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
         }
         int parse_size = http_parser_execute(&parser, &settings, buffer.data(), size);
         if (parser.http_errno != 0) {
-            LOG("Http Parser Error");
+            LOG_DEBUG("Http Parser Error");
             return false;
         }
         if (resp->IsMessageCompleteCalled) {
@@ -301,12 +301,12 @@ bool DoHttpRequest(std::string& host, std::string& port, bool isSSL, std::string
                    HTTPResponse* resp) {
     scoped_refptr<net::Conn> tcp = net::Dial("tcp", host, port, 60, isSSL, false);
     if (tcp.get() == NULL) {
-        LOG("Dial error");
+        LOG_DEBUG("Dial error");
         return false;
     }
     int size = tcp->Write(req.c_str(), req.size());
     if (size != req.size()) {
-        LOG("write Error");
+        LOG_DEBUG("write Error");
         return false;
     }
     return DoReadHttpResponse(tcp, resp);

@@ -119,7 +119,7 @@ std::string decode_string(const std::string& src) {
             } else {
                 i++;
                 o << src[i];
-                LOG("Parse string error :" + src);
+                LOG_WARNING("Parse string error :" + src);
             }
         }
         }

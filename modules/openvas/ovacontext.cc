@@ -24,7 +24,7 @@ void OVAContext::AddPreference(const Value& id, const Value& name, const Value& 
 Value OVAContext::GetPreference(const Value& id, const Value& name) {
     Value& ref = Nvti._map()[knowntext::kNVTI_preference];
     if (ref.Type != ValueType::kArray) {
-        LOG("preference array not exist " + Nvti[knowntext::kNVTI_filename].ToString());
+        LOG_WARNING("preference array not exist " + Nvti[knowntext::kNVTI_filename].ToString());
         return Value();
     }
     auto iter = ref._array().begin();
@@ -106,7 +106,7 @@ Value OVAContext::GetKbList(const std::string& name) {
 void OVAContext::SetKbItem(const std::string& name, const Value& val) {
     if (IsForkedTask) {
         if (Fork.GetItemPos(name) != -1) {
-            LOG("In forked task update a forking key: " + name);
+            LOG_ERROR("In forked task update a forking key: " + name);
         }
     }
     return Storage->SetItem(name, val);

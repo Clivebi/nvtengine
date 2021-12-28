@@ -35,7 +35,7 @@ public:
             int err = SSL_get_error(mSSL, n);
             if (err == SSL_ERROR_WANT_READ) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-                    LOG("SSL read timeout....");
+                    LOG_DEBUG("SSL read timeout....");
                     UpdateLastError();
                     return -1;
                 }
@@ -43,7 +43,7 @@ public:
             }
             if (err == SSL_ERROR_WANT_WRITE) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-                    LOG("SSL Write timeout....");
+                    LOG_DEBUG("SSL Write timeout....");
                     UpdateLastError();
                     return -1;
                 }
@@ -67,7 +67,7 @@ public:
             int err = SSL_get_error(mSSL, n);
             if (err == SSL_ERROR_WANT_READ) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-                    LOG("SSL read timeout....");
+                    LOG_DEBUG("SSL read timeout....");
                     UpdateLastError();
                     return -1;
                 }
@@ -75,7 +75,7 @@ public:
             }
             if (err == SSL_ERROR_WANT_WRITE) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-                    LOG("SSL Write timeout....");
+                    LOG_DEBUG("SSL Write timeout....");
                     UpdateLastError();
                     return -1;
                 }
@@ -110,20 +110,20 @@ public:
             err = SSL_get_error(mSSL, err);
             if (err == SSL_ERROR_WANT_WRITE) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-                    LOG("select write timeout");
+                    LOG_DEBUG("select write timeout");
                     UpdateLastError();
                     return false;
                 }
                 continue;
             } else if (err == SSL_ERROR_WANT_READ) {
                 if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, true)) {
-                    LOG("select read timeout");
+                    LOG_DEBUG("select read timeout");
                     UpdateLastError();
                     return false;
                 }
                 continue;
             } else {
-                LOG("SSL_do_handshake error " + ToString(err));
+                LOG_DEBUG("SSL_do_handshake error " + ToString(err));
                 ERR_print_errors_fp(stdout);
                 UpdateLastError();
                 return false;

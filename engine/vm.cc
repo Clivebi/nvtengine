@@ -40,6 +40,8 @@ void operator delete(void* p) noexcept {
 }
 #endif
 
+int g_LogLevel = 3;
+
 void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 void yyerror(Interpreter::Parser* parser, const char* s) {
@@ -203,7 +205,7 @@ Value Executor::GetConstValue(Instruction::keyType key) {
 Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
     //LOG("execute " + ins->ToString());
     if (ctx->IsExecutedInterupt()) {
-        LOG("Instruction execute interupted :" + ins->ToString());
+        LOG_DEBUG("Instruction execute interupted :" + ins->ToString());
         return ctx->GetReturnValue();
     }
     if (ins->OpCode >= Instructions::kADD && ins->OpCode <= Instructions::kMAXBinaryOP) {
@@ -313,7 +315,7 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
         return ExecuteSlice(ins, ctx);
     default:
         assert(false);
-        LOG("Unknown Instruction:" + ins->ToString());
+        LOG_ERROR("Unknown Instruction:" + ins->ToString());
         return Value();
     }
 }
@@ -426,7 +428,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         break;
     }
     default:
-        LOG("Unknown Instruction:" + ToString((int64_t)opCode));
+        LOG_ERROR("Unknown Instruction:" + ToString((int64_t)opCode));
     }
     ctx->SetVarValue(name, oldVal);
     return oldVal;
@@ -539,7 +541,7 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
         return Value((int64_t)i);
     }
     default:
-        LOG("Unknow OpCode:" + ins->ToString());
+        LOG_ERROR("Unknow OpCode:" + ins->ToString());
         return Value();
     }
 }
@@ -651,7 +653,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                 } else {
                     //没有默认值，而且没有传递这个参数
                     if ((*iter)->Refs.size() == 0) {
-                        LOG("actual parameters count not equal formal paramers for func:" +
+                        LOG_WARNING("actual parameters count not equal formal paramers for func:" +
                             ins->Name);
                     }
                 }
@@ -681,7 +683,7 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
         }
         if (!found) {
             DEBUG_CONTEXT();
-            LOG((*iter)->Name, " is not a parametr for ", ins->Name);
+            LOG_WARNING((*iter)->Name, " is not a parametr for ", ins->Name);
             //throw RuntimeException((*iter)->Name + " is not a parametr for " + ins->Name);
         }
     }
@@ -706,7 +708,7 @@ Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& 
     if (func->Refs.size() == 2) {
         const Instruction* formalParamersList = GetInstruction(func->Refs[1]);
         if (args.size() != formalParamersList->Refs.size()) {
-            LOG("actual parameters count not equal formal paramers for func:" + name);
+            LOG_WARNING("actual parameters count not equal formal paramers for func:" + name);
         }
         std::vector<const Instruction*> formalParamers = GetInstructions(formalParamersList->Refs);
         std::vector<const Instruction*>::iterator iter = formalParamers.begin();
@@ -955,7 +957,7 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         break;
     }
     default:
-        LOG("Unknown Instruction code :" + ToString((int64_t)opCode));
+        LOG_ERROR("Unknown Instruction code :" + ToString((int64_t)opCode));
     }
     toObject.SetValue(index, oldVal);
     return oldVal;
@@ -970,7 +972,7 @@ bool Executor::AutoConvertNilValue(Value& value, std::vector<Value>& indexer) {
         }
         if (indexer.front().IsInteger()) {
             DEBUG_CONTEXT();
-            LOG("wanring please check auto convert nil to map use a integer key larger than 4096");
+            LOG_WARNING("wanring please check auto convert nil to map use a integer key larger than 4096");
         }
         value = Value::make_map();
         return true;
@@ -1015,7 +1017,7 @@ Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
     Value root;
     ctx->GetVarValue(ref->Name, root);
     if (root.IsNULL()) {
-        LOG("try " + ins->Name + "[index] = val on nil object,so convert to map or array");
+        LOG_DEBUG("try " + ins->Name + "[index] = val on nil object,so convert to map or array");
         if (AutoConvertNilValue(root, indexer)) {
             ctx->SetVarValue(ref->Name, root);
         }

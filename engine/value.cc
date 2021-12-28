@@ -699,7 +699,7 @@ Value& Value::operator+=(const Value& right) {
     }
 
     DEBUG_CONTEXT();
-    LOG(ToString(), right.ToString());
+    LOG_ERROR(ToString(), right.ToString());
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 
@@ -911,7 +911,7 @@ const Value Value::operator[](const Value& key) const {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("index of string out of range");
         }
-        return Value(text[key.Integer]);
+        return Value((BYTE)text[key.Integer]);
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
@@ -919,7 +919,7 @@ const Value Value::operator[](const Value& key) const {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
+            LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
@@ -944,7 +944,7 @@ Value& Value::operator[](const Value& key) {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG("index of array out of range ( " + ToString() + "," + key.ToString() +
+            LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
@@ -1007,7 +1007,7 @@ void Value::SetValue(const Value& key, const Value& val) {
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG("set index of array out of range ( " + ToString() + "," + key.ToString() +
+            LOG_DEBUG("set index of array out of range ( " + ToString() + "," + key.ToString() +
                 " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("set index of array out of range ( " + ToString() + "," +
@@ -1202,7 +1202,7 @@ bool operator==(const Value& left, const Value& right) {
     if (left.IsString() && right.IsInteger()) {
         if (right.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
-            LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
+            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(), " ",
                 right.ToDescription());
         }
 
@@ -1211,13 +1211,13 @@ bool operator==(const Value& left, const Value& right) {
     if (right.IsString() && left.IsInteger()) {
         if (left.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
-            LOG("compare string with integer,may be have bug ", left.ToDescription(), " ",
+            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(), " ",
                 right.ToDescription());
         }
         return right.text == left.ToString();
     }
     if (!left.IsSameType(right)) {
-        LOG("compare value not same type may be have bug <always false> ", left.ToDescription(),
+        LOG_WARNING("compare value not same type may be have bug <always false> ", left.ToDescription(),
             " ", right.ToDescription());
         return false;
     }

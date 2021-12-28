@@ -22,7 +22,7 @@ public:
         size_t size = 0, read_size = 0;
         hFile = fopen(path.c_str(), "r");
         if (hFile == NULL) {
-            LOG("fopen failed: ", errno, path);
+            LOG_ERROR("fopen failed: ", errno, path);
             return NULL;
         }
         fseek(hFile, 0, SEEK_END);

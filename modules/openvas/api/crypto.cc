@@ -14,8 +14,8 @@ Value Md5Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     MD5_Init(&shCtx);
     MD5_Update(&shCtx, p0.c_str(), p0.size());
     MD5_Final(hash, &shCtx);
-    Value ret = Value::make_bytes(sizeof(hash));
-    ret.bytesView.CopyFrom(hash, sizeof(hash));
+    std::string ret = "";
+    ret.append((char*)hash, sizeof(hash));
     return ret;
 }
 
@@ -28,8 +28,8 @@ Value SHA1Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     SHA1_Init(&shCtx);
     SHA1_Update(&shCtx, args[0].text.c_str(), args[0].text.size());
     SHA1_Final(hash, &shCtx);
-    Value ret = Value::make_bytes(sizeof(hash));
-    ret.bytesView.CopyFrom(hash, sizeof(hash));
+    std::string ret = "";
+    ret.append((char*)hash, sizeof(hash));
     return ret;
 }
 
@@ -42,8 +42,8 @@ Value SHA256Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     SHA256_Init(&shCtx);
     SHA256_Update(&shCtx, p0.c_str(), p0.size());
     SHA256_Final(hash, &shCtx);
-    Value ret = Value::make_bytes(sizeof(hash));
-    ret.bytesView.CopyFrom(hash, sizeof(hash));
+    std::string ret = "";
+    ret.append((char*)hash, sizeof(hash));
     return ret;
 }
 
@@ -197,19 +197,19 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     int padding = GetInt(args, 1, 1);
     const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipherName.c_str());
     if (cipher == NULL) {
-        LOG("invalid chiper name ", cipherName);
+        LOG_DEBUG("invalid chiper name ", cipherName);
         return Value();
     }
     if (padding < 0 || padding > 5) {
-        LOG("invalid chiper name ", cipherName);
+        LOG_DEBUG("invalid chiper name ", cipherName);
         return Value();
     }
     if (EVP_CIPHER_key_length(cipher) > key.size()) {
-        LOG("invalid key size  ");
+        LOG_DEBUG("invalid key size  ");
         return Value();
     }
     if (EVP_CIPHER_iv_length(cipher) > iv.size()) {
-        LOG("invalid iv size  ");
+        LOG_DEBUG("invalid iv size  ");
         return Value();
     }
     return Value((Resource*)new SSLCipher(cipher, padding, key, iv, args[4].Integer));
