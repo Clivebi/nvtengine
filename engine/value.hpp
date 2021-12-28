@@ -273,12 +273,10 @@ public:
 
     void CopyFrom(const void* from, size_t size) {
         BYTE* ptr = mBackend->mData + mViewStart;
-        size_t n = size;
-        ;
-        if (n > Length()) {
-            n = Length();
+        if(size > Length()){
+            size = Length();
         }
-        memcpy(ptr, from, n);
+        memcpy(ptr, from, size);
     }
 
     void CopyFrom(std::string& src) { return CopyFrom(src.c_str(), src.size()); }

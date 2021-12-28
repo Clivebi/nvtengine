@@ -355,6 +355,15 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return result;
 }
 
+Value CopyBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(2);
+    CHECK_PARAMETER_BYTES(0);
+    CHECK_PARAMETER_STRING_OR_BYTES(1);
+    std::string src = GetString(args, 1);
+    args[0].bytesView.CopyFrom(src.c_str(),src.size());
+    return args[0];
+}
+
 BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytesOrString},
                                {"HasPrefixBytes", HasPrefixBytesOrString},
                                {"HasSuffixBytes", HasSuffixBytesOrString},
@@ -387,7 +396,8 @@ BuiltinMethod bytesMethod[] = {{"ContainsBytes", ContainsBytesOrString},
                                {"SearchRegExp", SearchRegExp},
                                {"RegExpReplace", RegExpReplace},
                                {"HexDumpBytes", HexDumpBytes},
-                               {"HexDumpString", HexDumpBytes}};
+                               {"HexDumpString", HexDumpBytes},
+                               {"CopyBytes", CopyBytes}};
 
 void RegisgerBytesBuiltinMethod(Executor* vm) {
     vm->RegisgerFunction(bytesMethod, COUNT_OF(bytesMethod));
