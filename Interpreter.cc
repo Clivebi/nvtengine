@@ -17,11 +17,13 @@ protected:
 public:
     InterpreterExecutorCallback(FilePath folder) : mFolder(folder) {}
 
-    void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+    void OnScriptWillExecute(Interpreter::Executor* vm,
+                             scoped_refptr<const Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {}
-    void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+    void OnScriptExecuted(Interpreter::Executor* vm,
+                          scoped_refptr<const Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
-    void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) {}
+    void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
         std::string path = (mFolder + FilePath(name));
         FileIO io;

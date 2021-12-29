@@ -18,13 +18,20 @@ typedef struct _BuiltinMethod {
     RUNTIME_FUNCTION func;
 } BuiltinMethod;
 
+class ScriptCache {
+public:
+    virtual void OnNewScript(scoped_refptr<Script> Script) = 0;
+    virtual scoped_refptr<const Script> GetScriptFromName(const char* name) = 0;
+};
+
 class ExecutorCallback {
 public:
-    virtual void OnScriptWillExecute(Executor* vm, scoped_refptr<Script> Script,
+    virtual void OnScriptWillExecute(Executor* vm, scoped_refptr<const Script> Script,
                                      VMContext* ctx) = 0;
-    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script,
+    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,
                                        VMContext* ctx) = 0;
-    virtual void OnScriptExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) = 0;
+    virtual void OnScriptExecuted(Executor* vm, scoped_refptr<const Script> Script,
+                                  VMContext* ctx) = 0;
     virtual void* LoadScriptFile(Executor* vm, const char* name, size_t& size) = 0;
     virtual void OnScriptError(Executor* vm, const char* name, const char* msg) = 0;
 };
@@ -46,8 +53,11 @@ public:
 
     Value GetFunction(const std::string& name, VMContext* ctx);
 
+    void SetScriptCacheProvider(ScriptCache* ptr) { mCacheProvider = ptr; }
+
 protected:
-    scoped_refptr<Script> LoadScript(const char* name, std::string& error);
+    scoped_refptr<const Script> LoadScript(const char* name, std::string& error);
+    scoped_refptr<Script> LoadScriptInternal(const char* name, std::string& error);
     Value Execute(const Instruction* ins, VMContext* ctx);
     Value ExecuteList(std::vector<const Instruction*> insList, VMContext* ctx);
     Value CallFunction(const Instruction* ins, VMContext* ctx);
@@ -82,7 +92,8 @@ protected:
 protected:
     void* mContext;
     ExecutorCallback* mCallback;
-    std::list<scoped_refptr<Script>> mScriptList;
+    ScriptCache* mCacheProvider;
+    std::list<scoped_refptr<const Script>> mScriptList;
     std::map<std::string, RUNTIME_FUNCTION> mBuiltinMethods;
 };
 } // namespace Interpreter

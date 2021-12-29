@@ -104,22 +104,20 @@ extern const char* kAddMulti;
 
 class Instruction {
 public:
-    typedef int keyType;
+    typedef unsigned int keyType;
     Instructions::Type OpCode;
     keyType key;
     std::string Name;
     std::vector<keyType> Refs;
 
-    void WriteToStream(std::ostream& o) {
+    void WriteToStream(std::ostream& o) const {
         o << OpCode;
         o << key;
         o << (unsigned char)Name.size();
         o.write(Name.c_str(), Name.size());
         o << (int)Refs.size();
-        std::vector<keyType>::iterator iter = Refs.begin();
-        while (iter != Refs.end()) {
-            o << *iter;
-            iter++;
+        for (auto iter : Refs) {
+            o << iter;
         }
     }
 
@@ -251,6 +249,7 @@ protected:
     std::map<Instruction::keyType, Value> mConstTable;
 
 public:
+    bool IsRelocated() const { return mInstructionBase > 0 || mConstBase > 0; }
     void RelocateInstruction(Instruction::keyType newbase, Instruction::keyType newConstbase) {
         if (mInstructionBase != 0 || mConstBase != 0) {
             throw RuntimeException("script can only Relocate once");
@@ -274,14 +273,16 @@ public:
         mConstBase = newConstbase;
     }
 
-    bool IsContainInstruction(Instruction::keyType key) {
+    bool IsContainInstruction(Instruction::keyType key) const {
         return key >= mInstructionBase && key < GetNextInstructionKey();
     }
-    bool IsContainConst(Instruction::keyType key) {
+    bool IsContainConst(Instruction::keyType key) const {
         return key >= mConstBase && key < GetNextConstKey();
     }
-    Instruction::keyType GetNextInstructionKey() { return mInstructionBase + mInstructionKey; }
-    Instruction::keyType GetNextConstKey() { return mConstBase + mConstKey; }
+    Instruction::keyType GetNextInstructionKey() const {
+        return mInstructionBase + mInstructionKey;
+    }
+    Instruction::keyType GetNextConstKey() const { return mConstBase + mConstKey; }
 
 public:
     Instruction* NewGroup(Instruction* element) {
@@ -376,23 +377,31 @@ public:
         return ins;
     }
 
-    Value GetConstValue(Instruction::keyType key) { return mConstTable[key - mConstBase]; }
-
-    const Instruction* GetInstruction(Instruction::keyType key) {
-        
-        return mInstructionTable[key - mInstructionBase];
+    Value GetConstValue(Instruction::keyType key) const {
+        auto iter = mConstTable.find(key - mConstBase);
+        if (iter != mConstTable.end()) {
+            return iter->second;
+        }
+        throw RuntimeException("invalid const value key");
     }
 
-    std::vector<const Instruction*> GetInstructions(std::vector<Instruction::keyType> keys) {
+    const Instruction* GetInstruction(Instruction::keyType key) const {
+        auto iter = mInstructionTable.find(key - mInstructionBase);
+        if (iter != mInstructionTable.end()) {
+            return iter->second;
+        }
+        throw RuntimeException("invalid instruction key");
+    }
+
+    std::vector<const Instruction*> GetInstructions(std::vector<Instruction::keyType> keys) const {
         std::vector<const Instruction*> result;
-        for (std::vector<Instruction::keyType>::iterator iter = keys.begin(); iter != keys.end();
-             iter++) {
-            result.push_back(mInstructionTable[*iter - mInstructionBase]);
+        for (auto iter : keys) {
+            result.push_back(GetInstruction(iter));
         }
         return result;
     }
 
-    std::string DumpInstruction(const Instruction* ins, std::string prefix) {
+    std::string DumpInstruction(const Instruction* ins, std::string prefix) const {
         std::stringstream stream;
         stream << prefix;
         if (ins->OpCode == Instructions::kConst) {
@@ -411,21 +420,19 @@ public:
         }
         return stream.str();
     }
-    void WriteToStream(std::ostream& o) {
+    void WriteToStream(std::ostream& o) const {
         o << EntryPoint->key;
         o << (long)mInstructionTable.size();
         o << (long)mConstTable.size();
-        for (std::map<Instruction::keyType, Instruction*>::iterator iter =
-                     mInstructionTable.begin();
-             iter != mInstructionTable.end(); iter++) {
-            iter->second->WriteToStream(o);
+        for (auto iter : mInstructionTable) {
+            (iter.second)->WriteToStream(o);
         }
     }
 
     void ReadFromStream(std::iostream& stream) {}
 
 protected:
-    std::string JoinRefsName(const Instruction* ins) {
+    std::string JoinRefsName(const Instruction* ins) const {
         std::string refs = "";
         std::vector<const Instruction*> list = GetInstructions(ins->Refs);
         for (size_t i = 0; i < list.size(); i++) {

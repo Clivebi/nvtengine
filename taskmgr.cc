@@ -159,6 +159,7 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     DefaultExecutorCallback callback(mPrefs["scripts_folder"].ToString(), mIO);
     Interpreter::Executor Engine(&callback, NULL);
+    Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
     LOG_DEBUG("start execute script");
     for (int i = 0; i < 11; i++) {
@@ -379,7 +380,7 @@ protected:
 public:
     DetectServiceCallback(FilePath folder, FileIO* IO, HostsTask::TCB* tcb, std::vector<int>& ports)
             : DefaultExecutorCallback(folder, IO), tcb(tcb), ports(ports) {}
-    void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) {
+    void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {
         if (tcb->Exit) {
             return;
         }
@@ -399,6 +400,7 @@ void HostsTask::DetectService(DetectServiceParamter* param) {
     DetectServiceCallback callback(mPrefs["scripts_folder"].ToString(), mIO, param->tcb,
                                    param->ports);
     Interpreter::Executor Engine(&callback, NULL);
+    Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
     OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);
     ctx.Host = param->tcb->Host;

@@ -56,7 +56,7 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 namespace Interpreter {
 
 Executor::Executor(ExecutorCallback* callback, void* userContext)
-        : mScriptList(), mCallback(callback) {
+        : mScriptList(), mCallback(callback), mCacheProvider(NULL) {
     mContext = userContext;
     RegisgerEngineBuiltinMethod(this);
 }
@@ -64,12 +64,11 @@ Executor::Executor(ExecutorCallback* callback, void* userContext)
 bool Executor::Execute(const char* name, bool showWarning) {
     bool bRet = false;
     std::string error = "";
-    scoped_refptr<Script> script = LoadScript(name, error);
+    scoped_refptr<const Script> script = LoadScript(name, error);
     if (script == NULL) {
         mCallback->OnScriptError(this, name, error.c_str());
         return false;
     }
-    mScriptList.push_back(script);
     scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, name);
     context->SetEnableWarning(showWarning);
 
@@ -89,7 +88,30 @@ bool Executor::Execute(const char* name, bool showWarning) {
     return bRet;
 }
 
-scoped_refptr<Script> Executor::LoadScript(const char* name, std::string& error) {
+scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& error) {
+    if (mCacheProvider != NULL) {
+        scoped_refptr<const Script> preview = mCacheProvider->GetScriptFromName(name);
+        if (preview != NULL) {
+            return preview;
+        }
+    }
+    scoped_refptr<Script> script = LoadScriptInternal(name, error);
+    if (script == NULL) {
+        return NULL;
+    }
+    if (mCacheProvider != NULL) {
+        mCacheProvider->OnNewScript(script);
+    }
+    if (!script->IsRelocated() && mScriptList.size()) {
+        scoped_refptr<const Script> last = mScriptList.back();
+        script->RelocateInstruction(ALGINTO((last->GetNextInstructionKey() + 1), 1000),
+                                    ALGINTO((last->GetNextConstKey() + 1), 1000));
+    }
+    mScriptList.push_back(script);
+    return script;
+}
+
+scoped_refptr<Script> Executor::LoadScriptInternal(const char* name, std::string& error) {
     size_t size = 0;
     void* data = mCallback->LoadScriptFile(this, name, size);
     if (data == NULL) {
@@ -130,22 +152,16 @@ RUNTIME_FUNCTION Executor::GetBuiltinMethod(const std::string& name) {
 }
 
 void Executor::RequireScript(const std::string& name, VMContext* ctx) {
-    std::list<scoped_refptr<Script>>::iterator iter = mScriptList.begin();
-    while (iter != mScriptList.end()) {
-        if ((*iter)->Name == name) {
+    for (auto iter : mScriptList) {
+        if (iter->Name == name) {
             return;
         }
-        iter++;
     }
     std::string error;
-    scoped_refptr<Script> required = LoadScript(name.c_str(), error);
+    scoped_refptr<const Script> required = LoadScript(name.c_str(), error);
     if (required.get() == NULL) {
         throw RuntimeException("load script <" + name + "> failed :" + error);
     }
-    scoped_refptr<Script> last = mScriptList.back();
-    required->RelocateInstruction(ALGINTO((last->GetNextInstructionKey() + 1), 1000),
-                                  ALGINTO((last->GetNextConstKey() + 1), 1000));
-    mScriptList.push_back(required);
     Execute(required->EntryPoint, ctx);
 }
 
@@ -163,12 +179,10 @@ Value Executor::GetAvailableFunction(VMContext* ctx) {
 }
 
 const Instruction* Executor::GetInstruction(Instruction::keyType key) {
-    std::list<scoped_refptr<Script>>::iterator iter = mScriptList.begin();
-    while (iter != mScriptList.end()) {
-        if ((*iter)->IsContainInstruction(key)) {
-            return (*iter)->GetInstruction(key);
+    for (auto iter : mScriptList) {
+        if (iter->IsContainInstruction(key)) {
+            return iter->GetInstruction(key);
         }
-        iter++;
     }
     char buf[16] = {0};
     snprintf(buf, 16, "%d", key);
@@ -179,7 +193,7 @@ std::vector<const Instruction*> Executor::GetInstructions(std::vector<Instructio
     if (keys.size() == 0) {
         return std::vector<const Instruction*>();
     }
-    std::list<scoped_refptr<Script>>::iterator iter = mScriptList.begin();
+    std::list<scoped_refptr<const Script>>::iterator iter = mScriptList.begin();
     while (iter != mScriptList.end()) {
         if ((*iter)->IsContainInstruction(keys[0])) {
             return (*iter)->GetInstructions(keys);
@@ -192,7 +206,7 @@ std::vector<const Instruction*> Executor::GetInstructions(std::vector<Instructio
 }
 
 Value Executor::GetConstValue(Instruction::keyType key) {
-    std::list<scoped_refptr<Script>>::iterator iter = mScriptList.begin();
+    std::list<scoped_refptr<const Script>>::iterator iter = mScriptList.begin();
     while (iter != mScriptList.end()) {
         if ((*iter)->IsContainConst(key)) {
             return (*iter)->GetConstValue(key);
@@ -654,7 +668,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                     //没有默认值，而且没有传递这个参数
                     if ((*iter)->Refs.size() == 0) {
                         LOG_WARNING("actual parameters count not equal formal paramers for func:" +
-                            ins->Name);
+                                    ins->Name);
                     }
                 }
                 i++;
@@ -972,7 +986,9 @@ bool Executor::AutoConvertNilValue(Value& value, std::vector<Value>& indexer) {
         }
         if (indexer.front().IsInteger()) {
             DEBUG_CONTEXT();
-            LOG_WARNING("wanring please check auto convert nil to map use a integer key larger than 4096");
+            LOG_WARNING(
+                    "wanring please check auto convert nil to map use a integer key larger than "
+                    "4096");
         }
         value = Value::make_map();
         return true;

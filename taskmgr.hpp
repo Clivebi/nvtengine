@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <string>
 
 #include "engine/logger.hpp"
@@ -11,7 +12,7 @@
 #include "modules/openvas/support/scriptstorage.hpp"
 
 using namespace Interpreter;
-
+#define ALGINTO(a, b) (((a / b) + 1) * b)
 class DefaultExecutorCallback : public Interpreter::ExecutorCallback {
 public:
     bool mSyntaxError;
@@ -25,15 +26,17 @@ public:
     DefaultExecutorCallback(FilePath folder, FileIO* IO)
             : mFolder(folder), mDescription(0), mIO(IO) {}
 
-    void OnScriptWillExecute(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+    void OnScriptWillExecute(Interpreter::Executor* vm,
+                             scoped_refptr<const Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {
         ctx->SetVarValue("description", Value(mDescription));
         ctx->SetVarValue("COMMAND_LINE", Value(false));
         vm->RequireScript("nasl.sc", ctx);
     }
-    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<Script> Script, VMContext* ctx) {
-    }
-    void OnScriptExecuted(Interpreter::Executor* vm, scoped_refptr<Interpreter::Script> Script,
+    virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,
+                                       VMContext* ctx) {}
+    void OnScriptExecuted(Interpreter::Executor* vm,
+                          scoped_refptr<const Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
         std::string path = (mFolder + FilePath(name));
@@ -50,6 +53,51 @@ public:
             mSyntaxError = true;
         }
         LOG_ERROR(std::string(name) + " " + msg);
+    }
+};
+
+class ScriptCacheImplement : public ScriptCache {
+protected:
+    std::mutex mLock;
+    std::map<std::string, scoped_refptr<Script>> mCache;
+    scoped_refptr<Script> mLast;
+    Interpreter::Instruction::keyType mNextInsKey;
+    Interpreter::Instruction::keyType mNextConstKey;
+
+public:
+    ScriptCacheImplement()
+            : mLock(), mCache(), mNextInsKey(0x80000000), mNextConstKey(0x80000000), mLast(NULL) {}
+    void OnNewScript(scoped_refptr<Script> Script) {
+        mLock.lock();
+        const char knownCache[][30] = {
+                "nasl.sc"
+                "http_func.inc.sc",
+                "http_keepalive.inc.sc",
+        };
+        for (size_t i = 0; i < sizeof(knownCache) / sizeof(knownCache[1]); i++) {
+            if (knownCache[i] == Script->Name) {
+                Script->RelocateInstruction(mNextInsKey, mNextInsKey);
+                mNextInsKey = ALGINTO(Script->GetNextInstructionKey() + 1, 1000);
+                mNextConstKey = ALGINTO(Script->GetNextConstKey() + 1, 1000);
+                mCache[Script->Name] = Script;
+            }
+        }
+        mLast = Script;
+        mLock.unlock();
+    }
+    scoped_refptr<const Script> GetScriptFromName(const char* name) {
+        scoped_refptr<Script> ret = NULL;
+        mLock.lock();
+        if (mLast != NULL && mLast->Name == name) {
+            ret = mLast;
+        } else {
+            auto item = mCache.find(name);
+            if (item != mCache.end()) {
+                ret = item->second;
+            }
+        }
+        mLock.unlock();
+        return ret;
     }
 };
 
@@ -84,6 +132,7 @@ protected:
     std::string mPorts;
     std::string mTaskID;
     size_t mMainThread;
+    ScriptCacheImplement mScriptCache;
 
     std::list<TCB*> mTCBGroup;
     std::list<Value> mGroupedScripts[11];
@@ -124,7 +173,7 @@ protected:
         DetectServiceParamter* param = (DetectServiceParamter*)p;
         param->tcb->Task->DetectService(param);
     }
-    void DetectService(DetectServiceParamter*p);
+    void DetectService(DetectServiceParamter* p);
     bool InitScripts(std::list<std::string>& scripts);
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
                      std::list<std::string>& scripts, std::list<Value>& loadOrder,
