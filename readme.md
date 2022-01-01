@@ -18,13 +18,20 @@ MAC、windows、linux、unix
 项目中大部分代码使用标准c++编写，很少依赖系统特性，能够在主流平台上编译和运行。
 
 ## 开发路径
-0.1 版本  
+0.1.0 版本  
 - [x] 语法实现  
 - [x] 基础内置API实现  
 - [x] 无依赖端口(syn arp ping)扫描  
 - [x] 无依赖服务发现  
-- [ ] 无依赖主机指纹识别  
 - [x] openvas基础(string,http) API  
 - [ ] openvas数据包构造API  
 - [x] openvas WMI API  
 - [x] openvas SSH API  
+
+0.1.2  版本  
+- [ ] openvas所有API实现支持
+- [ ] 实现windows/linux/mac完整跨平台
+
+0.1.3  版本  
+- [ ] 增强主机指纹识别功能
+- [ ] 管理接口完善
