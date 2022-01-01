@@ -158,7 +158,13 @@ Value MakeBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value ToBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    if (args.size() == 0) {
+        return Value::make_bytes("");
+    }
     CHECK_PARAMETER_COUNT(1);
+    if (args[0].IsBytes()) {
+        return args[0].Clone();
+    }
     CHECK_PARAMETER_STRING(0);
     return Value::make_bytes(args[0].text);
 }
