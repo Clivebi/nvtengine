@@ -41,10 +41,14 @@ public:
     Executor(ExecutorCallback* callback, void* userContext);
 
 public:
-    bool Execute(const char* name, bool showWarning = false);
+    bool Execute(const char* name, int timeout_second = 0, bool showWarning = false);
+
     void RegisgerFunction(BuiltinMethod methods[], int count, std::string prefix = "");
+
     Value CallScriptFunction(const std::string& name, std::vector<Value>& value, VMContext* ctx);
+
     void RequireScript(const std::string& name, VMContext* ctx);
+
     Value GetAvailableFunction(VMContext* ctx);
 
     void* GetUserContext() { return mContext; }

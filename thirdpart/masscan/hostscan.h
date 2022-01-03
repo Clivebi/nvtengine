@@ -2,9 +2,9 @@
 #define hostscan_h
 
 #include "massip.h"
+#include "stack-queue.h"
 #include "stack-src.h"
 #include "templ-pkt.h"
-#include "stack-queue.h"
 #define UDP_UNKNOWN (1000)
 #define UDP_DNS (1001)
 #define UDP_NETBIOS (1002)
@@ -116,4 +116,25 @@ struct ARPItem* resolve_mac_address(const char* host, unsigned* item, unsigned t
 
 void masscan_init();
 
+struct PCAPSocket {
+    unsigned int shutdown;
+    char ifname[256];
+    struct Adapter* adapter;
+    ipaddress my_ip;
+    ipaddress them_ip;
+    macaddress_t my_mac;
+    macaddress_t them_mac;
+    ipaddress router_ip;
+    macaddress_t router_mac;
+};
+
+typedef struct PCAPSocket* HSocket;
+
+HSocket raw_open_socket(ipaddress dst, const char* ifname);
+
+void raw_close_socket(HSocket handle);
+
+int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data_size);
+
+int raw_socket_recv(HSocket handle, const unsigned char** pkt, unsigned int* pkt_size);
 #endif /* hostscan_h */

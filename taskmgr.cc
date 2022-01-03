@@ -12,7 +12,13 @@ extern "C" {
 #include "taskmgr.hpp"
 
 HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO)
-        : mScriptCount(0), mHosts(host), mPorts(ports), mPrefs(prefs), mMainThread(0), mIO(IO) {
+        : mScriptCount(0),
+          mHosts(host),
+          mPorts(ports),
+          mPrefs(prefs),
+          mMainThread(0),
+          mIO(IO),
+          mScriptCache() {
     masscan_init();
 }
 

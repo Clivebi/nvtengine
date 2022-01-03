@@ -486,9 +486,9 @@ Value ISOTimePrint(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ISOTimeAdd(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
     CHECK_PARAMETER_STRING(0);
-    CHECK_PARAMETER_INTEGER(1);
-    CHECK_PARAMETER_INTEGER(2);
-    CHECK_PARAMETER_INTEGER(3);
+    //CHECK_PARAMETER_INTEGER(1);
+    //CHECK_PARAMETER_INTEGER(2);
+    //CHECK_PARAMETER_INTEGER(3);
 
     my_isotime_t timebuf;
     const char* string = args[0].text.c_str();

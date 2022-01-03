@@ -847,12 +847,29 @@ func dump_udp_v6_packet(packet){
     Println(HexDumpBytes(packet));
 }
 
-func forge_icmp_packet(){
-
+func forge_icmp_packet(ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksum,update_ip_len=true){
+    var ipsz = get_ipv4_hl(ip)*4;
+    if(ipsz>len(ip)){
+        return nil;
+    }
+    var icmp = MakeBytes(8+len(data));
+    icmp[0] = icmp_type;
+    icmp[1] = icmp_code;
+    icmp = WriteUInt16(icmp,4,icmp_id);
+    icmp = WriteUInt16(icmp,6,icmp_seq);
+    if(data){
+        CopyBytes(icmp[8:],data);
+    }
+    var sum = cacl_ip_checksum(icmp,len(icmp));
+    icmp = WriteUInt16(icmp,2,sum);
+    ip = set_ipv4_length(ip,len(sum));
+    ip = update_ipv4_checksum(ip);
+    return append(bytes(ip),icmp);
 }
 
-func forge_icmp_v6_packet(){
-
+func forge_icmp_v6_packet(ip6,data="",icmp_type,icmp_code,icmp_id,icmp_seq,
+                        reachable_time,retransmit_timer,flags,target,icmp_cksum,update_ip_len=true){
+    
 }
 
 func get_icmp_element(){

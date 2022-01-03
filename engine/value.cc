@@ -699,7 +699,7 @@ Value& Value::operator+=(const Value& right) {
     }
 
     DEBUG_CONTEXT();
-    LOG_ERROR(ToString(), right.ToString());
+    LOG_ERROR(ToDescription(), right.ToDescription());
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 

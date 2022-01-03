@@ -1,4 +1,6 @@
-#nasl 内置的全局变量
+#nasl 脚本适配转接层，这里实现了许多原nasl里面c的实现函数
+#通过这个转接层，减少脚本对c的依赖，去掉c里面许多业务相关的逻辑
+
 var NULL = nil;
 var TRUE = true;
 var FALSE = false;
@@ -134,8 +136,6 @@ func NASLTypeof(name){
 	return result;
 }
 
-#为了方便维护，所有内置函数不能通过命名参数来调用
-#所以原有的命名函数这里这里做中转
 func script_tag(name, value){
 	return ova_script_tag(name,value);
 }
@@ -174,7 +174,7 @@ func error_message(port,protocol,data,uri,proto){
 	return ova_error_message(port,protocol,data,uri);
 }
 
-func http_get(item, port){
+func build_http_req(method,item,port,data){
 	var header ={"Connection":"close"};
     header["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
     header["Accept-Encoding"] = "gzip, deflate";
@@ -193,7 +193,7 @@ func http_get(item, port){
 		item = "/";
 	}
 	item = URLPathEscape(item);
-	var result = "GET "+item + " HTTP/1.1\r\n";
+	var result = method+ " "+item + " HTTP/1.1\r\n";
 	for k,v in header{
 		result += k;
 		result += ": ";
@@ -201,7 +201,26 @@ func http_get(item, port){
 		result += "\r\n";
 	}
 	result += "\r\n";
+	if(data != nil){
+		return result + ToString(data);
+	}
 	return result;
+}
+
+func http_get(item, port){
+	return build_http_req("GET",item,port,nil);
+}
+
+func http_head(item, port){
+	return build_http_req("HEAD",item,port,nil);
+}
+
+func http_post(item,port,data){
+	return build_http_req("POST",item,port,data);
+}
+
+func http_put(item,port,data){
+	return build_http_req("PUT",item,port,data);
 }
 
 
@@ -287,11 +306,6 @@ func match(string,pattern,icase=false){
 #pread(cmd: "nmap", argv: make_list( "nmap",open_sock_tcp(port, transport: ENCAPS_IP)
 func pread(cmd,argv){
 	error("nasl:pread not implement");
-}
-
-#http_post(port: port, item: "/tkset/systemstatus", data: "")
-func http_post(port,item,data){
-	error("nasl:http_post not implement");
 }
 
 var _ssh_session_table = {};

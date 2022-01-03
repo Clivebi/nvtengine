@@ -159,13 +159,25 @@ void UpdateNVTI(std::string script_path, std::string home) {
     }
 }
 
+void LoadRule(std::string& rule) {
+    FileIO IO;
+    size_t size = 0;
+    char* data = (char*)IO.Read("./rule.txt", size);
+    if (data) {
+        rule.assign(data, size);
+        free(data);
+    }
+}
+
 void NVTEngineTest(char* folder, char* ip, char* port) {
     Value pref = Value::make_map();
+    std::string oids;
+    LoadRule(oids);
     //pref[knowntext::kPref_load_dependencies] = false;
     FileIO IO;
     pref["scripts_folder"] = folder;
     HostsTask task(ip, port, pref, &IO);
-    std::list<std::string> result = Interpreter::split(test_oids, ';');
+    std::list<std::string> result = Interpreter::split(oids, ';');
     std::list<std::string> list2;
     list2.push_back("1.3.6.1.4.1.25623.1.0.10267");
     task.BeginTask(result, "10000");

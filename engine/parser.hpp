@@ -7,7 +7,7 @@
 #include "script.hpp"
 
 #ifdef _WIN32
-#include<io.h>
+#include <io.h>
 #define isatty _isatty
 #define fileno _fileno
 #endif

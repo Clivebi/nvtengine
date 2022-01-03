@@ -38,13 +38,14 @@ protected:
     std::string mName;
     VMContext* mParent;
     Type mType;
+    time_t mDeadTime;
     int mDeepth;
     int mFlags;
     bool mIsEnableWarning;
     Value mReturnValue;
 
 public:
-    explicit VMContext(Type type, VMContext* Parent, std::string Name);
+    explicit VMContext(Type type, VMContext* Parent, int timeout_second, std::string Name);
     ~VMContext();
 
     void SetEnableWarning(bool val) { mIsEnableWarning = val; }
@@ -63,7 +64,16 @@ public:
     bool IsBreakAvaliable() { return mType == For || mType == Switch; }
     bool IsContinueAvaliable() { return mType == For; }
     bool IsInFunctionContext();
-    bool IsInFunctionContext(std::string&name);
+    bool IsInFunctionContext(std::string& name);
+
+    bool IsTimeout() {
+        time_t now = time(NULL);
+        time_t end = GetTopContext()->mDeadTime;
+        if (end == 0) {
+            return false;
+        }
+        return now > end;
+    }
 
     void AddVar(const std::string& name);
     void SetVarValue(const std::string& name, Value value);

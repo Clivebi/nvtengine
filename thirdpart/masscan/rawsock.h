@@ -53,6 +53,9 @@ rawsock_init_adapter(const char *adapter_name,
                      unsigned vlan_id);
 
 
+void 
+rawsock_close_adapter(struct Adapter *adapter);
+
 /**
  * Print to the command-line the list of available adapters. It's called
  * when the "--iflist" option is specified on the command-line.

@@ -34,5 +34,6 @@ stack_ndpv6_resolve(struct Adapter *adapter,
     unsigned *shutdown,
     macaddress_t *your_mac_address);
 
+
 #endif
 

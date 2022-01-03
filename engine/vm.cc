@@ -61,7 +61,7 @@ Executor::Executor(ExecutorCallback* callback, void* userContext)
     RegisgerEngineBuiltinMethod(this);
 }
 
-bool Executor::Execute(const char* name, bool showWarning) {
+bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
     bool bRet = false;
     std::string error = "";
     scoped_refptr<const Script> script = LoadScript(name, error);
@@ -69,7 +69,7 @@ bool Executor::Execute(const char* name, bool showWarning) {
         mCallback->OnScriptError(this, name, error.c_str());
         return false;
     }
-    scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, name);
+    scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, timeout_second, name);
     context->SetEnableWarning(showWarning);
 
     try {
@@ -92,6 +92,7 @@ scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& 
     if (mCacheProvider != NULL) {
         scoped_refptr<const Script> preview = mCacheProvider->GetScriptFromName(name);
         if (preview != NULL) {
+            mScriptList.push_back(preview);
             return preview;
         }
     }
@@ -185,7 +186,7 @@ const Instruction* Executor::GetInstruction(Instruction::keyType key) {
         }
     }
     char buf[16] = {0};
-    snprintf(buf, 16, "%d", key);
+    snprintf(buf, 16, "%08X", key);
     throw RuntimeException(std::string("unknown instruction key:") + buf);
 }
 
@@ -201,7 +202,7 @@ std::vector<const Instruction*> Executor::GetInstructions(std::vector<Instructio
         iter++;
     }
     char buf[16] = {0};
-    snprintf(buf, 16, "%d", keys[0]);
+    snprintf(buf, 16, "%08X", keys[0]);
     throw RuntimeException(std::string("unknown instruction key:") + buf);
 }
 
@@ -218,6 +219,9 @@ Value Executor::GetConstValue(Instruction::keyType key) {
 
 Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
     //LOG("execute " + ins->ToString());
+    if (ctx->IsTimeout()) {
+        throw RuntimeException("script execute timeout...");
+    }
     if (ctx->IsExecutedInterupt()) {
         LOG_DEBUG("Instruction execute interupted :" + ins->ToString());
         return ctx->GetReturnValue();
@@ -297,17 +301,17 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
     }
 
     case Instructions::kFORStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, "");
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
         ExecuteForStatement(ins, newCtx);
         return Value();
     }
     case Instructions::kForInStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, "");
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
         ExecuteForInStatement(ins, newCtx);
         return Value();
     }
     case Instructions::kSwitchCaseStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Switch, ctx, "");
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Switch, ctx, 0, "");
         ExecuteSwitchStatement(ins, newCtx);
         return Value();
     }
@@ -636,7 +640,7 @@ Value Executor::CallRutimeFunction(const Instruction* ins, VMContext* ctx,
 Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                                    const Instruction* func) {
     std::vector<Value> actualValues;
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, ins->Name);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, ins->Name);
     if (ins->Refs.size() == 1) {
         const Instruction* actual = GetInstruction(ins->Refs[0]);
         if (actual->Name == KnownListName::kNamedValue) {
@@ -683,7 +687,7 @@ Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
 
 Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMContext* ctx,
                                                      const Instruction* func) {
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, ins->Name);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, ins->Name);
     std::vector<const Instruction*> actual = GetInstructions(GetInstruction(ins->Refs[0])->Refs);
     std::vector<const Instruction*> formalParamers =
             GetInstructions(GetInstruction(func->Refs[1])->Refs);
@@ -716,7 +720,7 @@ Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMC
 }
 Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& args,
                                    VMContext* ctx) {
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, name);
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, name);
     const Instruction* func = ctx->GetFunction(name);
     const Instruction* body = GetInstruction(func->Refs[0]);
     if (func->Refs.size() == 2) {

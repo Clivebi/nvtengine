@@ -555,7 +555,7 @@ rawsock_ignore_transmits(struct Adapter *adapter, const char *ifname)
 
 /***************************************************************************
  ***************************************************************************/
-static void
+void
 rawsock_close_adapter(struct Adapter *adapter)
 {
     if (adapter->ring) {

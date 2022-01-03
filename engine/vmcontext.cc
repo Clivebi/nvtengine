@@ -27,7 +27,7 @@ void DebugContext() {
 }
 #endif
 
-VMContext::VMContext(Type type, VMContext* Parent, std::string Name)
+VMContext::VMContext(Type type, VMContext* Parent, int timeout_second, std::string Name)
         : mFlags(0), mIsEnableWarning(false) {
     mParent = Parent;
     mType = type;
@@ -36,6 +36,13 @@ VMContext::VMContext(Type type, VMContext* Parent, std::string Name)
     if (mParent != NULL) {
         mDeepth = mParent->mDeepth + 1;
         mIsEnableWarning = mParent->mIsEnableWarning;
+        mDeadTime = 0;
+    } else {
+        if (timeout_second) {
+            mDeadTime = time(NULL) + timeout_second;
+        } else {
+            mDeadTime = 0;
+        }
     }
     Status::sVMContextCount++;
     LoadBuiltinVar();

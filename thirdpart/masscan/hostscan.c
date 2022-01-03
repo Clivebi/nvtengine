@@ -904,6 +904,99 @@ void masscan_init() {
     pcap_init();
     x509_init();
 }
+
+HSocket raw_open_socket(ipaddress dst, const char* ifname) {
+    struct PCAPSocket* Handle = NULL;
+    int err = 0;
+    const char bpf_filter[1024] = {0};
+
+    Handle = (struct PCAPSocket*)malloc(sizeof(struct PCAPSocket));
+    if (Handle == NULL) {
+        return NULL;
+    }
+    memset(Handle, 0, sizeof(struct PCAPSocket));
+    if (ifname != NULL && *ifname) {
+        strcpy_s(Handle->ifname, 255, ifname);
+    } else {
+        err = rawsock_get_default_interface(Handle->ifname, 255);
+    }
+    if (err != 0) {
+        raw_close_socket(Handle);
+        return NULL;
+    }
+    //initialize src address ,src_mac_address,dst_address
+    Handle->them_ip = dst;
+    if (dst.version == 4) {
+        Handle->my_ip.ipv4 = rawsock_get_adapter_ip(Handle->ifname);
+    } else {
+        Handle->my_ip.ipv6 = rawsock_get_adapter_ipv6(Handle->ifname);
+    }
+    err = rawsock_get_adapter_mac(Handle->ifname, Handle->my_mac.addr);
+    if (err != 0) {
+        raw_close_socket(Handle);
+        return NULL;
+    }
+    ////TODO build pcap filter
+    Handle->adapter = rawsock_init_adapter(Handle->ifname, 0, 0, 0, 0, bpf_filter, 0, 0);
+    if (Handle->adapter == NULL) {
+        raw_close_socket(Handle);
+        return NULL;
+    }
+    rawsock_ignore_transmits(Handle->adapter, Handle->ifname);
+
+    if (dst.version == 4) {
+        err = rawsock_get_default_gateway(Handle->ifname, &Handle->router_ip.ipv4);
+        if (err != 0) {
+            raw_close_socket(Handle);
+            return NULL;
+        }
+        stack_arp_resolve(Handle->adapter, Handle->my_ip.ipv4, Handle->my_mac,
+                          Handle->router_ip.ipv4, &Handle->router_mac, &Handle->shutdown);
+    } else {
+        stack_ndpv6_resolve(Handle->adapter, Handle->my_ip.ipv6, Handle->my_mac, &Handle->shutdown,
+                            &Handle->router_mac);
+    }
+
+    if (macaddress_is_zero(Handle->router_mac)) {
+        raw_close_socket(Handle);
+        return NULL;
+    }
+
+    if (is_private_address(dst)) {
+        if (dst.version == 4) {
+            stack_arp_resolve(Handle->adapter, Handle->my_ip.ipv4, Handle->my_mac,
+                              Handle->them_ip.ipv4, &Handle->them_mac, &Handle->shutdown);
+        } else {
+            //NDP not implement yet now
+        }
+        if (macaddress_is_zero(Handle->them_mac)) {
+            raw_close_socket(Handle);
+            return NULL;
+        }
+    }
+    return Handle;
+}
+
+void raw_close_socket(HSocket handle) {
+    if (handle == NULL) {
+        return;
+    }
+    if (handle->adapter != NULL) {
+        rawsock_close_adapter(handle->adapter);
+        handle->adapter = NULL;
+    }
+    handle->shutdown = 1;
+    free(handle);
+}
+
+int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data_size) {
+    return rawsock_send_packet(handle->adapter, data, data_size, 1);
+}
+
+int raw_socket_recv(HSocket handle, const unsigned char** pkt, unsigned int* pkt_size) {
+    unsigned t1, t2;
+    return rawsock_recv_packet(handle->adapter, pkt_size, &t1, &t2, &handle->shutdown, pkt);
+}
 /*
 int main(int argc, char* argv[]) {
     struct HostScanResult* seek = NULL;

@@ -69,8 +69,8 @@ public:
             : mLock(), mCache(), mNextInsKey(0x80000000), mNextConstKey(0x80000000), mLast(NULL) {}
     void OnNewScript(scoped_refptr<Script> Script) {
         mLock.lock();
-        const char knownCache[][30] = {
-                "nasl.sc"
+        static const char knownCache[][30] = {
+                "nasl.sc",
                 "http_func.inc.sc",
                 "http_keepalive.inc.sc",
         };
