@@ -70,8 +70,13 @@ public:
     Instruction* AddToList(Instruction* list, Instruction* element);
 
     //
-    Instruction* CreateObjectIndexer(const std::string& first);
-    Instruction* AddObjectIndexer(Instruction* src, const std::string& item);
+    //Instruction* CreateObjectIndexer(const std::string& first);
+    //Instruction* AddObjectIndexer(Instruction* src, const std::string& item);
+
+    Instruction* CreatePath(const std::string &element);
+    Instruction* CreatePath(Instruction* element);
+    Instruction* AppendToPath(Instruction* path,Instruction* element);
+    Instruction* AppendToPath(Instruction* path,const std::string &element);
 
     Instruction* CreateReference(const std::string& root, Instruction* path);
     Instruction* VarReadReference(const std::string& root, Instruction* path);
@@ -123,6 +128,10 @@ public:
                                       Instruction* obj, Instruction* body);
     Instruction* CreateSwitchCaseStatement(Instruction* value, Instruction* cases,
                                            Instruction* defbranch);
+    Instruction* ObjectDeclarationExpresion(const std::string& name, Instruction* varList,
+                                            Instruction* methods);
+    Instruction* CreateObjectMethodCall(const std::string& var, const std::string& method,
+                                        Instruction* actualParameters);
     //parser ending
     void SetEntryPoint(Instruction* value) { mScript->EntryPoint = value; }
 };

@@ -39,33 +39,22 @@ public:
         mValues[name].push_back(val);
     }
 
-    Value GetItemList(const std::string& partten) {
-        if (partten.find("*") == std::string::npos) {
-            auto iter = mValues.find(partten);
-            if (iter != mValues.end()) {
-                return iter->second;
+    Value GetItemKeys(const std::string& partten) {
+        std::vector<Value> keys;
+        for (auto iter : mValues) {
+            if (Interpreter::IsMatchString(iter.first, partten)) {
+                keys.push_back(iter.first);
             }
-            return Value();
         }
-        Value ret = Value::make_map();
-        auto iter = mValues.begin();
-        while (iter != mValues.end()) {
-            if (Interpreter::IsMatchString(iter->first, partten)) {
-                auto iter2 = iter->second.begin();
-                if (iter->second.size() > 1) {
-                    LOG_DEBUG("Check Key", iter->first, " this have more than one value");
-                }
-                while (iter2 != iter->second.end()) {
-                    ret[iter->first] = (*iter2);
-                    iter2++;
-                }
-            }
-            iter++;
+        return keys;
+    }
+
+    Value GetItemList(const std::string& item) {
+        auto iter = mValues.find(item);
+        if (iter != mValues.end()) {
+            return iter->second;
         }
-        if (ret.Length() == 0) {
-            return Value();
-        }
-        return ret;
+        return Value();
     }
 
     void SetItem(const std::string& name, const Value& val) {

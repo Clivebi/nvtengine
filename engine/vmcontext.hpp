@@ -76,10 +76,12 @@ public:
     }
 
     void AddVar(const std::string& name);
-    void SetVarValue(const std::string& name, Value value);
+    void SetVarValue(const std::string& name, Value value, bool current = false);
     bool GetVarValue(const std::string& name, Value& val);
     Value GetVarValue(const std::string& name);
     void AddFunction(const Instruction* function);
+    void AddMethod(const std::string& objectName, const std::string& name,
+                   const Instruction* function);
     const Instruction* GetFunction(const std::string& name);
 
     Value GetTotalFunction();
@@ -88,14 +90,58 @@ public:
 
     VMContext* GetTopContext();
 
+    struct ObjectCreator {
+        bool Initialzed;
+        std::string Name;
+        std::map<std::string, Value> Attributes;
+        const Instruction* MethodsList;
+    };
+
+    void AddObjectCreator(const std::string name, ObjectCreator* creator) {
+        GetTopContext()->mObjectCreator[name] = creator;
+    }
+
+    ObjectCreator* GetObjectCreator(const std::string name) {
+        VMContext* ctx = GetTopContext();
+        auto iter = ctx->mObjectCreator.find(name);
+        if (iter != ctx->mObjectCreator.end()) {
+            return iter->second;
+        }
+        return NULL;
+    }
+
+    std::string ShortDescription() {
+        switch (mType) {
+        case File:
+            return "File:" + mName;
+        case For:
+            return "For";
+        case Function:
+            return "Function:" + mName;
+        case Switch:
+            return "Switch";
+        }
+        return "";
+    }
+
+    std::string ShortStack() {
+        std::string stacks = "";
+        VMContext* ptr = this;
+        while (ptr) {
+            stacks = ptr->ShortDescription() + "-->" + stacks;
+            ptr = ptr->mParent;
+        }
+        return stacks;
+    }
+
 protected:
     void LoadBuiltinVar();
     bool IsBuiltinVarName(const std::string& name);
     bool IsShadowName(const std::string& name);
 
-private:
     std::map<std::string, Value> mVars;
     std::map<std::string, const Instruction*> mFunctions;
+    std::map<std::string, ObjectCreator*> mObjectCreator;
     DISALLOW_COPY_AND_ASSIGN(VMContext);
 };
 

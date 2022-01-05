@@ -336,7 +336,7 @@ Value SSHExecute(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (rc != SSH_OK) {
         return Value();
     }
-    Value ret = Value::make_map();
+    Value ret = Value::MakeMap();
     ret["Stdout"] = out;
     ret["StdErr"] = error;
     return ret;

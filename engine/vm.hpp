@@ -47,6 +47,8 @@ public:
 
     Value CallScriptFunction(const std::string& name, std::vector<Value>& value, VMContext* ctx);
 
+    Value CallObjectMethod(Value object, Value func, std::vector<Value>& value, VMContext* ctx);
+
     void RequireScript(const std::string& name, VMContext* ctx);
 
     Value GetAvailableFunction(VMContext* ctx);
@@ -65,24 +67,40 @@ protected:
     Value Execute(const Instruction* ins, VMContext* ctx);
     Value ExecuteList(std::vector<const Instruction*> insList, VMContext* ctx);
     Value CallFunction(const Instruction* ins, VMContext* ctx);
+    Value CallMethod(const Instruction* ins, VMContext* ctx);
     Value CallRutimeFunction(const Instruction* ins, VMContext* ctx, RUNTIME_FUNCTION method);
     Value CallScriptFunction(const Instruction* ins, VMContext* ctx, const Instruction* func);
-    Value CallScriptFunctionWithNamedParameter(const Instruction* ins, VMContext* ctx,
-                                               const Instruction* func);
     Value ExecuteIfStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteForStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteForInStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);
-    bool AutoConvertNilValue(Value& val, std::vector<Value>& indexer);
+    Value ConvertNil(Value index,VMContext* ctx);
     Value ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateMap(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateArray(const Instruction* ins, VMContext* ctx);
     Value ExecuteSlice(const Instruction* ins, VMContext* ctx);
     Value ExecuteSwitchStatement(const Instruction* ins, VMContext* ctx);
+    Value ExecuteObjectDeclaration(const Instruction* ins, VMContext* ctx);
+    Value ExecuteNewObject(VMContext::ObjectCreator* creator, const Instruction* actual,
+                           VMContext* ctx);
 
     Value BatchAddOperation(const Instruction* ins, VMContext* ctx);
+
+    scoped_refptr<VMContext> FillActualParameters(const Instruction* func,
+                                                  const Instruction* actual, VMContext* ctx);
+
+    scoped_refptr<VMContext> FillActualParameters(const Instruction* func,
+                                                  std::vector<Value>& values, VMContext* ctx);
+    bool IsNameInGroup(const std::string& name, std::vector<const Instruction*>& groups) {
+        for (auto iter : groups) {
+            if (iter->Name == name) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     Value UpdateValueAt(Value& toObject, const Value& index, const Value& val,
                         Instructions::Type opCode);
@@ -95,6 +113,7 @@ protected:
 
 protected:
     void* mContext;
+    VMContext* mCurrentVMContxt;
     ExecutorCallback* mCallback;
     ScriptCache* mCacheProvider;
     std::list<scoped_refptr<const Script>> mScriptList;

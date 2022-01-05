@@ -24,4 +24,5 @@ add_library(engine STATIC
     vmcontext.cc 
     builtin.cc
     utf8.cc
+    udobject.cc 
 )

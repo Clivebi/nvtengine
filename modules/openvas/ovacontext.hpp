@@ -1,6 +1,6 @@
 #pragma once
-#include "../../engine/vm.hpp"
 #include "../../engine/check.hpp"
+#include "../../engine/vm.hpp"
 #include "./support/scriptstorage.hpp"
 #include "knowntext.hpp"
 using namespace Interpreter;
@@ -60,8 +60,8 @@ struct OVAContext {
               IsForkedTask(false),
               Host(""),
               Fork() {
-        Nvti = Value::make_map();
-        Nvti[knowntext::kNVTI_filename] = script;
+        Nvti = Value::MakeMap();
+        Nvti.SetValue(knowntext::kNVTI_filename, script);
     }
 
     std::string NvtiString() { return Nvti.ToJSONString(false); }
@@ -75,7 +75,6 @@ struct OVAContext {
     bool IsPortInOpenedRange(Value& port, bool tcp);
 
     Value GetKbItem(const std::string& name);
-    Value GetKbList(const std::string& name);
     void SetKbItem(const std::string& name, const Value& val);
 };
 

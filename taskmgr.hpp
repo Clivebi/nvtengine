@@ -117,7 +117,7 @@ protected:
         scoped_refptr<support::ScriptStorage> Storage;
         TCB(std::string host) {
             Storage = new support::ScriptStorage();
-            Env = Value::make_map();
+            Env = Value::MakeMap();
             Exit = false;
             ScriptProgress = 0;
             ExecutedScriptCount = 0;

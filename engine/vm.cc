@@ -70,6 +70,7 @@ bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
         return false;
     }
     scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, timeout_second, name);
+    mCurrentVMContxt = context;
     context->SetEnableWarning(showWarning);
 
     try {
@@ -173,7 +174,7 @@ Value Executor::GetAvailableFunction(VMContext* ctx) {
         builtin.push_back(Value(iter->first));
         iter++;
     }
-    Value result = Value::make_map();
+    Value result = Value::MakeMap();
     result._map()[Value("script")] = ctx->GetTotalFunction();
     result._map()[Value("builtin")] = builtin;
     return result;
@@ -258,7 +259,8 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
             val.Float = (-val.Float);
             return val;
         default:
-            throw RuntimeException("minus operation only can applay to integer or float");
+            throw RuntimeException("minus operation only can applay to integer or float " +
+                                   ctx->ShortStack());
         }
     }
     case Instructions::kNewFunction: {
@@ -267,6 +269,12 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
             return Value();
         }
         return Value(ins);
+    }
+    case Instructions::kObjectDecl: {
+        return ExecuteObjectDeclaration(ins, ctx);
+    }
+    case Instructions::kCallObjectMethod: {
+        return CallMethod(ins, ctx);
     }
     case Instructions::kCallFunction: {
         return CallFunction(ins, ctx);
@@ -302,17 +310,23 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
 
     case Instructions::kFORStatement: {
         scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
+        mCurrentVMContxt = newCtx;
         ExecuteForStatement(ins, newCtx);
+        mCurrentVMContxt = ctx;
         return Value();
     }
     case Instructions::kForInStatement: {
         scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
+        mCurrentVMContxt = newCtx;
         ExecuteForInStatement(ins, newCtx);
+        mCurrentVMContxt = ctx;
         return Value();
     }
     case Instructions::kSwitchCaseStatement: {
         scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Switch, ctx, 0, "");
+        mCurrentVMContxt = newCtx;
         ExecuteSwitchStatement(ins, newCtx);
+        mCurrentVMContxt = ctx;
         return Value();
     }
     case Instructions::kBREAKStatement: {
@@ -339,18 +353,7 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
 }
 
 std::vector<Value> Executor::ObjectPathToIndexer(const Instruction* ins, VMContext* ctx) {
-    if (ins->OpCode == Instructions::kObjectIndexer) {
-        std::list<std::string> objs = split(ins->Name, '/');
-        std::vector<Value> ret;
-        auto iter = objs.begin();
-        while (iter != objs.end()) {
-            ret.push_back(*iter);
-            iter++;
-        }
-        return ret;
-    }
-    assert(ins->OpCode == Instructions::kGroup);
-    assert(ins->Name == KnownListName::kIndexer);
+    assert(ins->OpCode == Instructions::kPath);
     return InstructionToValue(GetInstructions(ins->Refs), ctx);
 }
 
@@ -401,21 +404,21 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
     case Instructions::kuINC:
         if (!oldVal.IsInteger()) {
             DEBUG_CONTEXT();
-            throw RuntimeException("++ operation only can used on Integer ");
+            throw RuntimeException("++ operation only can used on Integer " + ctx->ShortStack());
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
         if (!oldVal.IsInteger()) {
             DEBUG_CONTEXT();
-            throw RuntimeException("-- operation only can used on Integer ");
+            throw RuntimeException("-- operation only can used on Integer " + ctx->ShortStack());
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
         if (!oldVal.IsInteger()) {
             DEBUG_CONTEXT();
-            throw RuntimeException("++ operation only can used on Integer ");
+            throw RuntimeException("++ operation only can used on Integer " + ctx->ShortStack());
         }
         Value ret = oldVal;
         oldVal.Integer++;
@@ -425,7 +428,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
 
     case Instructions::kuDECReturnOld: {
         if (!oldVal.IsInteger()) {
-            throw RuntimeException("-- operation only can used on Integer ");
+            throw RuntimeException("-- operation only can used on Integer " + ctx->ShortStack());
         }
         Value ret = oldVal;
         oldVal.Integer--;
@@ -435,7 +438,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
 
     case Instructions::kuURSHIFT: {
         if (!oldVal.IsInteger() || !val.IsInteger()) {
-            throw RuntimeException(">>>= operation only can used on Integer ");
+            throw RuntimeException(">>>= operation only can used on Integer " + ctx->ShortStack());
         }
         uint64_t i = ((uint64_t)oldVal.ToInteger() >> val.ToInteger());
         oldVal.Integer = (Value::INTVAR)i;
@@ -553,7 +556,7 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
         return Value(firstVal.ToBoolean() && secondVal.ToBoolean());
     case Instructions::kURSHIFT: {
         if (!firstVal.IsInteger() || !secondVal.IsInteger()) {
-            throw RuntimeException(">>> operation only can used on Integer ");
+            throw RuntimeException(">>> operation only can used on Integer " + ctx->ShortStack());
         }
         uint64_t i = ((uint64_t)firstVal.ToInteger() >> secondVal.ToInteger());
         return Value((int64_t)i);
@@ -578,6 +581,9 @@ Value Executor::ExecuteList(std::vector<const Instruction*> insList, VMContext* 
 
 Value Executor::GetFunction(const std::string& name, VMContext* ctx) {
     Value ret;
+    if (ctx == NULL) {
+        ctx = mCurrentVMContxt;
+    }
     const Instruction* func = ctx->GetFunction(name);
     if (func != NULL) {
         return Value(func);
@@ -590,6 +596,10 @@ Value Executor::GetFunction(const std::string& name, VMContext* ctx) {
 }
 
 Value Executor::CallFunction(const Instruction* ins, VMContext* ctx) {
+    VMContext::ObjectCreator* creator = ctx->GetObjectCreator(ins->Name);
+    if (creator != NULL) {
+        return ExecuteNewObject(creator, GetInstruction(ins->Refs[0]), ctx);
+    }
     Value func = GetFunction(ins->Name, ctx);
     //LOG("Call function:", ins->Name);
     if (func.Type == ValueType::kRuntimeFunction) {
@@ -597,8 +607,116 @@ Value Executor::CallFunction(const Instruction* ins, VMContext* ctx) {
     } else if (func.Type == ValueType::kFunction) {
         return CallScriptFunction(ins, ctx, func.Function);
     } else {
-        throw RuntimeException("can't as function called :" + ins->Name);
+        throw RuntimeException("can't as function called :" + ins->Name + " " + ctx->ShortStack());
     }
+}
+
+scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
+                                                        std::vector<Value>& values,
+                                                        VMContext* ctx) {
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, func->Name);
+    const Instruction* formal = NULL;
+    std::vector<const Instruction*> formalList;
+    if (func->Refs.size() == 2) {
+        formal = GetInstruction(func->Refs[1]);
+        formalList = GetInstructions(formal->Refs);
+        for (auto iter : formalList) {
+            Execute(iter, newCtx);
+        }
+    }
+    newCtx->SetVarValue("_FCT_ANON_ARGS", Value(values), true);
+    //函数不带参数
+    if (formal == NULL) {
+        return newCtx;
+    }
+    //可变参数
+    if (formal->Name == KnownListName::kDeclMore) {
+        Value list = Value(values);
+        newCtx->SetVarValue(formalList.front()->Name, list);
+        return newCtx;
+    }
+    size_t i = 0;
+    for (i = 0; i < formalList.size(); i++) {
+        if (i < values.size()) {
+            newCtx->SetVarValue(formalList[i]->Name, values[i], true);
+        } else {
+            if (formalList[i]->Refs.size() == 0) {
+                LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
+            }
+        }
+    }
+    return newCtx;
+}
+
+scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
+                                                        const Instruction* actual, VMContext* ctx) {
+    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, func->Name);
+    const Instruction* formal = NULL;
+    std::vector<const Instruction*> formalList;
+    auto actualList = GetInstructions(actual->Refs);
+    if (func->Refs.size() == 2) {
+        formal = GetInstruction(func->Refs[1]);
+        formalList = GetInstructions(formal->Refs);
+        for (auto iter : formalList) {
+            Execute(iter, newCtx);
+        }
+    }
+    //命名参数
+    if (actual->Name == KnownListName::kNamedValue) {
+        for (auto iter : actualList) {
+            if (!IsNameInGroup(iter->Name, formalList)) {
+                LOG_WARNING(iter->Name, " is not a parametr for " + func->Name, " ",
+                            ctx->ShortStack());
+            }
+            Value val = Execute(GetInstruction(iter->Refs[0]), ctx);
+            newCtx->SetVarValue(iter->Name, val, true);
+        }
+        return newCtx;
+    }
+    auto values = InstructionToValue(actualList, ctx);
+    newCtx->SetVarValue("_FCT_ANON_ARGS", Value(values), true);
+    //函数不带参数
+    if (formal == NULL) {
+        return newCtx;
+    }
+    //可变参数
+    if (formal->Name == KnownListName::kDeclMore) {
+        Value list = Value(values);
+        newCtx->SetVarValue(formalList.front()->Name, list);
+        return newCtx;
+    }
+    size_t i = 0;
+    for (i = 0; i < formalList.size(); i++) {
+        if (i < values.size()) {
+            newCtx->SetVarValue(formalList[i]->Name, values[i], true);
+        } else {
+            if (formalList[i]->Refs.size() == 0) {
+                LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
+            }
+        }
+    }
+    return newCtx;
+}
+
+Value Executor::CallMethod(const Instruction* ins, VMContext* ctx) {
+    Value where = Execute(GetInstruction(ins->Refs[0]), ctx);
+    if (!where.IsObject()) {
+        throw RuntimeException("can't call method on non object " + ctx->ShortStack());
+    }
+    std::string name = where.object->TypeName() + "#" + ins->Name;
+    auto func = ctx->GetFunction(name);
+    if (func == NULL) {
+        throw RuntimeException("cant't find method:" + name + " " + ctx->ShortStack());
+    }
+
+    scoped_refptr<VMContext> newCtx = FillActualParameters(func, GetInstruction(ins->Refs[1]), ctx);
+    newCtx->SetVarValue("self", where, true);
+
+    mCurrentVMContxt = newCtx;
+    Execute(GetInstruction(func->Refs[0]), newCtx);
+    Value val = newCtx->GetReturnValue();
+    mCurrentVMContxt = ctx;
+    return val;
 }
 
 Value Executor::CallRutimeFunction(const Instruction* ins, VMContext* ctx,
@@ -639,107 +757,48 @@ Value Executor::CallRutimeFunction(const Instruction* ins, VMContext* ctx,
 
 Value Executor::CallScriptFunction(const Instruction* ins, VMContext* ctx,
                                    const Instruction* func) {
-    std::vector<Value> actualValues;
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, ins->Name);
-    if (ins->Refs.size() == 1) {
-        const Instruction* actual = GetInstruction(ins->Refs[0]);
-        if (actual->Name == KnownListName::kNamedValue) {
-            return CallScriptFunctionWithNamedParameter(ins, ctx, func);
-        }
-        actualValues = InstructionToValue(GetInstructions(actual->Refs), ctx);
-    }
-    if (ctx->IsExecutedInterupt()) {
-        return ctx->GetReturnValue();
-    }
-    newCtx->AddVar("_FCT_ANON_ARGS");
-    newCtx->SetVarValue("_FCT_ANON_ARGS", Value(actualValues));
-    if (func->Refs.size() == 2) {
-        const Instruction* formal = GetInstruction(func->Refs[1]);
-        std::vector<const Instruction*> formalParamers = GetInstructions(formal->Refs);
-        if (formal->Name == KnownListName::kDeclMore) {
-            assert(formal->Refs.size() == 1);
-            Execute(formalParamers.front(), newCtx);
-            Value list = Value(actualValues);
-            newCtx->SetVarValue(formalParamers.front()->Name, list);
-        } else {
-            auto iter = formalParamers.begin();
-            int i = 0;
-            while (iter != formalParamers.end()) {
-                Execute(*iter, newCtx);
-                if (i < actualValues.size()) {
-                    newCtx->SetVarValue((*iter)->Name, actualValues[i]);
-                } else {
-                    //没有默认值，而且没有传递这个参数
-                    if ((*iter)->Refs.size() == 0) {
-                        LOG_WARNING("actual parameters count not equal formal paramers for func:" +
-                                    ins->Name);
-                    }
-                }
-                i++;
-                iter++;
-            }
-        }
-    }
+    scoped_refptr<VMContext> newCtx = FillActualParameters(func, GetInstruction(ins->Refs[0]), ctx);
+    mCurrentVMContxt = newCtx;
     Execute(GetInstruction(func->Refs[0]), newCtx);
     Value val = newCtx->GetReturnValue();
+    mCurrentVMContxt = ctx;
     return val;
 }
 
-Value Executor::CallScriptFunctionWithNamedParameter(const Instruction* ins, VMContext* ctx,
-                                                     const Instruction* func) {
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, ins->Name);
-    std::vector<const Instruction*> actual = GetInstructions(GetInstruction(ins->Refs[0])->Refs);
-    std::vector<const Instruction*> formalParamers =
-            GetInstructions(GetInstruction(func->Refs[1])->Refs);
-    for (auto iter = actual.begin(); iter != actual.end(); iter++) {
-        bool found = false;
-        for (auto iter2 = formalParamers.begin(); iter2 != formalParamers.end(); iter2++) {
-            if ((*iter)->Name == (*iter2)->Name) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            DEBUG_CONTEXT();
-            LOG_WARNING((*iter)->Name, " is not a parametr for ", ins->Name);
-            //throw RuntimeException((*iter)->Name + " is not a parametr for " + ins->Name);
-        }
-    }
-
-    for (auto iter = formalParamers.begin(); iter != formalParamers.end(); iter++) {
-        Execute(*iter, newCtx);
-    }
-
-    for (auto iter = actual.begin(); iter != actual.end(); iter++) {
-        Value val = Execute(GetInstruction((*iter)->Refs[0]), ctx);
-        newCtx->SetVarValue((*iter)->Name, val);
-    }
-    Execute(GetInstruction(func->Refs[0]), newCtx);
-    Value val = newCtx->GetReturnValue();
-    return val;
-}
 Value Executor::CallScriptFunction(const std::string& name, std::vector<Value>& args,
                                    VMContext* ctx) {
-    scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Function, ctx, 0, name);
-    const Instruction* func = ctx->GetFunction(name);
-    const Instruction* body = GetInstruction(func->Refs[0]);
-    if (func->Refs.size() == 2) {
-        const Instruction* formalParamersList = GetInstruction(func->Refs[1]);
-        if (args.size() != formalParamersList->Refs.size()) {
-            LOG_WARNING("actual parameters count not equal formal paramers for func:" + name);
-        }
-        std::vector<const Instruction*> formalParamers = GetInstructions(formalParamersList->Refs);
-        std::vector<const Instruction*>::iterator iter = formalParamers.begin();
-        int i = 0;
-        while (iter != formalParamers.end()) {
-            Execute(*iter, ctx);
-            newCtx->SetVarValue((*iter)->Name, args[i]);
-            i++;
-            iter++;
-        }
+    auto func = ctx->GetFunction(name);
+    if (func == NULL) {
+        return Value();
     }
+    const Instruction* body = GetInstruction(func->Refs[0]);
+    scoped_refptr<VMContext> newCtx = FillActualParameters(func, args, ctx);
+    mCurrentVMContxt = newCtx;
     Execute(body, newCtx);
     Value val = newCtx->GetReturnValue();
+    mCurrentVMContxt = ctx;
+    return val;
+}
+
+Value Executor::CallObjectMethod(Value object, Value func, std::vector<Value>& value,
+                                 VMContext* ctx) {
+    if (!object.IsObject()) {
+        throw RuntimeException(object.ToDescription() + " not a object " + ctx->ShortStack());
+    }
+    if (!func.IsFunction()) {
+        throw RuntimeException(func.ToDescription() + " not a callable object " +
+                               ctx->ShortStack());
+    }
+    if (ctx == NULL) {
+        ctx = mCurrentVMContxt;
+    }
+    scoped_refptr<VMContext> newCtx = FillActualParameters(func.Function, value, ctx);
+    newCtx->SetVarValue("self", object, true);
+
+    mCurrentVMContxt = newCtx;
+    Execute(GetInstruction(func.Function->Refs[0]), newCtx);
+    Value val = newCtx->GetReturnValue();
+    mCurrentVMContxt = ctx;
     return val;
 }
 
@@ -767,6 +826,7 @@ Value Executor::ExecuteForStatement(const Instruction* ins, VMContext* ctx) {
     return Value();
 }
 
+//TODO 实现UserObject clone
 Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
     const Instruction* iter_able_obj = GetInstruction(ins->Refs[0]);
     const Instruction* body = GetInstruction(ins->Refs[1]);
@@ -833,6 +893,21 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
         }
     } break;
 
+    case ValueType::kObject: {
+        auto groups = objVal.Object()->__enum_all();
+        for (auto iter : groups) {
+            if (key.size() > 0) {
+                ctx->SetVarValue(key, iter.first);
+            }
+            ctx->SetVarValue(val, iter.second);
+            Execute(body, ctx);
+            ctx->CleanContinueFlag();
+            if (ctx->IsExecutedInterupt()) {
+                break;
+            }
+        }
+    }
+
     default:
         break;
     }
@@ -842,10 +917,10 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
 Value Executor::ExecuteCreateMap(const Instruction* ins, VMContext* ctx) {
     const Instruction* list = GetInstruction(ins->Refs[0]);
     if (list->OpCode == Instructions::kNop) {
-        return Value::make_map();
+        return Value::MakeMap();
     }
     std::vector<const Instruction*> items = GetInstructions(list->Refs);
-    Value val = Value::make_map();
+    Value val = Value::MakeMap();
     std::vector<const Instruction*>::iterator iter = items.begin();
     while (iter != items.end()) {
         const Instruction* key = GetInstruction((*iter)->Refs[0]);
@@ -863,10 +938,10 @@ Value Executor::ExecuteCreateMap(const Instruction* ins, VMContext* ctx) {
 Value Executor::ExecuteCreateArray(const Instruction* ins, VMContext* ctx) {
     const Instruction* list = GetInstruction(ins->Refs[0]);
     if (list->OpCode == Instructions::kNop) {
-        return Value::make_array();
+        return Value::MakeArray();
     }
     std::vector<const Instruction*> items = GetInstructions(list->Refs);
-    Value val = Value::make_array();
+    Value val = Value::MakeArray();
     std::vector<const Instruction*>::iterator iter = items.begin();
     while (iter != items.end()) {
         val._array().push_back(Execute((*iter), ctx));
@@ -981,45 +1056,26 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
     return oldVal;
 }
 
-bool Executor::AutoConvertNilValue(Value& value, std::vector<Value>& indexer) {
-    if (indexer.size() == 1) {
-        if (indexer.front().IsInteger() && indexer.front().Integer < 4096) {
-            value = Value::make_array();
-            value._array().resize(indexer.front().Integer + 1);
-            return true;
-        }
-        if (indexer.front().IsInteger()) {
-            DEBUG_CONTEXT();
-            LOG_WARNING(
-                    "wanring please check auto convert nil to map use a integer key larger than "
-                    "4096");
-        }
-        value = Value::make_map();
-        return true;
+Value Executor::ConvertNil(Value index, VMContext* ctx) {
+    auto func = ctx->GetFunction("__index_nil__");
+    if (func != NULL) {
+        std::vector<Value> args;
+        args.push_back(index);
+        return CallScriptFunction("__index_nil__", args, ctx);
     }
-    Value root;
-    Value parent;
-    for (size_t i = 0; i < indexer.size(); i++) {
-        Value ref = Value::make_map();
-        if (indexer[i].IsInteger()) {
-            if (indexer[i].Integer > 4096) {
-                return false;
-            }
-            ref = Value::make_array();
-            ref._array().resize(indexer[i].Integer + 1);
-        }
-        if (root.IsNULL()) {
-            root = ref;
-        }
-        if (i == 0) {
-            parent = ref;
-            continue;
-        }
-        parent[indexer[i - 1]] = ref;
-        parent = ref;
+    if (index.IsInteger() && index.Integer < 4096) {
+        Value ret = Value::MakeArray();
+        ret._array().resize(index.IsInteger() + 1);
+        return ret;
     }
-    value = root;
-    return true;
+    if (index.IsInteger()) {
+        DEBUG_CONTEXT();
+        LOG_WARNING(
+                "wanring please check auto convert nil to map use a integer key larger than "
+                "4096",
+                ctx->ShortStack());
+    }
+    return Value::MakeMap();
 }
 
 // Instruction* CreateReference(const std::string& root,Instruction* path);
@@ -1037,14 +1093,15 @@ Value Executor::ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx) {
     Value root;
     ctx->GetVarValue(ref->Name, root);
     if (root.IsNULL()) {
-        LOG_DEBUG("try " + ins->Name + "[index] = val on nil object,so convert to map or array");
-        if (AutoConvertNilValue(root, indexer)) {
-            ctx->SetVarValue(ref->Name, root);
+        if (indexer.size() > 1) {
+            throw RuntimeException("index on nil object not incorrect " + ctx->ShortStack());
         }
+        root = ConvertNil(indexer.front(), ctx);
+        ctx->SetVarValue(ref->Name, root);
     }
-    Value& toObject = root;
+    Value toObject = root;
     for (size_t i = 0; i < indexer.size() - 1; i++) {
-        toObject = toObject[indexer[i]];
+        toObject = toObject.GetValue(indexer[i]);
     }
     val = UpdateValueAt(toObject, indexer.back(), val, ins->OpCode);
     if (root.IsString()) {
@@ -1062,7 +1119,7 @@ Value Executor::ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx) {
         if (toObject.IsNULL()) {
             return Value();
         }
-        toObject = toObject[indexValues[i]];
+        toObject = toObject.GetValue(indexValues[i]);
     }
     if (toObject.IsNULL()) {
         return Value();
@@ -1141,6 +1198,63 @@ Value Executor::BatchAddOperation(const Instruction* ins, VMContext* ctx) {
         seek = ref0;
         groups.push_front(Execute(GetInstruction(seek->Refs[1]), ctx));
     }
+}
+
+Value Executor::ExecuteNewObject(VMContext::ObjectCreator* creator, const Instruction* actual,
+                                 VMContext* ctx) {
+    if (!creator->Initialzed) {
+        auto methodList = GetInstructions(creator->MethodsList->Refs);
+        for (auto iter : methodList) {
+            ctx->AddMethod(creator->Name, iter->Name, iter);
+        }
+        creator->Initialzed = true;
+    }
+    std::map<std::string, Value> attributes;
+    for (auto iter : creator->Attributes) {
+        attributes[iter.first] = iter.second.Clone();
+    }
+
+    if (!actual->IsNULL()) {
+        if (actual->OpCode == Instructions::kGroup && actual->Name == KnownListName::kNamedValue &&
+            actual->Refs.size() == creator->Attributes.size()) {
+            auto list = GetInstructions(actual->Refs);
+            for (auto iter : list) {
+                Value val = Execute(iter, ctx);
+                attributes[iter->Name] = val;
+            }
+        } else {
+            std::stringstream o;
+            o << "actual:" << actual->ToString() << " Refs.size=" << actual->Refs.size();
+            LOG_DEBUG(o.str());
+            DEBUG_CONTEXT();
+            throw RuntimeException("initialize " + creator->Name +
+                                   " object paramters not invalid " + ctx->ShortStack());
+        }
+    }
+    scoped_refptr<UDObject> obj = new UDObject(this, creator->Name, attributes);
+    return Value::MakeObject(obj);
+}
+
+//    Instruction* ObjectDeclarationExpresion(const std::string& name, Instruction* varList,
+//                                            Instruction* methods);
+Value Executor::ExecuteObjectDeclaration(const Instruction* ins, VMContext* ctx) {
+    auto varList = GetInstructions(GetInstruction(ins->Refs[0])->Refs);
+    std::map<std::string, Value> attributes;
+    for (auto iter : varList) {
+        assert(iter->OpCode == Instructions::kNewVar);
+        Value val;
+        if (iter->Refs.size() == 1) {
+            val = Execute(iter, ctx);
+        }
+        attributes[iter->Name] = val;
+    }
+    VMContext::ObjectCreator* creator = new VMContext::ObjectCreator();
+    creator->Attributes = attributes;
+    creator->MethodsList = GetInstruction(ins->Refs[1]);
+    creator->Name = ins->Name;
+    creator->Initialzed = false;
+    ctx->AddObjectCreator(ins->Name, creator);
+    return Value();
 }
 
 } // namespace Interpreter

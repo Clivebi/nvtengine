@@ -32,7 +32,6 @@ Value match(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value Rand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    srand((int)time(NULL));
     return rand();
 }
 
@@ -335,7 +334,7 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     }
 
     if (cmd == "hostnames") {
-        Value ret = Value::make_array();
+        Value ret = Value::MakeArray();
         std::vector<std::string> list = subject_alt_names(x509);
         for (auto v : list) {
             ret._array().push_back(v);

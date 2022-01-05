@@ -13,6 +13,7 @@ long Status::sMapCount = 0;
 long Status::sParserCount = 0;
 long Status::sScriptCount = 0;
 long Status::sVMContextCount = 0;
+long Status::sUDObjectCount = 0;
 
 std::list<std::string> split(const std::string& text, char split_char) {
     std::list<std::string> result;
@@ -401,119 +402,111 @@ std::string MapObject::ToDescription() const {
 }
 
 //Value 众多的构造函数
-Value::Value(char val)
-        : Type(ValueType::kByte), Byte(val), bytesView(), text(), resource(NULL), object(NULL) {
-    Integer = 0;
+Value::Value(char val) {
+    Reset();
+    Type = ValueType::kByte;
     Byte = val;
 }
-Value::Value(unsigned char val)
-        : Type(ValueType::kByte), Byte(val), bytesView(), text(), resource(NULL), object(NULL) {
-    Integer = 0;
+Value::Value(unsigned char val) {
+    Reset();
+    Type = ValueType::kByte;
     Byte = val;
 }
 
-Value::Value()
-        : Type(ValueType::kNULL), Integer(0), bytesView(), text(), resource(NULL), object(NULL) {}
+Value::Value() {
+    Reset();
+}
 
-Value::Value(bool val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(long val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(int val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(INTVAR val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(unsigned int val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(size_t val)
-        : Type(ValueType::kInteger),
-          Integer(val),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(double val)
-        : Type(ValueType::kFloat), Float(val), bytesView(), text(), resource(NULL), object(NULL) {}
-Value::Value(const char* str)
-        : Type(ValueType::kString),
-          Integer(0),
-          bytesView(),
-          text(str),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(std::string str)
-        : Type(ValueType::kString),
-          Integer(0),
-          bytesView(),
-          text(str),
-          resource(NULL),
-          object(NULL) {}
+Value::Value(bool val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
 
-Value::Value(const Instruction* f)
-        : Type(ValueType::kFunction),
-          Function(f),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
-Value::Value(Resource* res)
-        : Type(ValueType::kResource),
-          Integer(0),
-          bytesView(),
-          text(),
-          resource(res),
-          object(NULL) {}
-Value::Value(const std::vector<Value>& val) : Integer(0), bytesView(), text(), resource(NULL) {
+Value::Value(long val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
+
+Value::Value(int val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
+
+Value::Value(INTVAR val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
+
+Value::Value(unsigned int val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
+
+Value::Value(size_t val) {
+    Reset();
+    Type = ValueType::kInteger;
+    Integer = val;
+}
+
+Value::Value(double val) {
+    Reset();
+    Type = ValueType::kFloat;
+    Float = val;
+}
+
+Value::Value(const char* str) {
+    Reset();
+    Type = ValueType::kString;
+    text = str;
+}
+Value::Value(std::string str) {
+    Reset();
+    Type = ValueType::kString;
+    text = str;
+}
+
+Value::Value(const Instruction* f) {
+    Reset();
+    Type = ValueType::kFunction;
+    Function = f;
+}
+
+Value::Value(RUNTIME_FUNCTION f) {
+    Reset();
+    Type = ValueType::kRuntimeFunction;
+    RuntimeFunction = f;
+}
+
+Value::Value(Resource* res) {
+    Reset();
+    Type = ValueType::kResource;
+    resource = res;
+}
+
+Value::Value(const std::vector<Value>& val) {
+    Reset();
     Type = ValueType::kArray;
     scoped_refptr<ArrayObject> ptr = new ArrayObject();
     ptr->_array = val;
     object = ptr.get();
 }
-Value::Value(RUNTIME_FUNCTION f)
-        : Type(ValueType::kRuntimeFunction),
-          RuntimeFunction(f),
-          bytesView(),
-          text(),
-          resource(NULL),
-          object(NULL) {}
 
 Value::Value(const Value& val) {
+    Reset();
+    Type = val.Type;
     switch (val.Type) {
     case ValueType::kBytes:
-        Integer = 0;
         bytesView = val.bytesView;
         break;
     case ValueType::kString:
-        Integer = 0;
         text = val.text;
         break;
     case ValueType::kResource:
-        Integer = 0;
         resource = val.resource;
         break;
     case ValueType::kInteger:
@@ -524,7 +517,6 @@ Value::Value(const Value& val) {
     case ValueType::kMap:
     case ValueType::kObject:
         object = val.object;
-        Integer = 0;
         break;
     case ValueType::kFloat:
         Float = val.Float;
@@ -536,26 +528,23 @@ Value::Value(const Value& val) {
         RuntimeFunction = val.RuntimeFunction;
         break;
     case ValueType::kNULL:
-        Integer = 0;
         break;
     default:
         throw RuntimeException("unknown value type!!!");
     }
-    Type = val.Type;
 }
 
 Value& Value::operator=(const Value& val) {
+    Reset();
+    Type = val.Type;
     switch (val.Type) {
     case ValueType::kBytes:
-        Integer = 0;
         bytesView = val.bytesView;
         break;
     case ValueType::kString:
-        Integer = 0;
         text = val.text;
         break;
     case ValueType::kResource:
-        Integer = 0;
         resource = val.resource;
         break;
     case ValueType::kInteger:
@@ -566,7 +555,6 @@ Value& Value::operator=(const Value& val) {
     case ValueType::kMap:
     case ValueType::kObject:
         object = val.object;
-        Integer = 0;
         break;
     case ValueType::kFloat:
         Float = val.Float;
@@ -578,12 +566,10 @@ Value& Value::operator=(const Value& val) {
         RuntimeFunction = val.RuntimeFunction;
         break;
     case ValueType::kNULL:
-        Integer = 0;
         break;
     default:
         throw RuntimeException("unknown value type!!!");
     }
-    Type = val.Type;
     return *this;
 }
 
@@ -606,7 +592,7 @@ MapObject* MapObject::Clone() {
 Value Value::Clone() const {
     switch (Type) {
     case ValueType::kBytes:
-        return Value::make_bytes(bytesView.ToString());
+        return Value::MakeBytes(bytesView.ToString());
     case ValueType::kArray: {
         Value ret = Value();
         ret.Type = ValueType::kArray;
@@ -620,43 +606,52 @@ Value Value::Clone() const {
         ret.object = Map()->Clone();
         return ret;
     }
+    case ValueType::kObject: {
+        Value ret = Value();
+        ret.Type = ValueType::kObject;
+        ret.object = Object()->Clone();
+        return ret;
+    }
     default:
         return Value(*this);
     }
 }
 
-Value Value::make_array() {
+Value Value::MakeArray() {
     Value ret = Value();
     ret.Type = ValueType::kArray;
     ret.object = new ArrayObject();
     return ret;
 }
-Value Value::make_bytes(size_t Len) {
+Value Value::MakeBytes(size_t Len) {
     Value ret = Value();
     ret.Type = ValueType::kBytes;
     ret.bytesView = BytesView(Len);
     return ret;
 }
-Value Value::make_bytes(std::string src) {
+Value Value::MakeBytes(std::string src) {
     Value ret = Value();
     ret.Type = ValueType::kBytes;
     ret.bytesView = BytesView(src.size());
     ret.bytesView.CopyFrom(src);
     return ret;
 }
-Value Value::make_map() {
+Value Value::MakeMap() {
     Value ret = Value();
     ret.Type = ValueType::kMap;
     ret.object = new MapObject();
     return ret;
 }
 
+Value Value::MakeObject(UDObject* obj) {
+    Value ret = Value();
+    ret.Type = ValueType::kObject;
+    ret.object = obj;
+    return ret;
+}
+
 Value& Value::operator+=(const Value& right) {
     if (right.IsNULL()) {
-        return *this;
-    }
-    if (IsSameType(right) && IsString()) {
-        text += right.text; //string + string
         return *this;
     }
     if (IsNumber() && right.IsNumber()) { //number + number
@@ -666,6 +661,25 @@ Value& Value::operator+=(const Value& right) {
         } else {
             Integer += right.ToInteger();
         }
+        return *this;
+    }
+    if (IsSameType(right) && IsString()) {
+        text += right.text; //string + string
+        return *this;
+    }
+
+    if (IsString()) { //string + other
+        switch (right.Type) {
+        case ValueType::kByte:
+            text += (char)right.Byte;
+            break;
+        default:
+            text += right.ToString();
+        }
+        return *this;
+    }
+    if (IsArray()) { //array + element
+        _array().push_back(right);
         return *this;
     }
     if (right.IsString()) { // other + string
@@ -683,21 +697,6 @@ Value& Value::operator+=(const Value& right) {
         text = result;
         return *this;
     }
-    if (IsString()) { //string + other
-        switch (right.Type) {
-        case ValueType::kByte:
-            text += (char)right.Byte;
-            break;
-        default:
-            text += right.ToString();
-        }
-        return *this;
-    }
-    if (IsArray()) { //array + element
-        _array().push_back(right);
-        return *this;
-    }
-
     DEBUG_CONTEXT();
     LOG_ERROR(ToDescription(), right.ToDescription());
     throw Interpreter::RuntimeException("+= can't apply on this value");
@@ -720,8 +719,8 @@ std::string Value::ToString() const {
     case ValueType::kFloat:
         return Interpreter::ToString(Float);
     case ValueType::kByte: {
-        std::string ret="";
-        ret.append(1,(char)Byte);
+        std::string ret = "";
+        ret.append(1, (char)Byte);
         return ret;
     }
     default:
@@ -829,7 +828,7 @@ Value::INTVAR Value::ToInteger() const {
 }
 
 std::string Value::MapKey() const {
-    if (IsObject()) {
+    if (IsArray() || IsMap() || IsObject()) {
         return object->MapKey();
     }
     switch (Type) {
@@ -850,6 +849,18 @@ std::string Value::MapKey() const {
         return "unknown";
     }
 }
+
+std::string Value::TypeName() const {
+    if (IsObject()) {
+        return object->TypeName();
+    }
+    std::string name;
+    if (IsResource(name)) {
+        return name;
+    }
+    return ValueType::ToString(Type);
+};
+
 size_t Value::Length() const {
     if (IsBytes()) {
         return bytesView.Length();
@@ -862,6 +873,9 @@ size_t Value::Length() const {
     }
     if (Type == ValueType::kMap) {
         return Map()->_map.size();
+    }
+    if (IsObject()) {
+        return Object()->__length();
     }
     DEBUG_CONTEXT();
     throw Interpreter::RuntimeException("this value type not have length ");
@@ -913,14 +927,14 @@ const Value Value::operator[](const Value& key) const {
         }
         return Value((BYTE)text[key.Integer]);
     }
-    if (Type == ValueType::kArray) {
+    if (IsArray()) {
         if (!key.IsInteger()) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
-                " ) auto extend");
+            //LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
+            //          " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
@@ -929,12 +943,15 @@ const Value Value::operator[](const Value& key) const {
         }
         return Array()->_array[key.Integer];
     }
-    if (Type == ValueType::kMap) {
+    if (IsMap()) {
         return Map()->_map[key.MapKey()];
     }
+    if (IsObject()) {
+        return Object()->__get_attr(key);
+    }
     DEBUG_CONTEXT();
-    throw Interpreter::RuntimeException("value type <" + ValueType::ToString(Type) + " :" +
-                                        ToString() + "> not support index operation");
+    throw Interpreter::RuntimeException("value type <" + ToDescription() +
+                                        "> not support index operation");
 }
 
 Value& Value::operator[](const Value& key) {
@@ -945,7 +962,7 @@ Value& Value::operator[](const Value& key) {
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
-                " ) auto extend");
+                      " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
@@ -958,7 +975,7 @@ Value& Value::operator[](const Value& key) {
         return _map()[key.MapKey()];
     }
     DEBUG_CONTEXT();
-    throw RuntimeException("the value type <" + ValueType::ToString(Type) + " :" + ToString() +
+    throw RuntimeException("the value type <" + ToDescription() +
                            "> not have value[index]= val operation");
 }
 
@@ -1008,7 +1025,7 @@ void Value::SetValue(const Value& key, const Value& val) {
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG_DEBUG("set index of array out of range ( " + ToString() + "," + key.ToString() +
-                " ) auto extend");
+                      " ) auto extend");
             if (key.Integer > 4096) {
                 throw RuntimeException("set index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
@@ -1022,8 +1039,12 @@ void Value::SetValue(const Value& key, const Value& val) {
         Map()->_map[key.MapKey()] = val;
         return;
     }
+    if (IsObject()) {
+        Object()->__set_attr(key, val);
+        return;
+    }
     DEBUG_CONTEXT();
-    throw RuntimeException("set the value type <" + ValueType::ToString(Type) + " :" + ToString() +
+    throw RuntimeException("set the value type <" + ToDescription() +
                            "> not have value[index]= val operation");
 }
 
@@ -1065,7 +1086,7 @@ Value Value::Slice(const Value& f, const Value& t) const {
         ret.Type = ValueType::kBytes;
         return ret;
     }
-    Value ret = make_array();
+    Value ret = MakeArray();
     std::vector<Value> result;
     std::vector<Value>& array = Array()->_array;
     for (size_t i = from; i < to; i++) {
@@ -1202,8 +1223,8 @@ bool operator==(const Value& left, const Value& right) {
     if (left.IsString() && right.IsInteger()) {
         if (right.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(), " ",
-                right.ToDescription());
+            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
+                        "<-->", right.ToDescription());
         }
 
         return left.text == right.ToString();
@@ -1211,14 +1232,14 @@ bool operator==(const Value& left, const Value& right) {
     if (right.IsString() && left.IsInteger()) {
         if (left.Type != ValueType::kByte) {
             DEBUG_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(), " ",
-                right.ToDescription());
+            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
+                        "<-->", right.ToDescription());
         }
         return right.text == left.ToString();
     }
     if (!left.IsSameType(right)) {
-        LOG_WARNING("compare value not same type may be have bug <always false> ", left.ToDescription(),
-            " ", right.ToDescription());
+        LOG_WARNING("compare value not same type may be have bug <always false> ",
+                    left.ToDescription(), " ", right.ToDescription());
         return false;
     }
     switch (left.Type) {
@@ -1235,6 +1256,10 @@ bool operator==(const Value& left, const Value& right) {
         MapObject* ptr = (MapObject*)left.object.get();
         MapObject* src = (MapObject*)right.object.get();
         return ptr->_map == src->_map;
+    }
+
+    case ValueType::kObject: {
+        return left.Object()->__equal(right.Object());
     }
     default:
         return false;

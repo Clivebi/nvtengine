@@ -22,6 +22,7 @@ public:
     static long sParserCount;
     static long sScriptCount;
     static long sVMContextCount;
+    static long sUDObjectCount;
     static std::string ToString() {
         std::stringstream o;
         o << "Res:\t\t" << sResourceCount << "\n";
@@ -30,6 +31,7 @@ public:
         o << "Parser:\t\t" << sParserCount << "\n";
         o << "Script:\t\t" << sScriptCount << "\n";
         o << "Context:\t" << sVMContextCount << "\n";
+        o << "UDObj:\t" << sUDObjectCount << "\n";
         return o.str();
     }
 };
@@ -141,7 +143,7 @@ class Value;
 class Object : public CRefCountedThreadSafe<Object> {
 public:
     virtual ~Object() {}
-    virtual std::string ObjectType() const = 0;
+    virtual std::string TypeName() const = 0;
     virtual std::string MapKey() const { return Interpreter::ToString((int64_t)this); }
     virtual std::string ToString() const = 0;
     virtual std::string ToDescription() const = 0;
@@ -155,7 +157,7 @@ public:
     ~ArrayObject() { Status::sArrayCount--; }
 
 public:
-    std::string ObjectType() const { return "array"; };
+    std::string TypeName() const { return "array"; };
     std::string ToString() const;
     std::string ToDescription() const;
     std::string ToJSONString() const;
@@ -175,25 +177,51 @@ public:
 
 public:
     MapObject* Clone();
-    std::string ObjectType() const { return "map"; };
+    std::string TypeName() const { return "map"; };
     std::string ToString() const;
     std::string ToDescription() const;
     std::string ToJSONString() const;
     DISALLOW_COPY_AND_ASSIGN(MapObject);
 };
 
-inline bool IsMap(Object* obj) {
-    return obj->ObjectType() == "map";
-}
-inline bool IsArray(Object* obj) {
-    return obj->ObjectType() == "array";
-}
+class VMContext;
+class Executor;
+
+class UDObject : public Object {
+protected:
+    Executor* mEngine;
+    const std::string mTypeName;
+    std::map<std::string, Value> mAttributes;
+    DISALLOW_COPY_AND_ASSIGN(UDObject);
+
+public:
+    explicit UDObject(Executor* Engine, const std::string& Type,
+                      std::map<std::string, Value>& attributes);
+
+    std::string TypeName() const { return mTypeName; };
+
+    std::string ToString() const;
+
+    std::string ToDescription() const;
+
+    std::string ToJSONString() const;
+
+    UDObject* Clone() const;
+
+    //元方法
+    size_t __length() const;
+    Value __get_attr(Value key) const;
+    Value __set_attr(Value key, Value val);
+    std::list<std::pair<Value, Value>> __enum_all() const;
+    bool __equal(const UDObject* other) const;
+};
 
 typedef scoped_refptr<Object> OBJECTPTR;
 typedef scoped_refptr<Resource> RESOURCE;
+typedef Value (*RUNTIME_FUNCTION)(std::vector<Value>& values, VMContext* ctx, Executor* vm);
+
 class VMContext;
 class Executor;
-typedef Value (*RUNTIME_FUNCTION)(std::vector<Value>& values, VMContext* ctx, Executor* vm);
 class Instruction;
 
 //bytes type backend
@@ -273,7 +301,7 @@ public:
 
     void CopyFrom(const void* from, size_t size) {
         BYTE* ptr = mBackend->mData + mViewStart;
-        if(size > Length()){
+        if (size > Length()) {
             size = Length();
         }
         memcpy(ptr, from, size);
@@ -315,6 +343,16 @@ public:
     RESOURCE resource;
     OBJECTPTR object;
 
+    void Reset() {
+        object = NULL;
+        resource = NULL;
+        text = "";
+        bytesView = BytesView();
+        Function = 0;
+        Integer = 0;
+        Type = ValueType::kNULL;
+    }
+
 public:
     Value();
     Value(char);
@@ -335,10 +373,11 @@ public:
     Value(const std::vector<Value>& val);
     Value& operator=(const Value& right);
 
-    static Value make_array();
-    static Value make_bytes(size_t size);
-    static Value make_bytes(std::string src);
-    static Value make_map();
+    static Value MakeArray();
+    static Value MakeBytes(size_t size);
+    static Value MakeBytes(std::string src);
+    static Value MakeMap();
+    static Value MakeObject(UDObject* obj);
 
 public:
     bool IsNULL() const { return Type == ValueType::kNULL; }
@@ -348,17 +387,14 @@ public:
     }
     bool IsString() const { return Type == ValueType::kString; }
     bool IsBytes() const { return Type == ValueType::kBytes; }
-    //bool IsStringOrBytes() const { return Type == ValueType::kString || Type == ValueType::kBytes; }
     bool IsSameType(const Value& right) const { return Type == right.Type; }
-    bool IsObject() const {
-        return Type == ValueType::kObject || Type == ValueType::kArray || Type == ValueType::kMap;
-    }
+    bool IsObject() const { return Type == ValueType::kObject; }
     bool IsMap() const { return Type == ValueType::kMap; }
     bool IsArray() const { return Type == ValueType::kArray; }
     bool IsFunction() {
         return Type == ValueType::kFunction || Type == ValueType::kRuntimeFunction;
     }
-    bool IsResource(std::string& name) {
+    bool IsResource(std::string& name) const {
         if (Type == ValueType::kResource) {
             name = resource->TypeName();
             return true;
@@ -460,30 +496,45 @@ public:
         return Value(~Integer);
     }
 
-    Value Clone() const;
-
+    //access underlayer data struct
     ArrayObject* Array() const { return (ArrayObject*)object.get(); }
     MapObject* Map() const { return (MapObject*)object.get(); }
     MAPTYPE& _map() { return ((MapObject*)object.get())->_map; }
     std::vector<Value>& _array() { return ((ArrayObject*)object.get())->_array; }
-
-    std::string MapKey() const;
-    //转成一个字符串
-    std::string ToString() const;
-    //描述信息
-    std::string ToDescription() const;
-    std::string ToJSONString(bool escape = true) const;
-    double ToFloat() const;
-    INTVAR ToInteger() const;
-
-    size_t Length() const;
-    const Value operator[](const Value& key) const;
+    UDObject* Object() const {
+        assert(IsObject());
+        return (UDObject*)(object.get());
+    }
+    //new element in the map or array
     Value& operator[](const Value& key);
-    std::string TypeName() const { return ValueType::ToString(Type); };
-    bool ToBoolean() const;
-    Value Slice(const Value& from, const Value& to) const;
-    void SetValue(const Value& key, const Value& val);
+    //common method
+    //create a new copy of this value
+    Value Clone() const;
+    //retrun the key as the map key
+    std::string MapKey() const;
+    //convert to a string
+    std::string ToString() const;
+    //return the description
+    std::string ToDescription() const;
+    //convert to json string
+    std::string ToJSONString(bool escape = true) const;
+    //convert to float
+    double ToFloat() const;
+    //convert to integer
+    INTVAR ToInteger() const;
+    //get the length
+    size_t Length() const;
+    //get the value at the index(key)
+    const Value operator[](const Value& key) const;
     Value GetValue(const Value& key) const;
+    //set the value at the index(key)
+    void SetValue(const Value& key, const Value& val);
+    //get the type value type name
+    std::string TypeName() const;
+    //convet to boolean
+    bool ToBoolean() const;
+    //make a slice work on bytes or array
+    Value Slice(const Value& from, const Value& to) const;
 };
 
 Value operator+(const Value& left, const Value& right);

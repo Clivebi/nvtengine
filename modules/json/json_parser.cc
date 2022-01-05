@@ -19,7 +19,7 @@ Value JSONValueToValue(json::JSONValue* val, bool unescape) {
     Value ret = Value();
     switch (val->Type) {
     case json::JSONValue::ARRAY: {
-        ret = Value::make_array();
+        ret = Value::MakeArray();
         auto iter = val->Array.begin();
         while (iter != val->Array.end()) {
             ret._array().push_back(JSONValueToValue(*iter, unescape));
@@ -29,7 +29,7 @@ Value JSONValueToValue(json::JSONValue* val, bool unescape) {
     }
 
     case json::JSONValue::OBJECT: {
-        ret = Value::make_map();
+        ret = Value::MakeMap();
         auto iter = val->Object.begin();
         while (iter != val->Object.end()) {
             ret._map()[iter->first] = JSONValueToValue(iter->second, unescape);

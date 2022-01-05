@@ -204,7 +204,7 @@ Value ResolveHostNameToList(std::vector<Value>& args, VMContext* ctx, Executor* 
     if (res.size() == 0) {
         return Value();
     }
-    Value ret = Value::make_array();
+    Value ret = Value::MakeArray();
     for (auto v : res) {
         ret._array().push_back(v);
     }

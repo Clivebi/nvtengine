@@ -66,7 +66,7 @@ public:
         if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::GetAll sql error");
         }
-        Value ret = Value::make_array();
+        Value ret = Value::MakeArray();
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
             ret._array().push_back(ParseJSON(text,false));

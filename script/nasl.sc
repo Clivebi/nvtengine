@@ -58,33 +58,94 @@ var EUNREACH = 3;
 var EUNKNOWN = 99;
 var OPENVAS_VERSION = "21.4.3~dev1~git-36d09619-openvas-21.04";
 
-#nasl一些特色的函数，我们有更好的实现，这里做转接
+func __index_nil__(index){
+	#Println("convet nil object to NASLArray",index,ShortStack());
+	return NASLArray();
+}
 
-
-func add_to_array(array,val){
-	var type = typeof(val);
-	switch(type){
-		case "array","map":{
-			for v in val{
-				array = add_to_array(array,v);
-			}	
+object NASLArray(hash_table={},vector=[]){
+	func __len__(){
+		var res = 0;
+		for v in hash_table{
+			res += len(v);
 		}
-		default:{
-			array = append(array,val);
+		return res + len(vector);
+	}
+	func __get_index__(key){
+		if(typeof(key) == "integer"){
+			if(key<len(self.vector)){
+				return self.vector[key];
+			}
+			return nil;
+		}else{
+			var list = self.hash_table[key];
+			if(typeof(list)!= "array"){
+				self.hash_table[key] = [];
+				list = [];
+			} 
+			if (len(list)==0){
+				return nil;
+			}
+			return list[len(list)-1];
 		}
 	}
-	return array;
+
+	func __set_index__(key,value){
+		if(typeof(key) == "integer"){
+			self.vector[key] = value;
+			return value;
+		}
+		var list = self.hash_table[key];
+		if(typeof(list) != "array"){
+			list = [];
+		}
+		if(len(list) == 0){
+			list = append(list,value);
+		}else{
+			list[len(list)-1] = value;
+		}
+		self.hash_table[key] = list;
+		return value;
+	}
+
+	func __enum_all__(){
+		var result = [];
+		for k,v in self.vector{
+			result = append(result,{"__key__":k,"__value__":v});
+		}
+		for k,v in self.hash_table{
+			for v2 in v{
+				result = append(result,{"__key__":k,"__value__":v2});
+			}
+		}
+		return result;
+	}
+
+	func add_var_to_list(val){
+		if(typeof(val)== "NASLArray" ||typeof(val)== "array" ||typeof(val)== "map"){
+			for v in val{
+				self.add_var_to_list(v);
+			}
+			return;
+		}
+		self.vector = append(self.vector,val);
+	}
+
+	func add_var_to_array(index,val){
+		self.__set_index__(index,val);
+	}
 }
+
 
 #
 #由于新版数组不能使用下标来索引，为保持兼容性，返回一个map
 func make_list(list...){
 	if(len(list)==0){
-		return {};
+		return NASLArray();
 	}
-	var ret = [];
+	var ret = NASLArray();
 	for v in list{
-		ret = add_to_array(ret,v);
+		ret.add_var_to_list(v);
 	}
 	return ret;
 }
@@ -92,7 +153,7 @@ func make_list(list...){
 func nasl_make_list_unique(list...){
 	var helper = {};
 	for v in list{
-		if(typeof(v)=="map" || typeof(v)=="array"){
+		if(typeof(v)=="map" || typeof(v)=="array" || typeof(v) == "NASLArray"){
 			for v2 in v{
 				helper[v2] = 1;
 			}
@@ -104,7 +165,7 @@ func nasl_make_list_unique(list...){
 	for k,v in helper{
 		ret = append(ret,k);
 	}
-	return ret;
+	return NASLArray(vector:ret,hash_table:{});
 }
 
 func power(x,y){
@@ -115,22 +176,23 @@ func power(x,y){
 }
 
 func make_array(list...){
-	var result = {};
+	var ret = NASLArray();
 	var size = len(list);
 	if(size > 0){
 		if(size %2){
 			error("make_array: the count of parameters not algin to 2 <count="+ToString(size)+">");
 		}
+		var ret = NASLArray();
 		for(i=0;i<size-1;i+=2){
-			result[list[i]] = list[i+1];
+			ret.add_var_to_array(list[i],list[i+1]);
 		}
 	}
-	return result;
+	return ret;
 }
 
 func NASLTypeof(name){
 	var result = typeof(name);
-	if (result == "map"){
+	if (result == "map" || result == "NASLArray"){
 		return "array";
 	}
 	return result;
@@ -152,6 +214,31 @@ func set_kb_item(name, value){
 	#Println(name,"-->",value);
 	return ova_set_kb_item(name,value);
 }
+
+func get_kb_list(pattern){
+	var temp;
+	var ret = NASLArray();
+	if(ContainsString(pattern,"*")){
+		var keys = kb_get_keys(pattern);
+		for v in keys{
+			temp = kb_get_list(v);
+			if(temp && len(temp)){
+				for v2 in temp{
+					ret.add_var_to_array(v,v2);
+				}
+			}
+		}
+		return ret;
+	}
+	temp =  kb_get_list(pattern);
+	if(temp && len(temp)){
+		for v2 in temp{
+			ret.add_var_to_array(pattern,v2);
+		}
+	}
+	return ret;
+}
+
 
 func log_message(port,protocol,data,uri,proto){
 	if(proto != nil){
@@ -180,7 +267,7 @@ func build_http_req(method,item,port,data){
     header["Accept-Encoding"] = "gzip, deflate";
     header["Accept-Language"] = "zh-CN,zh,en;q=0.9,en;q=0.8";
     header["User-Agent"]="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36";
-	if(port != 80 && port != 443){
+	if(ToInteger(port) != 80 && ToInteger(port) != 443){
 		header["Host"] = get_host_name()+":"+port;
 	}else{
 		header["Host"] = get_host_name();
@@ -590,7 +677,7 @@ func strcat(strlist...){
 func ord(obj){
 	if(typeof(obj) == "string"){
 		if(len(obj)){
-			return obj[0];
+			return ToInteger(obj[0]);
 		}
 		return '0';
 	}
@@ -598,11 +685,11 @@ func ord(obj){
 		DisplayContext();
 		error("debug me");
 	}
-	return obj;
+	return ToInteger(obj);
 }
 
 func hex(val){
-	 var hexText = HexEncode(val);
+	 var hexText = HexEncode(ToString(val));
 	 if(len(hexText)%2){
 		 return "0x0"+hexText;
 	 }
@@ -610,7 +697,7 @@ func hex(val){
 }
 
 func hexstr(str){
-	return HexEncode(str);
+	return HexEncode(ToString(str));
 }
 
 func strstr(str1,str2){
@@ -669,7 +756,10 @@ func toupper(str){
 	return ToUpperString(str);
 }
 
-func crap(length,data){
+func crap(length,data=nil){
+	if(!data){
+		data = " ";
+	}
 	return RepeatString(data,length);
 }
 
@@ -798,20 +888,25 @@ func str_replace(string, find, replace,count = -1){
 }
 
 func keys(obj){
-	var list = [];
+	var list = {};
 	if(typeof(obj)=="array"){
 		#DisplayContext();
 		Println("please check this may be have some bug**************");
+		Println(ShortStack());
 	}
+	var res = NASLArray();
 	for k,v in obj{
-		list = append(list,k);
+		list[k] = 1;
 	}
-	return list;
+	for k,v in list{
+		res.add_var_to_list(k);
+	}
+	return res;
 }
 
 func max_index(obj){
-	if(typeof(obj)=="array"){
-		return len(obj);
+	if(typeof(obj)=="NASLArray"){
+		return len(obj.vector);
 	}
 	return 0;
 }
@@ -1422,11 +1517,11 @@ func RegAddValue(handle,key,value){
 }
 
 func WinRootHiveToPath(hive){
-    var object = {0x80000002:"HKLM",0x80000000:"HKCR",0x80000001:"HKCU",0x80000003:"HKU",0x80000005:"HKCC"};
+    var hive_roots = {0x80000002:"HKLM",0x80000000:"HKCR",0x80000001:"HKCU",0x80000003:"HKU",0x80000005:"HKCC"};
     if(hive==0 || hive == nil){
         return "HKLM";
     }
-    return object[ToInteger(hive)];
+    return hive_roots[ToInteger(hive)];
 }
 
 func wmi_reg_enum_key(wmi_handle,key,hive=0){

@@ -186,11 +186,18 @@ Value get_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return script->GetKbItem(args[0].text);
 }
 
-Value get_kb_list(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+Value kb_get_keys(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING(0);
     OVAContext* script = GetOVAContext(vm);
-    return script->GetKbList(args[0].text);
+    return script->Storage->GetItemKeys(args[0].text);
+}
+
+Value kb_get_list(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING(0);
+    OVAContext* script = GetOVAContext(vm);
+    return script->Storage->GetItemList(args[0].text);
 }
 
 Value get_preference(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

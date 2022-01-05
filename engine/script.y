@@ -30,6 +30,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
         MULASSIGN DIVASSIGN INC DEC NOT LB RB INTOKEN SWITCH CASE DEFAULT
         BOR BAND BXOR BNG LSHIFT RSHIFT  BORASSIGN BANDASSIGN BXORASSIGN 
         LSHIFTASSIGN RSHIFTASSIGN OR AND POINTTOKEN MOREVAL URSHIFT URSHIFTASSIGN MODASSIGN
+        OBJECTTOKEN
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
@@ -67,7 +68,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %type <object> slice 
 %type <object> map array map_pair map_pair_list
 %type <object> named_value named_value_list
-%type <object> value_indexer_path object_indexer  read_lvalue 
+%type <object> value_ref_path read_lvalue 
 
 %type <object> func_declaration func_call_expression return_expression
 %type <object> formal_parameter formal_parameterlist value_list 
@@ -80,7 +81,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %type <object> break_expression continue_expression 
 %type <object> for_in_statement
 %type <object> case_item case_item_list switch_case_statement const_value_list
-
+%type <object> obj_method obj_method_list obj_declaration obj_method_call
 %%
 
 %start  startstatement;
@@ -121,6 +122,25 @@ declarationlist:declarationlist COMMA declaration
 var_declaration: VAR declarationlist
         {
                 $$=$2;
+        }
+        ;
+
+obj_method: func_declaration
+        {
+                $$ = $1;
+        };
+
+obj_method_list:obj_method_list obj_method
+        {
+                $$=parser->AddToList($1,$2);
+        }
+        |obj_method{
+                $$=parser->CreateList(KnownListName::kObjMethod,$1);
+        };
+
+obj_declaration:OBJECTTOKEN IDENT LPTOKEN declarationlist RPTOKEN LC obj_method_list RC
+        {
+                $$=parser->ObjectDeclarationExpresion($2,$4,$7);
         }
         ;
 
@@ -295,7 +315,20 @@ func_declaration:FUNCTION IDENTIFIER LPTOKEN formal_parameterlist RPTOKEN block
         }
         ;
 
-func_call_expression: IDENTIFIER LPTOKEN value_list RPTOKEN
+obj_method_call:IDENTIFIER POINTTOKEN IDENTIFIER LPTOKEN value_list RPTOKEN
+        {
+                $$=parser->CreateObjectMethodCall($1,$3,$5);
+        }
+        |IDENTIFIER POINTTOKEN IDENTIFIER LPTOKEN  RPTOKEN
+        {
+                $$=parser->CreateObjectMethodCall($1,$3,NULL);
+        };
+
+func_call_expression: obj_method_call
+        {
+                $$=$1;
+        }
+        |IDENTIFIER LPTOKEN value_list RPTOKEN
         {
                 $$=parser->CreateFunctionCall($1,$3);
         }
@@ -374,23 +407,21 @@ rvalue: LPTOKEN rvalue RPTOKEN
         }
         ;
 
-value_indexer_path:LB rvalue RB
-        { 
-                $$=parser->CreateList(KnownListName::kIndexer,$2);   
-        }
-        |value_indexer_path LB rvalue RB
+value_ref_path:LB rvalue RB
         {
-                $$=parser->AddToList($1,$3);
+                $$=parser->CreatePath($2);
         }
-        ;
-
-object_indexer: POINTTOKEN IDENTIFIER
+        |value_ref_path LB rvalue RB
         {
-                $$=parser->CreateObjectIndexer($2);
+                $$=parser->AppendToPath($1,$3);
         }
-        | object_indexer POINTTOKEN IDENTIFIER
+        |POINTTOKEN IDENTIFIER
         {
-                $$=parser->AddObjectIndexer($1,$3);
+                $$=parser->CreatePath($2);
+        }
+        |value_ref_path POINTTOKEN IDENTIFIER
+        {
+                $$=parser->AppendToPath($1,$3);
         }
         ;
         
@@ -399,11 +430,7 @@ lvalue:IDENTIFIER
         {
                 $$=parser->CreateReference($1,NULL);
         }
-        | IDENTIFIER value_indexer_path
-        {
-                $$=parser->CreateReference($1,$2);
-        }
-        | IDENTIFIER object_indexer
+        | IDENTIFIER value_ref_path
         {
                 $$=parser->CreateReference($1,$2);
         }
@@ -413,11 +440,7 @@ read_lvalue:IDENTIFIER
         {
                 $$=parser->VarReadExpresion($1);
         }
-        | IDENTIFIER value_indexer_path
-        {
-                $$=parser->VarReadReference($1,$2);
-        }
-        | IDENTIFIER object_indexer
+        | IDENTIFIER value_ref_path
         {
                 $$=parser->VarReadReference($1,$2);
         }
@@ -698,6 +721,7 @@ statement_in_block_list:statement_in_block_list statement_in_block
 
 statement: func_declaration
         |statement_in_block
+        |obj_declaration
         ;
 
 statementlist: statementlist  statement

@@ -40,11 +40,11 @@ bool ExecuteScript(std::string path) {
     size_t i = path.rfind('/');
     std::string dir = path.substr(0, i + 1);
     std::string name = path.substr(i + 1);
-    OVAContext context(name, Value::make_map(), Value::make_map(), new support::ScriptStorage());
+    OVAContext context(name, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
     InterpreterExecutorCallback callback(dir);
     Interpreter::Executor Engine(&callback, &context);
     RegisgerModulesBuiltinMethod(&Engine);
-    return Engine.Execute(name.c_str(), true);
+    return Engine.Execute(name.c_str(),5*60, true);
 }
 
 int main(int argc, char* argv[]) {

@@ -36,7 +36,7 @@ Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         t = args[0].ToInteger();
     }
     ptm = localtime(&t);
-    Value ret = Value::make_map();
+    Value ret = Value::MakeMap();
     ret["sec"] = ptm->tm_sec;
     ret["min"] = ptm->tm_min;
     ret["hour"] = ptm->tm_hour;

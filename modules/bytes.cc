@@ -62,12 +62,12 @@ Value TrimLeftBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* 
         if (args[0].IsString()) {
             return "";
         }
-        return Value::make_bytes("");
+        return Value::MakeBytes("");
     } else {
         if (args[0].IsString()) {
             return p0.substr(head_remove);
         }
-        return Value::make_bytes(p0.substr(head_remove));
+        return Value::MakeBytes(p0.substr(head_remove));
     }
 }
 
@@ -91,7 +91,7 @@ Value TrimRightBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor*
     if (args[0].IsString()) {
         return p0.substr(0, p0.size() - remove_size);
     }
-    Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
+    Value ret = Value::MakeBytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
@@ -113,7 +113,7 @@ Value TrimBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
         if (args[0].IsString()) {
             return "";
         }
-        return Value::make_bytes("");
+        return Value::MakeBytes("");
     }
     p0 = p0.substr(head_remove);
     size_t remove_size = 0;
@@ -127,7 +127,7 @@ Value TrimBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
     if (args[0].IsString()) {
         return p0.substr(0, p0.size() - remove_size);
     }
-    Value ret = Value::make_bytes(p0.substr(0, p0.size() - remove_size));
+    Value ret = Value::MakeBytes(p0.substr(0, p0.size() - remove_size));
     return ret;
 }
 
@@ -162,7 +162,7 @@ Value RepeatBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm
     if (args[0].IsString()) {
         return result;
     }
-    return Value::make_bytes(result);
+    return Value::MakeBytes(result);
 }
 
 Value ReplaceBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -179,7 +179,7 @@ Value ReplaceBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* v
     if (args[0].IsString()) {
         return result;
     }
-    return Value::make_bytes(result);
+    return Value::MakeBytes(result);
 }
 
 Value ReplaceAllBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -192,7 +192,7 @@ Value ReplaceAllBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor
     if (args[0].IsString()) {
         return result;
     }
-    return Value::make_bytes(result);
+    return Value::MakeBytes(result);
 }
 
 std::list<std::string> Split(const std::string& src, const std::string& slip) {
@@ -229,7 +229,7 @@ Value SplitBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm)
     std::string p0 = GetString(args, 0);
     std::string p1 = GetString(args, 1);
     std::list<std::string> result = Split(p0, p1);
-    Value ret = Value::make_array();
+    Value ret = Value::MakeArray();
     for (auto iter : result) {
         ret._array().push_back(iter);
     }
@@ -243,7 +243,7 @@ Value ToUpperBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* v
     if (args[0].IsString()) {
         return p0;
     }
-    return Value::make_bytes(p0);
+    return Value::MakeBytes(p0);
 }
 
 Value ToLowerBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -253,7 +253,7 @@ Value ToLowerBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* v
     if (args[0].IsString()) {
         return p0;
     }
-    return Value::make_bytes(p0);
+    return Value::MakeBytes(p0);
 }
 
 inline std::regex RegExp(const std::string& r, bool icase) {
@@ -296,7 +296,7 @@ Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     }
     std::smatch m;
     std::string s = p0;
-    Value ret = Value::make_array();
+    Value ret = Value::MakeArray();
     std::regex re = RegExp(p1, icase);
     while (std::regex_search(s, m, re)) {
         for (auto iter = m.begin(); iter != m.end(); iter++) {

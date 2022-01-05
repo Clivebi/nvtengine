@@ -154,19 +154,19 @@ Value Require(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value MakeBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
-    return Value::make_bytes((size_t)args[0].Integer);
+    return Value::MakeBytes((size_t)args[0].Integer);
 }
 
 Value ToBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size() == 0) {
-        return Value::make_bytes("");
+        return Value::MakeBytes("");
     }
     CHECK_PARAMETER_COUNT(1);
     if (args[0].IsBytes()) {
         return args[0].Clone();
     }
     CHECK_PARAMETER_STRING(0);
-    return Value::make_bytes(args[0].text);
+    return Value::MakeBytes(args[0].text);
 }
 
 bool IsHexChar(char c) {
@@ -206,7 +206,7 @@ Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         unsigned char val = (BYTE)strtol(buf, NULL, 16);
         result.append(1, val);
     }
-    return Value::make_bytes(result);
+    return Value::MakeBytes(result);
 }
 
 Value HexEncode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -249,7 +249,7 @@ bool IsBigEndianVM() {
 }
 
 Value VMEnv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    Value ret = Value::make_map();
+    Value ret = Value::MakeMap();
     if (IsBigEndianVM()) {
         ret._map()[Value("ByteOrder")] = "BigEndian";
     } else {
@@ -301,6 +301,10 @@ Value Clone(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return args.front().Clone();
 }
 
+Value ShortStack(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    return ctx->ShortStack();
+}
+
 BuiltinMethod builtinFunction[] = {
         {"byte", ToByte},
         {"exit", Exit},
@@ -323,6 +327,7 @@ BuiltinMethod builtinFunction[] = {
         {"HexEncode", HexEncode},
         {"DisplayContext", DisplayContext},
         {"VMEnv", VMEnv},
+        {"ShortStack", ShortStack},
         {"GetAvaliableFunction", GetAvaliableFunction},
         {"IsFunctionExist", IsFunctionExist},
 };

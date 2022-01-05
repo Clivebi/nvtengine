@@ -84,6 +84,7 @@ int yywrap( yyscan_t yyscanner)
 <INITIAL>"..."       return MOREVAL;
 <INITIAL>">>>"       return URSHIFT;
 <INITIAL>">>>="      return URSHIFTASSIGN;
+<INITIAL>"object"    return OBJECTTOKEN;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
     yylval->identifier = parser->CreateString(yytext);

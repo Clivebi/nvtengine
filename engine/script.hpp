@@ -18,7 +18,7 @@ const Type kNop = 0;
 const Type kConst = CODE_BASE + 1;
 const Type kNewVar = CODE_BASE + 2;
 const Type kReadVar = CODE_BASE + 3;
-const Type kObjectIndexer = CODE_BASE + 4;
+//const Type kObjectIndexer = CODE_BASE + 4;
 //const Type kWriteVar = CODE_BASE + 4;
 const Type kNewFunction = CODE_BASE + 5;
 const Type kCallFunction = CODE_BASE + 6;
@@ -39,6 +39,9 @@ const Type kForInStatement = CODE_BASE + 19;
 const Type kSwitchCaseStatement = CODE_BASE + 20;
 const Type kMinus = CODE_BASE + 21;
 const Type kReadReference = CODE_BASE + 22;
+const Type kObjectDecl = CODE_BASE + 23;
+const Type kCallObjectMethod = CODE_BASE + 24;
+const Type kPath = CODE_BASE + 25;
 
 const Type kBinaryOP = 40;
 const Type kADD = kBinaryOP + 1;
@@ -92,7 +95,7 @@ extern const char* kDeclMore;
 extern const char* kDeclFuncArgs;
 extern const char* kValue;
 extern const char* kNamedValue;
-extern const char* kIndexer;
+//extern const char* kIndexer;
 extern const char* kAssign;
 extern const char* kMapValue;
 extern const char* kCaseItem;
@@ -100,6 +103,8 @@ extern const char* kCase;
 extern const char* kBlockStatement;
 extern const char* kStatement;
 extern const char* kAddMulti;
+extern const char* kObjMethod;
+extern const char* kPath;
 }; // namespace KnownListName
 
 class Instruction {
@@ -203,8 +208,12 @@ public:
             return "for in statement";
         case Instructions::kSwitchCaseStatement:
             return "switch -- case statement";
-        case Instructions::kObjectIndexer:
-            return "object indexer:" + Name;
+        case Instructions::kPath:
+            return "ref_path:" + Name;
+        case Instructions::kObjectDecl:
+            return "object define:" + Name;
+        case Instructions::kCallObjectMethod:
+            return "call object method:" + Name;
         case Instructions::kReadReference:
             return "read object value:" + Name;
         case Instructions::kPathReference:

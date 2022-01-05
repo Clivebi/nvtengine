@@ -36,7 +36,8 @@ BuiltinMethod ovaMethod[] = {
 
         {"set_kb_item", set_kb_item},
         {"get_kb_item", get_kb_item},
-        {"get_kb_list", get_kb_list},
+        {"kb_get_keys", kb_get_keys},
+        {"kb_get_list", kb_get_list},
         {"replace_kb_item", replace_kb_item},
         {"get_preference", get_preference},
         
@@ -98,6 +99,7 @@ BuiltinMethod ovaMethod[] = {
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
+    srand(time(NULL));
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod));
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod), "ova_");
 }

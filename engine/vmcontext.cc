@@ -28,7 +28,7 @@ void DebugContext() {
 #endif
 
 VMContext::VMContext(Type type, VMContext* Parent, int timeout_second, std::string Name)
-        : mFlags(0), mIsEnableWarning(false) {
+        : mFlags(0), mIsEnableWarning(false), mObjectCreator() {
     mParent = Parent;
     mType = type;
     mDeepth = 0;
@@ -55,6 +55,9 @@ VMContext::~VMContext() {
 #ifdef _DEBUG_SCRIPT
     VMContext::sLastContext = mParent;
 #endif
+    for (auto iter : mObjectCreator) {
+        delete iter.second;
+    }
 }
 
 bool VMContext::IsBuiltinVarName(const std::string& name) {
@@ -155,7 +158,7 @@ void VMContext::AddVar(const std::string& name) {
     }
 }
 
-void VMContext::SetVarValue(const std::string& name, Value value) {
+void VMContext::SetVarValue(const std::string& name, Value value, bool current) {
     if (!IsBuiltinVarName(name)) {
         throw RuntimeException("variable not changable,because name is builtin :" + name);
     }
@@ -165,6 +168,10 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
         std::map<std::string, Value>::iterator iter = ctx->mVars.find(name);
         if (iter != ctx->mVars.end()) {
             iter->second = value;
+            return;
+        }
+        if (current) {
+            ctx->mVars[name] = value;
             return;
         }
         if (ctx->mType == Function) {
@@ -180,7 +187,7 @@ void VMContext::SetVarValue(const std::string& name, Value value) {
     }
     ctx = GetTopContext();
     ctx->mVars[name] = value;
-    LOG_DEBUG("auto add var in the file context " + name, " File: ", ctx->mName);
+    //LOG_DEBUG("auto add var in the file context " + name, " File: ", ctx->mName);
 }
 
 bool VMContext::IsShadowName(const std::string& name) {
@@ -230,6 +237,22 @@ Value VMContext::GetVarValue(const std::string& name) {
     return ret;
 }
 
+void VMContext::AddMethod(const std::string& objectName, const std::string& name,
+                          const Instruction* function) {
+    std::string func = objectName + "#" + name;
+    VMContext* ctx = GetTopContext();
+    if (!IsFunctionOverwriteEnabled(func)) {
+        throw RuntimeException(func + " function can't overwrite");
+    }
+    //LOG("add function:"+obj->Name);
+    std::map<std::string, const Instruction*>::iterator iter = ctx->mFunctions.find(func);
+    if (iter == ctx->mFunctions.end()) {
+        ctx->mFunctions[func] = function;
+        return;
+    }
+    throw RuntimeException("function already exist name:" + func);
+}
+
 void VMContext::AddFunction(const Instruction* obj) {
     if (mType != File) {
         throw RuntimeException("function declaration must in the top block name:" + obj->Name);
@@ -247,15 +270,13 @@ void VMContext::AddFunction(const Instruction* obj) {
 }
 
 const Instruction* VMContext::GetFunction(const std::string& name) {
-    VMContext* ctx = this;
-    while (ctx->mParent != NULL) {
-        ctx = ctx->mParent;
+    VMContext* ctx = GetTopContext();
+
+    auto iter = ctx->mFunctions.find(name);
+    if (iter != ctx->mFunctions.end()) {
+        return iter->second;
     }
-    std::map<std::string, const Instruction*>::iterator iter = ctx->mFunctions.find(name);
-    if (iter == ctx->mFunctions.end()) {
-        return NULL;
-    }
-    return iter->second;
+    return NULL;
 }
 
 Value VMContext::GetTotalFunction() {

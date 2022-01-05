@@ -46,20 +46,20 @@ public:
     std::vector<HeaderValue*> Header;
 
     Value ToValue() {
-        Value ret = Value::make_map();
+        Value ret = Value::MakeMap();
         ret._map()["version"] = Version;
         ret._map()["status"] = Value(strtol(Status.c_str(), NULL, 0));
         ret._map()["reason"] = Reason;
         ret._map()["raw_header"] = RawHeader;
         ret._map()["body"] = Body;
-        Value h = Value::make_map();
+        Value h = Value::MakeMap();
         std::vector<HeaderValue*>::iterator iter = Header.begin();
         while (iter != Header.end()) {
             auto exist = h._map().find((*iter)->Name);
             if (exist != h._map().end()) {
                 exist->second._array().push_back((*iter)->Value);
             } else {
-                Value val = Value::make_array();
+                Value val = Value::MakeArray();
                 val._array().push_back((*iter)->Value);
                 h._map()[(*iter)->Name] = val;
             }
@@ -598,7 +598,7 @@ Value URLPathUnescape(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value URLQueryDecode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     std::string query = GetString(args, 0);
-    Value ret = Value::make_map();
+    Value ret = Value::MakeMap();
     std::list<std::pair<std::string, std::string>> result;
     if (parser_querys(query, result)) {
         auto iter = result.begin();
@@ -664,7 +664,7 @@ Value DeflateBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args[0].IsString()) {
         return res;
     }
-    return Value::make_bytes(res);
+    return Value::MakeBytes(res);
 }
 
 Value BrotliDecompressBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -675,7 +675,7 @@ Value BrotliDecompressBytes(std::vector<Value>& args, VMContext* ctx, Executor* 
     if (args[0].IsString()) {
         return res;
     }
-    return Value::make_bytes(res);
+    return Value::MakeBytes(res);
 }
 
 Value URLParse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -684,12 +684,12 @@ Value URLParse(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string host, port, scheme, path;
     std::map<std::string, std::string> querys;
     parser_url(url, scheme, host, port, path, querys);
-    Value ret = Value::make_map();
+    Value ret = Value::MakeMap();
     ret._map()["host"] = host;
     ret._map()["port"] = port;
     ret._map()["scheme"] = scheme;
     ret._map()["path"] = path;
-    Value q = Value::make_map();
+    Value q = Value::MakeMap();
     auto iter = querys.begin();
     while (iter != querys.end()) {
         q._map()[iter->first] = iter->second;

@@ -1,13 +1,13 @@
 #include "ovacontext.hpp"
 void OVAContext::AddPreference(const Value& id, const Value& name, const Value& type,
                                const Value& value) {
-    Value x = Value::make_map();
+    Value x = Value::MakeMap();
     x["name"] = name;
     x["type"] = type;
     x["value"] = value;
     x["id"] = id;
     auto iter = Nvti._map().find(knowntext::kNVTI_preference);
-    Value newVal = Value::make_array();
+    Value newVal = Value::MakeArray();
     Value& pref = newVal;
     if (iter != Nvti._map().end()) {
         pref = iter->second;
@@ -48,7 +48,7 @@ void OVAContext::GetPreferenceFile(const Value& id, const Value& name, std::stri
 
 void OVAContext::AddXref(const Value& name, const Value& value) {
     auto iter = Nvti._map().find(knowntext::kNVTI_xref);
-    Value newVal = Value::make_map();
+    Value newVal = Value::MakeMap();
     Value& pref = newVal;
     if (iter != Nvti._map().end()) {
         pref = iter->second;
@@ -59,7 +59,7 @@ void OVAContext::AddXref(const Value& name, const Value& value) {
 }
 void OVAContext::AddTag(const Value& name, const Value& value) {
     auto iter = Nvti._map().find(knowntext::kNVTI_tag);
-    Value newVal = Value::make_map();
+    Value newVal = Value::MakeMap();
     Value& pref = newVal;
     if (iter != Nvti._map().end()) {
         pref = iter->second;
@@ -97,10 +97,6 @@ Value OVAContext::GetKbItem(const std::string& name) {
         return Storage->GetItem(name, 0);
     }
     return Storage->GetItem(name, -1);
-}
-
-Value OVAContext::GetKbList(const std::string& name) {
-    return Storage->GetItemList(name);
 }
 
 void OVAContext::SetKbItem(const std::string& name, const Value& val) {

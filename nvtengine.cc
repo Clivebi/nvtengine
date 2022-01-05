@@ -131,9 +131,9 @@ void UpdateNVTI(std::string script_path, std::string home) {
     std::list<std::string> result;
     FileIO IO;
     CollectAllScript(script_path, "", result);
-    Value ret = Value::make_array();
+    Value ret = Value::MakeArray();
     for (auto iter : result) {
-        OVAContext context(iter, Value::make_map(), Value::make_map(),
+        OVAContext context(iter, Value::MakeMap(), Value::MakeMap(),
                            new support::ScriptStorage());
         DefaultExecutorCallback callback(script_path, &IO);
         callback.mDescription = true;
@@ -170,7 +170,7 @@ void LoadRule(std::string& rule) {
 }
 
 void NVTEngineTest(char* folder, char* ip, char* port) {
-    Value pref = Value::make_map();
+    Value pref = Value::MakeMap();
     std::string oids;
     LoadRule(oids);
     //pref[knowntext::kPref_load_dependencies] = false;
@@ -179,7 +179,7 @@ void NVTEngineTest(char* folder, char* ip, char* port) {
     HostsTask task(ip, port, pref, &IO);
     std::list<std::string> result = Interpreter::split(oids, ';');
     std::list<std::string> list2;
-    list2.push_back("1.3.6.1.4.1.25623.1.0.10267");
+    list2.push_back("1.3.6.1.4.1.25623.1.0.105782");
     task.BeginTask(result, "10000");
     task.Join();
 }
