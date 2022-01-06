@@ -337,7 +337,7 @@ func ipv4_address_to_string(src){
     if (typeof(src)=="integer"){
         src = AppendUInt32ToBuffer(bytes(),src);
     }
-    return ToString(src[0])+"."+ToString(src[1])+"."+ToString(src[2])+"."+ToString(src[3]);
+    return ToString(ToInteger(src[0]))+"."+ToString(ToInteger(src[1]))+"."+ToString(ToInteger(src[2]))+"."+ToString(ToInteger(src[3]));
 }
 
 func build_ipv4_header(ip_hl,ip_tos,ip_len,ip_id,ip_off_flags,ip_off,ip_ttl,ip_p,ip_src,ip_dst){
@@ -515,7 +515,7 @@ func get_ip_element(ip,element){
             return 4;
         }
         case "ip_id":{
-            return ReadUInt16(4,false);
+            return ReadUInt16(ip,4);
         }
         case "ip_hl":{
             return get_ipv4_hl(ip);
@@ -524,19 +524,19 @@ func get_ip_element(ip,element){
             return get_ipv4_tos(ip);
         }
         case "ip_len":{
-            return ReadUInt16(ip,2,false);
+            return ReadUInt16(ip,2);
         }
         case "ip_off":{
-            return ReadUInt16(hdr,6,false);
+            return ReadUInt16(ip,6);
         }
         case "ip_ttl":{
-            return get_ipv4_ttl(hdr);
+            return get_ipv4_ttl(ip);
         }
         case "ip_p":{
-            return get_ipv4_protocol(hdr);
+            return get_ipv4_protocol(ip);
         }
         case "ip_sum":{
-            return get_ipv4_checksum(hdr);
+            return get_ipv4_checksum(ip);
         }
         case "ip_src":{
             return ipv4_address_to_string(ip[12:16]);
@@ -748,7 +748,8 @@ func forge_udp_packet(ip, data, uh_dport=0, uh_sport=0, uh_sum,uh_ulen, update_i
     return total;
 }
 
-func forge_udp_v6_packet(ip, data, uh_dport=0, uh_sport=0, uh_sum,uh_ulen, update_ip_len){
+func forge_udp_v6_packet(ip6, data, uh_dport=0, uh_sport=0, uh_sum,uh_ulen, update_ip_len){
+    var ip = ip6;
     if(!ip){
         return nil;
     }
@@ -775,11 +776,11 @@ func get_udp_element(udp, element){
         return nil;
     }
     var hdr = udp[ipsz:];
-    if(element != "data"){
+    if(element == "data"){
         var offset = ipsz+8;
         var datasz = ReadUInt16(hdr,4);
-        if(datasz +ipsz > len(udp)){
-            datasz = len(udp)-ipsz;
+        if(datasz +offset > len(udp)){
+            datasz = len(udp)-offset;
         }
         return udp[offset:offset+datasz];
     }
@@ -802,24 +803,25 @@ func get_udp_element(udp, element){
 }
 
 func get_udp_v6_element(udp,element){
-    if(!udp){
+    var ip = udp;
+    if(!ip){
         return nil;
     }
-    if(udp[0]>>4 != 6){
+    if(ip[0]>>4 != 6){
         return nil;
     }
-    var ip_len = get_ipv6_plen(tcp);
-    if(ip_len > len(tcp)){
+    var ip_len = get_ipv6_plen(ip);
+    if(ip_len > len(ip)){
         return nil;
     }
-    var hdr = udp[40:];
-    if(element != "data"){
+    var hdr = ip[40:];
+    if(element == "data"){
         var offset = 48;
         var datasz = ReadUInt16(hdr,4);
-        if(datasz +offset > len(udp)){
-            datasz = len(udp)-offset;
+        if(datasz +offset > len(ip)){
+            datasz = len(ip)-offset;
         }
-        return udp[offset:offset+datasz];
+        return ip[offset:offset+datasz];
     }
     switch(element){
         case "uh_sport":{
@@ -861,23 +863,157 @@ func forge_icmp_packet(ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksu
         CopyBytes(icmp[8:],data);
     }
     var sum = cacl_ip_checksum(icmp,len(icmp));
-    icmp = WriteUInt16(icmp,2,sum);
-    ip = set_ipv4_length(ip,len(sum));
+    icmp = WriteUInt16(icmp,2,sum,false);
+    ip = set_ipv4_length(ip,len(icmp)+ipsz);
     ip = update_ipv4_checksum(ip);
     return append(bytes(ip),icmp);
 }
 
-func forge_icmp_v6_packet(ip6,data="",icmp_type,icmp_code,icmp_id,icmp_seq,
+func get_icmp_element(icmp,element){
+    var ip = icmp;
+    if(!ip){
+        return nil;
+    }
+    if(ip[0]>>4 != 4){
+        return nil;
+    }
+    var ipsz = get_ipv4_hl(ip)*4;
+    if(ipsz > len(ip)){
+        return nil;
+    }
+    var ip_len = get_ipv4_length(ip);
+    if(ip_len > len(ip)){
+        return nil;
+    }
+    var hdr = ip[ipsz:];
+    if(element == "data"){
+        var offset = ipsz+8;
+        if(ipsz+8 < len(ip)){
+            var size = len(ip)-ipsz - 8;
+            return ip[offset:offset+size];
+        }
+        return nil;
+    }
+    switch(element){
+        case "icmp_type":{
+            return hdr[0];
+        }
+        case "icmp_code":{
+            return hdr[1];
+        }
+        case "icmp_id":{
+            return ReadUInt16(hdr,4);
+        }
+        case "icmp_seq":{
+            return ReadUInt16(hdr,6);
+        }
+        case "icmp_cksum":{
+            return ReadUInt16(hdr,2);
+        }
+    }
+    return nil;
+}
+
+func forge_icmp_v6_packet(ip6,data="",icmp_type=0,icmp_code=0,icmp_id=0,icmp_seq=0,
                         reachable_time,retransmit_timer,flags,target,icmp_cksum,update_ip_len=true){
-    
+    if(!ip6 || len(ip6) < 40){
+        return nil;
+    }
+    var ipsz =len(ip6);
+    var hdr = MakeBytes(32);
+    var hdr_size = 8;
+    hdr[0] = icmp_type;
+    hdr[1] = icmp_code;
+    switch (icmp_type){
+        case 128:{
+            hdr = WriteUInt16(hdr,4,icmp_id);
+            hdr = WriteUInt16(hdr,6,icmp_seq);
+        }
+        case 134:{
+            hdr[4] = ip6[7];
+            hdr[5] = byte(flags);
+            hdr = WriteUInt32(hdr,8,reachable_time);
+            hdr = WriteUInt32(hdr,12,retransmit_timer);
+            hdr_size = 16;
+        }
+        case 135:{
+            CopyBytes(hdr[8:],ip6[24:40]);
+            hdr_size = 24;
+        }
+        case 136:{
+            hdr = WriteUInt32(hdr,4,flags);
+            flags = ReadUInt32(hdr,4);
+            if(flags & 0x00000020){
+                CopyBytes(hdr[8:],ip6[8:24]);
+            }else{
+                CopyBytes(hdr[8:],ipv6_string_to_address(target));
+            }
+            hdr_size = 24;
+        }
+        default:{
+            hdr_size = 8;
+        }
+    }
+    var full = hdr[:hdr_size];
+    if(data != nil){
+        full = append(full,bytes(data));
+    }
+    ip6 = set_ipv6_plen(ip6,len(full));
+    var ps_head = MakeBytes(36);
+    ps_head[33] = 0x3a;
+    ps_head = WriteUInt16(ps_head,34,len(full));
+    CopyBytes(ps_head,ip6[8:24]);
+    CopyBytes(ps_head[16:],ip6[24:40]);
+    var sum = cacl_ip_checksum(append(ps_head,full),36+len(full));
+    full = WriteUInt16(full,2,sum,false);
+    return append(bytes(ip6),full);
 }
 
-func get_icmp_element(){
 
-}
-
-func get_icmp_v6_element(){
-
+func get_icmp_v6_element(icmp,element){
+    var ip = icmp;
+    if(!ip){
+        return nil;
+    }
+    if(ip[0]>>4 != 6){
+        return nil;
+    }
+    if(len(ip) < 48){
+        return nil;
+    }
+    if (get_ipv6_plen(ip) < 8){
+        return nil;
+    }
+    if (get_ipv6_plen(ip)+40 < len(ip)){
+        return nil;
+    }
+    var hdr = ip[40:];
+    if(element == "data"){
+        var offset = ipsz+8;
+        if(48 < len(ip)){
+            var size = len(ip)-48;
+            return ip[offset:offset+size];
+        }
+        return nil;
+    }
+    switch(element){
+        case "icmp_type":{
+            return hdr[0];
+        }
+        case "icmp_code":{
+            return hdr[1];
+        }
+        case "icmp_id":{
+            return ReadUInt16(hdr,4);
+        }
+        case "icmp_seq":{
+            return ReadUInt16(hdr,6);
+        }
+        case "icmp_cksum":{
+            return ReadUInt16(hdr,2);
+        }
+    }
+    return nil;
 }
 
 func dump_icmp_packet(packet){
@@ -912,6 +1048,13 @@ func send_capture(){
     
 }
 
+func assertEqual(a,b){
+    if(a != b){
+        DisplayContext();
+        Println("assert failed");
+    }
+}
+
 func test_address_convert(){
     #fe80::872:545c:cf3b:e0f5
     #ff02::16
@@ -941,12 +1084,47 @@ func test_udp(){
     #func forge_udp_packet(ip, data, uh_dport=0, uh_sport=0, uh_sum,uh_ulen, update_ip_len)
 
     ip = forge_ip_packet("",5,4,0,0xd83e,0,64,17,0,"192.168.4.149","114.114.114.114");
-    udp = forge_udp_packet(ip,_dns,53,60075,0,0,0);
+    udp = forge_udp_packet(ip:ip,data:_dns,uh_dport:53,uh_sport:60075);
     if (raw != udp){
         Println("**************************");
         Println(HexDumpBytes(raw));
         Println(HexDumpBytes(udp));
+    }else{
+        assertEqual(get_udp_element(udp,"data"),_dns);
+        assertEqual(get_udp_element(udp,"uh_dport"),53);
+        assertEqual(get_udp_element(udp,"uh_sport"),60075);
     }
+    assertEqual(get_ip_element(udp,"ip_v"),4);
+    assertEqual(get_ip_element(udp,"ip_id"),0xd83e);
+    assertEqual(get_ip_element(udp,"ip_ttl"),64);
+    assertEqual(get_ip_element(udp,"ip_p"),17);
+    assertEqual(get_ip_element(udp,"ip_src"),"192.168.4.149");
+    assertEqual(get_ip_element(udp,"ip_dst"),"114.114.114.114");
+}
+
+func test_icmp(){
+    var data = HexDecodeString("61d653020008f0a208090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637");
+    #ip_hl,ip_tos,ip_len,ip_id,ip_off_flags,ip_off,ip_ttl,ip_p,ip_src,ip_dst
+    var ip = build_ipv4_header(5,0,00,0x600c,0,0,64,1,ipv4_string_to_address("192.168.4.149"),
+    ipv4_string_to_address("192.168.3.72"));
+    #ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksum,update_ip_len=true
+    var icmp = forge_icmp_packet(ip:ip,data:data,icmp_type:8,icmp_code:0,icmp_id:0xce10,icmp_seq:0);
+    var raw = HexDecodeString("45000054600c00004001916fc0a80495c0a8034808009968ce10000061d653020008f0a208090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637");
+    if(icmp != raw){
+        Println("**************test_icmp************");
+        Println(HexDumpBytes(raw));
+        Println(HexDumpBytes(icmp));
+    }else{
+        assertEqual(get_icmp_element(icmp,"data"),data);
+        assertEqual(get_icmp_element(icmp,"icmp_type"),8);
+        assertEqual(get_icmp_element(icmp,"icmp_id"),0xce10);
+    }
+    assertEqual(get_ip_element(icmp,"ip_v"),4);
+    assertEqual(get_ip_element(icmp,"ip_id"),0x600c);
+    assertEqual(get_ip_element(icmp,"ip_ttl"),64);
+    assertEqual(get_ip_element(icmp,"ip_p"),1);
+    assertEqual(get_ip_element(icmp,"ip_src"),"192.168.4.149");
+    assertEqual(get_ip_element(icmp,"ip_dst"),"192.168.3.72");
 }
 
 
@@ -1019,7 +1197,28 @@ func test_ipv6_udp(){
         Println("error...");
         Println(HexDumpBytes(_total));
         Println(HexDumpBytes(raw));
+    }else{
+        assertEqual(get_udp_v6_element(_total,"data"),payload);
+        assertEqual(get_udp_v6_element(_total,"uh_dport"),5353);
+        assertEqual(get_udp_v6_element(_total,"uh_sport"),5353);
     }
+    #ip6_tc=0,ip6_fl=0,ip6_p=0,ip6_hlim=64,ip6_src,ip6_dst,ip_plen
+    #data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6_dst
+    var ip = forge_ip_v6_packet(ip6_tc:0,ip6_fl:0x600,ip6_p:17,ip6_hlim:255,
+    ip6_src:ipv6_address_string(HexDecodeString("fe8000000000000014cddc4efc96c36e")),
+    ip6_dst:ipv6_address_string(HexDecodeString("ff0200000000000000000000000000fb")));
+
+    var udp = forge_udp_v6_packet(ip6:ip,data:payload,uh_dport:5353,uh_sport:5353);
+    if (raw != udp){
+        Println("error...");
+        Println(HexDumpBytes(udp));
+        Println(HexDumpBytes(raw));
+    }else{
+        assertEqual(get_udp_v6_element(udp,"data"),payload);
+        assertEqual(get_udp_v6_element(udp,"uh_dport"),5353);
+        assertEqual(get_udp_v6_element(udp,"uh_sport"),5353);
+    }
+
 }
 
 func test_ipv6_tcp(){
@@ -1065,6 +1264,33 @@ func test_ipv6_tcp_with_payload(){
     }
 }
 
+func test_ipv6_icmp(){
+    var data = HexDecodeString("01018c8590445c51");
+    #build_ipv6_header(ip6_tc=0,ip6_fl=0,ip6_p=0,ip6_hlim=64,ip6_src,ip6_dst,ip_plen)
+    var ip = build_ipv6_header(0,0,58,255,ipv6_string_to_address("fe80::10eb:2efb:a04c:4628"),
+    ipv6_string_to_address("fe80::1427:4a98:6b6f:4e1a"),0);
+    #forge_icmp_v6_packet(ip6,data="",icmp_type,icmp_code,icmp_id,icmp_seq,
+    #                   reachable_time,retransmit_timer,flags,target,icmp_cksum,update_ip_len=true)
+    var packet = forge_icmp_v6_packet(ip6:ip,data:data,icmp_type:135,icmp_code:0);
+    var raw = HexDecodeString("6000000000203afffe8000000000000010eb2efba04c4628fe8000000000000014274a986b6f4e1a8700ac1800000000fe8000000000000014274a986b6f4e1a01018c8590445c51");
+    if (raw != packet){
+        Println("error...");
+        Println(HexDumpBytes(packet));
+        Println(HexDumpBytes(raw));
+    }
+
+    ip = build_ipv6_header(0,0,58,255,ipv6_string_to_address("fe80::1427:4a98:6b6f:4e1a"),
+    ipv6_string_to_address("fe80::10eb:2efb:a04c:4628"),0);
+    
+    packet = forge_icmp_v6_packet(ip6:ip,icmp_type:136,icmp_code:0,flags:0x40000000,target:"fe80::1427:4a98:6b6f:4e1a");
+    raw = HexDecodeString("6000000000183afffe8000000000000014274a986b6f4e1afe8000000000000010eb2efba04c46288800e53c40000000fe8000000000000014274a986b6f4e1a");
+    if (raw != packet){
+        Println("error2...");
+        Println(HexDumpBytes(packet));
+        Println(HexDumpBytes(raw));
+    }
+}
+test_icmp();
 test_address_convert();
 test_udp();
 test_tcp_option();
@@ -1072,3 +1298,4 @@ test_tcp_payload();
 test_ipv6_udp();
 test_ipv6_tcp();
 test_ipv6_tcp_with_payload();
+test_ipv6_icmp();

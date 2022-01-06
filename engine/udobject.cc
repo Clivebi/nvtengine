@@ -5,7 +5,13 @@
 namespace Interpreter {
 UDObject::UDObject(Executor* Engine, const std::string& Type,
                    std::map<std::string, Value>& attributes)
-        : mEngine(Engine), mTypeName(Type), mAttributes(attributes) {}
+        : mEngine(Engine), mTypeName(Type), mAttributes(attributes) {
+            Status::sUDObjectCount++;
+        }
+
+UDObject::~UDObject(){
+    Status::sUDObjectCount--;
+}
 
 std::string UDObject::ToString() const {
     std::stringstream o;

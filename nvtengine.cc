@@ -177,7 +177,7 @@ void NVTEngineTest(char* folder, char* ip, char* port) {
     FileIO IO;
     pref["scripts_folder"] = folder;
     HostsTask task(ip, port, pref, &IO);
-    std::list<std::string> result = Interpreter::split(oids, ';');
+    std::list<std::string> result = Interpreter::split(test_oids, ';');
     std::list<std::string> list2;
     list2.push_back("1.3.6.1.4.1.25623.1.0.105782");
     task.BeginTask(result, "10000");
