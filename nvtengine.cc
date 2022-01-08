@@ -4,7 +4,9 @@
 
 #include <fstream>
 #include <regex>
-
+extern "C" {
+#include "thirdpart/masscan/hostscan.h"
+}
 #include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
 #include "modules/modules.h"
@@ -133,8 +135,7 @@ void UpdateNVTI(std::string script_path, std::string home) {
     CollectAllScript(script_path, "", result);
     Value ret = Value::MakeArray();
     for (auto iter : result) {
-        OVAContext context(iter, Value::MakeMap(), Value::MakeMap(),
-                           new support::ScriptStorage());
+        OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         DefaultExecutorCallback callback(script_path, &IO);
         callback.mDescription = true;
         Interpreter::Executor exe(&callback, &context);
@@ -188,6 +189,7 @@ int main(int argc, char* argv[]) {
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
 #endif
+    masscan_init();
     g_LogLevel = LEVEL_DEBUG;
     if (argc == 2) {
         UpdateNVTI(argv[1], "");

@@ -130,11 +130,27 @@ struct PCAPSocket {
 
 typedef struct PCAPSocket* HSocket;
 
-HSocket raw_open_socket(ipaddress dst, const char* ifname);
+HSocket raw_open_socket(ipaddress dst, const char* ifname, const char* bpf_filter);
 
 void raw_close_socket(HSocket handle);
 
 int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data_size);
 
 int raw_socket_recv(HSocket handle, const unsigned char** pkt, unsigned int* pkt_size);
+
+struct CAPTURE_HANDLE {
+    unsigned int shutdown;
+    char ifname[256];
+    struct Adapter* adapter;
+};
+
+typedef struct CAPTURE_HANDLE* CaptureHandle;
+
+CaptureHandle OpenCapture(const char* ifname, const char* bpf_filter);
+
+void          CloseCapture(CaptureHandle handle);
+
+int           CapturePacket(CaptureHandle handle, const unsigned char** pkt, unsigned int* pkt_size);
+
+
 #endif /* hostscan_h */

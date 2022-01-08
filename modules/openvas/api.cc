@@ -3,6 +3,7 @@
 
 #include "./api/crypto.cc"
 #include "./api/net.cc"
+#include "./api/packet.cc"
 #include "./api/script.cc"
 #include "./api/ssh.cc"
 #include "./api/time.cc"
@@ -40,11 +41,11 @@ BuiltinMethod ovaMethod[] = {
         {"kb_get_list", kb_get_list},
         {"replace_kb_item", replace_kb_item},
         {"get_preference", get_preference},
-        
+
         {"security_message", security_message},
         {"log_message", log_message},
         {"error_message", error_message},
-        
+
         {"ResolveHostName", ResolveHostName},
         {"ResolveHostNameToList", ResolveHostNameToList},
         {"open_priv_sock_tcp", open_priv_sock_tcp},
@@ -96,6 +97,8 @@ BuiltinMethod ovaMethod[] = {
         {"SSHIsSFTPEnabled", SSHIsSFTPEnabled},
         {"CreateWinRM", CreateWinRM},
         {"WinRMCommand", WinRMCommand},
+        {"PcapSend", PcapSend},
+        {"CapturePacket", CapturePacket},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

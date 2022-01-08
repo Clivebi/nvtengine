@@ -80,16 +80,31 @@ func set_ipv6_dscp(hdr,dsc){
     return hdr;
 }
 
+func get_ipv6_dscp(hdr){
+    var val = ReadUInt32(hdr,0);
+    return (val >>22)&0x3F;
+}
+
 func set_ipv6_enc(hdr,enc){
     enc = (enc & 0x3F)<<20;
     hdr=WriteUInt32(hdr,0,ReadUInt32(hdr,0)|(enc&0xFFFFFFFF));
     return hdr;
 }
 
+func get_ipv6_enc(hdr){
+    var val = ReadUInt32(hdr,0);
+    return (val >>20)&0x3F;
+}
+
 func set_ipv6_flow(hdr,flow){
     flow = (flow & 0xFFFFF);
     hdr=WriteUInt32(hdr,0,ReadUInt32(hdr,0)|(flow&0xFFFFFFFF));
     return hdr;
+}
+
+func get_ipv6_flow(hdr){
+    var val = ReadUInt32(hdr,0);
+    return val&0xFFFFF;
 }
 
 func set_ipv6_plen(hdr,length){
@@ -584,12 +599,50 @@ func set_ip_elements(ip,ip_hl=nil,ip_v=nil,ip_tos=nil,ip_id=nil,ip_off=nil,
     return ip;
 }
 
+func display_ip_layer(ip){
+    if(!ip || len(ip)<20){
+        return nil;
+    }
+    if(ip[0]>>4 == 4){ #ipv4
+        Println(" ");
+        Println("Version:\t4");
+        Println("Header Length:\t"+get_ipv4_hl(ip)*4);
+        Println("TOS:\t\t"+get_ipv4_tos(ip));
+        Println("Total Length:\t"+get_ipv4_length(ip));
+        Println("ID:\t\t"+ReadUInt16(ip,4));
+        Println("Flags:\t\t"+(ReadUInt16(ip,6)>>13&0x7));
+        Println("Offset:\t\t"+(ReadUInt16(ip,6)&0x3F));
+        Println("TTL:\t\t"+get_ipv4_ttl(ip));
+        Println("Protocol:\t"+get_ipv4_protocol(ip));
+        Println("Header ChckSum:\t"+HexEncode(ReadUInt16(ip,10)));
+        Println("Src IP:\t\t"+ipv4_address_to_string(ip[12:16]));
+        Println("Dst IP:\t\t"+ipv4_address_to_string(ip[16:20]));
+        return ip[get_ipv4_hl(ip)*4:];
+    }
+    if(ip[0]>>4 == 6){
+        if(len(ip)<40){
+            return nil;
+        }
+        Println(" ");
+        Println("Version:\t6");
+        Println("DSCP:\t\t"+get_ipv6_dscp(ip));
+        Println("ENC:\t\t"+get_ipv6_enc(ip));
+        Println("Payload Length:\t"+get_ipv6_plen(ip));
+        Println("Next Header:\t"+ToInteger(ip[6]));
+        Println("Hop Limit:\t"+ToInteger(ip[7]));
+        Println("Src IP:\t\t"+ipv6_address_string(ip[8:24]));
+        Println("Dst IP:\t\t"+ipv6_address_string(ip[24:40]));
+        return ip[40:];
+    }
+    return nil;
+}
+
 func dump_ip_packet(packet){
-     Println(HexDumpBytes(packet));
+    display_ip_layer(packet);
 }
 
 func dump_ip_v6_packet(packet){
-    Println(HexDumpBytes(packet));
+   display_ip_layer(packet);
 }
 
 #func build_tcp_header(src_port,dst_port,seq,ack,flags,win,urp)
@@ -729,11 +782,21 @@ func get_tcp_v6_element(tcp,element){
 }
 
 func dump_tcp_packet(packet){
-    Println(HexDumpBytes(packet));
+    var tcp = display_ip_layer(packet);
+    Println(" ");
+    Println("Src Port:\t"+ReadUInt16(tcp,0));
+    Println("Dst Port:\t"+ReadUInt16(tcp,2));
+    Println("Seq:\t\t"+ ReadUInt32(tcp,4));
+    Println("ACK:\t\t"+ ReadUInt32(tcp,8));
+    Println("OFF:\t\t"+ToInteger((tcp[12]>>4)&0xFF));
+    Println("Flags:\t\t"+ToInteger((tcp[12]&0x3F)&0xFF));
+    Println("WIN:\t\t"+ReadUInt16(tcp,14));
+    Println("CheckSum:\t"+HexEncode(ReadUInt16(tcp,16)));
+    Println("URP:\t\t"+ReadUInt16(tcp,18));
 }
 
 func dump_tcp_v6_packet(packet){
-    Println(HexDumpBytes(packet));
+    dump_tcp_packet(packet);
 }
 
 #func build_udp(ip,src_port,dst_port,data)
@@ -842,11 +905,22 @@ func get_udp_v6_element(udp,element){
 }
 
 func dump_udp_packet(packet){
-    Println(HexDumpBytes(packet));
+    var hdr = display_ip_layer(packet);
+    if(hdr == nil){
+        return;
+    }
+    if(len(hdr) < 8){
+        return;
+    }
+    Println(" ");
+    Println("Src Port:\t"+ReadUInt16(hdr,0));
+    Println("Dst Port:\t"+ReadUInt16(hdr,2));
+    Println("Length:\t"+ReadUInt16(hdr,4));
+    Println("CheckSum:\t"+HexEncode(ReadUInt16(hdr,6)));
 }
 
 func dump_udp_v6_packet(packet){
-    Println(HexDumpBytes(packet));
+    dump_udp_packet(packet);
 }
 
 func forge_icmp_packet(ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksum,update_ip_len=true){
@@ -1032,16 +1106,16 @@ func forge_igmp_v6_packet(){
 
 }
 
-func send_packet(){
-
+func send_packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=5,allow_broadcast){
+    return PcapSend(packet,pcap_filter,pcap_timeout,pcap_active);
 }
 
-func send_v6packet(){
-
+func send_v6packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=5,allow_broadcast){
+    return PcapSend(packet,pcap_filter,pcap_timeout,pcap_active);
 }
 
-func pcap_next(){
-
+func pcap_next(interface="",pcap_filter="",timeout=5){
+    return CapturePacket(interface,pcap_filter,timeout);
 }
 
 func send_capture(){
@@ -1094,6 +1168,7 @@ func test_udp(){
         assertEqual(get_udp_element(udp,"uh_dport"),53);
         assertEqual(get_udp_element(udp,"uh_sport"),60075);
     }
+    dump_udp_packet(udp);
     assertEqual(get_ip_element(udp,"ip_v"),4);
     assertEqual(get_ip_element(udp,"ip_id"),0xd83e);
     assertEqual(get_ip_element(udp,"ip_ttl"),64);
@@ -1148,6 +1223,7 @@ func test_tcp_option(){
        Println(HexDumpBytes(_total));
        Println(HexDumpBytes(raw));
    }
+   dump_tcp_packet(_total);
    #func forge_ip_packet(data="",ip_hl=5,ip_v=4,ip_tos=0,ip_id=0,ip_off=0,
    #ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst="")
 
@@ -1183,6 +1259,7 @@ func test_tcp_payload(){
         var raw = HexDecodeString("450205dcc44f40002f0682a217ca2221c0a8049501bbead1391df93ae3f2a8e8801000eb7afa00000101080aa55ed71a3df55d17");
         Println(HexDumpBytes(raw));
     }
+    dump_tcp_packet(_total);
 }
 
 func test_ipv6_udp(){
@@ -1202,6 +1279,7 @@ func test_ipv6_udp(){
         assertEqual(get_udp_v6_element(_total,"uh_dport"),5353);
         assertEqual(get_udp_v6_element(_total,"uh_sport"),5353);
     }
+    dump_udp_v6_packet(_total);
     #ip6_tc=0,ip6_fl=0,ip6_p=0,ip6_hlim=64,ip6_src,ip6_dst,ip_plen
     #data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6_dst
     var ip = forge_ip_v6_packet(ip6_tc:0,ip6_fl:0x600,ip6_p:17,ip6_hlim:255,
@@ -1290,6 +1368,16 @@ func test_ipv6_icmp(){
         Println(HexDumpBytes(raw));
     }
 }
+
+func test_send_packet(){
+    var data = HexDecodeString("61d653020008f0a208090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031323334353637");
+    #ip_hl,ip_tos,ip_len,ip_id,ip_off_flags,ip_off,ip_ttl,ip_p,ip_src,ip_dst
+    var ip = build_ipv4_header(5,0,00,0x600c,0,0,64,1,ipv4_string_to_address("192.168.4.149"),
+    ipv4_string_to_address("192.168.3.72"));
+    #ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksum,update_ip_len=true
+    var icmp = forge_icmp_packet(ip:ip,data:data,icmp_type:8,icmp_code:0,icmp_id:0xce10,icmp_seq:0);
+    PcapSend(icmp,"",5,true);
+}
 test_icmp();
 test_address_convert();
 test_udp();
@@ -1299,3 +1387,4 @@ test_ipv6_udp();
 test_ipv6_tcp();
 test_ipv6_tcp_with_payload();
 test_ipv6_icmp();
+test_send_packet();

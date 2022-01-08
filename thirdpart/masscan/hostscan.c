@@ -905,16 +905,17 @@ void masscan_init() {
     x509_init();
 }
 
-HSocket raw_open_socket(ipaddress dst, const char* ifname) {
+HSocket raw_open_socket(ipaddress dst, const char* ifname, const char* bpf_filter) {
     struct PCAPSocket* Handle = NULL;
     int err = 0;
-    const char bpf_filter[1024] = {0};
+    struct bpf_program filter_prog;
 
     Handle = (struct PCAPSocket*)malloc(sizeof(struct PCAPSocket));
     if (Handle == NULL) {
         return NULL;
     }
     memset(Handle, 0, sizeof(struct PCAPSocket));
+    Handle->shutdown = 0;
     if (ifname != NULL && *ifname) {
         strcpy_s(Handle->ifname, 255, ifname);
     } else {
@@ -974,6 +975,19 @@ HSocket raw_open_socket(ipaddress dst, const char* ifname) {
             return NULL;
         }
     }
+    if (bpf_filter && *bpf_filter && Handle->adapter->pcap != NULL) {
+        if (0 != PCAP.compile(Handle->adapter->pcap, &filter_prog, bpf_filter, true, 0xffffffff)) {
+            raw_close_socket(Handle);
+            return NULL;
+        }
+        if (0 != PCAP.setfilter(Handle->adapter->pcap, &filter_prog)) {
+            PCAP.freecode(&filter_prog);
+            raw_close_socket(Handle);
+            return NULL;
+        }
+        PCAP.freecode(&filter_prog);
+    }
+
     return Handle;
 }
 
@@ -990,10 +1004,91 @@ void raw_close_socket(HSocket handle) {
 }
 
 int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data_size) {
-    return rawsock_send_packet(handle->adapter, data, data_size, 1);
+    unsigned char* buffer = NULL;
+    int ret = 0;
+    if (data_size > 1500) {
+        return -1;
+    }
+    buffer = (unsigned char*)MALLOC(1600);
+    if (buffer == NULL) {
+        return -1;
+    }
+    if (!macaddress_is_zero(handle->them_mac)) {
+        memcpy(buffer, handle->them_mac.addr, 6);
+    } else {
+        memcpy(buffer, handle->router_mac.addr, 6);
+    }
+    memcpy(buffer + 6, handle->my_mac.addr, 6);
+    if (handle->them_ip.version == 4) {
+        buffer[12] = 0x08;
+        buffer[13] = 0x00;
+    } else {
+        buffer[12] = 0x86;
+        buffer[13] = 0xdd;
+    }
+    memcpy(buffer + 14, data, data_size);
+    ret = rawsock_send_packet(handle->adapter, buffer, data_size + 14, 1);
+    free(buffer);
+    return ret;
 }
 
 int raw_socket_recv(HSocket handle, const unsigned char** pkt, unsigned int* pkt_size) {
+    unsigned t1, t2;
+    return rawsock_recv_packet(handle->adapter, pkt_size, &t1, &t2, &handle->shutdown, pkt);
+}
+
+CaptureHandle OpenCapture(const char* ifname, const char* bpf_filter) {
+    CaptureHandle Handle = NULL;
+    int err = 0;
+    struct bpf_program filter_prog;
+
+    Handle = (CaptureHandle)malloc(sizeof(struct CAPTURE_HANDLE));
+    if (Handle == NULL) {
+        return NULL;
+    }
+    memset(Handle, 0, sizeof(struct CAPTURE_HANDLE));
+    if (ifname != NULL && *ifname) {
+        strcpy_s(Handle->ifname, 255, ifname);
+    } else {
+        err = rawsock_get_default_interface(Handle->ifname, 255);
+    }
+    if (err != 0) {
+        CloseCapture(Handle);
+        return NULL;
+    }
+    Handle->adapter = rawsock_init_adapter(Handle->ifname, 0, 0, 0, 0, bpf_filter, 0, 0);
+    if (Handle->adapter == NULL) {
+        CloseCapture(Handle);
+        return NULL;
+    }
+    if (bpf_filter && *bpf_filter && Handle->adapter->pcap != NULL) {
+        if (0 != PCAP.compile(Handle->adapter->pcap, &filter_prog, bpf_filter, true, 0xffffffff)) {
+            CloseCapture(Handle);
+            return NULL;
+        }
+        if (0 != PCAP.setfilter(Handle->adapter->pcap, &filter_prog)) {
+            PCAP.freecode(&filter_prog);
+            CloseCapture(Handle);
+            return NULL;
+        }
+        PCAP.freecode(&filter_prog);
+    }
+    return Handle;
+}
+
+void CloseCapture(CaptureHandle handle) {
+    if (handle == NULL) {
+        return;
+    }
+    if (handle->adapter != NULL) {
+        rawsock_close_adapter(handle->adapter);
+        handle->adapter = NULL;
+    }
+    handle->shutdown = 1;
+    free(handle);
+}
+
+int CapturePacket(CaptureHandle handle, const unsigned char** pkt, unsigned int* pkt_size) {
     unsigned t1, t2;
     return rawsock_recv_packet(handle->adapter, pkt_size, &t1, &t2, &handle->shutdown, pkt);
 }

@@ -24,7 +24,7 @@ MAC、windows、linux、unix
 - [x] 无依赖端口(syn arp ping)扫描  
 - [x] 无依赖服务发现  
 - [x] openvas基础(string,http) API  
-- [ ] openvas数据包构造API  
+- [x] openvas数据包构造API  
 - [x] openvas WMI API  
 - [x] openvas SSH API  
 

@@ -2,7 +2,9 @@
 #include <stdio.h>
 
 #include <fstream>
-
+extern "C" {
+#include "thirdpart/masscan/hostscan.h"
+}
 #include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
 #include "fileio.hpp"
@@ -44,10 +46,11 @@ bool ExecuteScript(std::string path) {
     InterpreterExecutorCallback callback(dir);
     Interpreter::Executor Engine(&callback, &context);
     RegisgerModulesBuiltinMethod(&Engine);
-    return Engine.Execute(name.c_str(),5*60, true);
+    return Engine.Execute(name.c_str(), 5 * 60, true);
 }
 
 int main(int argc, char* argv[]) {
+    masscan_init();
     g_LogLevel = LEVEL_DEBUG;
     if (argc > 1) {
         ExecuteScript(argv[1]);

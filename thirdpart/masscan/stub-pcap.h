@@ -86,6 +86,11 @@ struct pcap_pkthdr {
 #endif
 };
 
+struct bpf_program {
+	unsigned bf_len;
+	struct bpf_insn *bf_insns;
+};
+
 
 /*
  * This block is for function declarations. Consult the libpcap
@@ -131,7 +136,14 @@ typedef int (*PCAP_SET_RFMON)(pcap_t *p, int rfmon);
 typedef int (*PCAP_CAN_SET_RFMON)(pcap_t *p);
 typedef int (*PCAP_ACTIVATE)(pcap_t *p);
 
-
+//PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,bpf_u_int32);
+//PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *);
+//PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
+//PCAP_API void	pcap_freecode(struct bpf_program *);
+typedef int (*PCAP_COMPILE)(pcap_t *,struct bpf_program *,const char *f, int ,unsigned int );
+typedef int (*PCAP_SETFILTER)(pcap_t *p,struct bpf_program *bpf);
+typedef int (*PCAP_LOOKUPNET)(const char *, unsigned int *, unsigned int *, char *);
+typedef void (*PCAP_FREECODE)(struct bpf_program * );
 
 /*
  * PORTABILITY: Windows supports the "sendq" feature, and is really slow
@@ -198,6 +210,10 @@ struct PcapFunctions {
     PCAP_SET_RFMON           set_rfmon;
     PCAP_CAN_SET_RFMON       can_set_rfmon;
     PCAP_ACTIVATE            activate;
+    PCAP_COMPILE             compile;
+    PCAP_SETFILTER           setfilter;
+    PCAP_LOOKUPNET           lookupnet;
+    PCAP_FREECODE            freecode;
 
 };
 
