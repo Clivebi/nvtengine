@@ -2182,7 +2182,7 @@ func dump_ipv6_packet(packet){
 
 #func build_ipv4_header(ip_hl,ip_tos,ip_len,ip_id,ip_off_flags,ip_off,ip_ttl,ip_p,ip_src,ip_dst)
 func forge_ip_packet(data="",ip_hl=5,ip_v=4,ip_tos=0,ip_id=0,ip_off=0,
-ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst=""){
+ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst="",ip_len=0){
     var ip_len = len(data)+ip_hl*4;
     if(ip_id == 0){
         ip_id = rand();
@@ -2197,7 +2197,7 @@ ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst=""){
     return hdr;
 }
 
-func forge_ip_v6_packet(data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6_dst){
+func forge_ip_v6_packet(data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6_dst,ip_len=0){
     return build_ipv6_header(ip6_tc,ip6_fl,ip6_p,ip6_hlim,
                                 ipv6_string_to_address(ip6_src),
                                 ipv6_string_to_address(ip6_dst),len(data));

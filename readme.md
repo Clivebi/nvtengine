@@ -27,11 +27,15 @@ MAC、windows、linux、unix
 - [x] openvas数据包构造API  
 - [x] openvas WMI API  
 - [x] openvas SSH API  
+- [ ] 配置选项实现
+- [ ] 凭据管理
+- [ ] 实现windows/linux/mac完整跨平台
 
 0.1.2  版本  
+- [ ] vfs集成
 - [ ] openvas所有API实现支持
-- [ ] 实现windows/linux/mac完整跨平台
+- [ ] 安全性提升，数据加密，签名
+- [ ] 管理接口完善
 
 0.1.3  版本  
 - [ ] 增强主机指纹识别功能
-- [ ] 管理接口完善
