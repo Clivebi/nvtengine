@@ -7,3 +7,12 @@ Interpreter.dSYM/
 Interpreter
 test/test1.sc
 script/test1.sc
+vs/.vs
+vs/Debug
+vs/Release
+vs/x64
+
+vs/*/Debug
+vs/*/Release
+vs/*/x64
+*.user
