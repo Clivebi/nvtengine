@@ -1,6 +1,9 @@
 #include <dirent.h>
 #include <stdio.h>
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#endif // _WIN32
 
 #include <fstream>
 #include <regex>

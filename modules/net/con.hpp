@@ -55,7 +55,11 @@ public:
             UpdateLastError();
             return -1;
         }
+        #ifdef _WIN32
+        int nSize = ::recv(mSocket, (char*)buffer, size, 0);
+        #else
         int nSize = ::recv(mSocket, buffer, size, 0);
+        #endif
         if (nSize == -1) {
             UpdateLastError();
             LOG_DEBUG("BaseConn recv error ", mLastError);
@@ -69,7 +73,11 @@ public:
             UpdateLastError();
             return -1;
         }
+        #ifdef _WIN32
+        int nSize = ::send(mSocket, (char*)buffer, size, 0);
+        #else
         int nSize = ::send(mSocket, buffer, size, 0);
+        #endif
         if (nSize == -1) {
             UpdateLastError();
             LOG_DEBUG("BaseConn recv error ", mLastError);

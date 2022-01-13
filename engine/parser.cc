@@ -99,7 +99,7 @@ Instruction* Parser::VarReadExpresion(const std::string& name) {
 Instruction* Parser::CreateConst(const std::string& value) {
     return mScript->NewConst(value);
 }
-Instruction* Parser::CreateConst(long value) {
+Instruction* Parser::CreateConst(int64_t value) {
     return mScript->NewConst(value);
 }
 Instruction* Parser::CreateConst(double value) {

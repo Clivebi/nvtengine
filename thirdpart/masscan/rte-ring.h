@@ -85,7 +85,6 @@
 
 
 #if defined(_MSC_VER)
-#define inline __inline
 #define unlikely(x) x
 #define likely(x) x
 #include <intrin.h>

@@ -18,7 +18,7 @@ public:
     Value GetItem(const std::string& name, int pos) {
         auto iter = mValues.find(name);
         if (iter != mValues.end()) {
-            if (pos < 0 || pos >= iter->second.size()) {
+            if (pos < 0 || (unsigned int)pos >= iter->second.size()) {
                 return iter->second.back();
             }
             return iter->second[pos];
@@ -26,7 +26,7 @@ public:
         return Value();
     }
 
-    int GetItemSize(const std::string& name) {
+    size_t GetItemSize(const std::string& name) {
         auto iter = mValues.find(name);
         if (iter != mValues.end()) {
             return iter->second.size();

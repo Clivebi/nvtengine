@@ -32,7 +32,7 @@ unsigned int swapint32(unsigned int src) {
     return val;
 }
 
-//TODO 增加 ARP缓存功能？
+//TODO add arp cache support?
 //packet,bpffilter,timeout,read_answer
 Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);

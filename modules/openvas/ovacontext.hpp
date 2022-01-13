@@ -4,8 +4,6 @@
 #include "./support/scriptstorage.hpp"
 #include "knowntext.hpp"
 using namespace Interpreter;
-//windows下没有类似fork一样的操作，所以这里使用重新执行脚本的方法来实现
-//参考原版get_kb_item的实现
 struct ForkedValue {
     std::vector<std::string> Names;
     std::vector<int> Values;
@@ -22,7 +20,6 @@ struct ForkedValue {
         }
         return -1;
     }
-    //类似一个进位的问题
     bool UpdateValue(size_t i) {
         int nValue = Current[i] + 1;
         if (nValue >= Values[i]) {

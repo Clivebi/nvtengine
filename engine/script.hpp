@@ -351,8 +351,8 @@ public:
         ins->Refs.push_back(key);
         return ins;
     }
-    Instruction* NewConst(long value) {
-        Value val = Value(value);
+    Instruction* NewConst(int64_t value) {
+        Value val = Value((Value::INTVAR)value);
         Instruction::keyType key = mConstKey;
         mConstKey++;
         mConstTable[key] = val;

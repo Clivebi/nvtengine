@@ -2,7 +2,7 @@
 namespace OpenSSLHelper {
 
 int password_callback(char* buf, int num, int rwflag, void* userdata) {
-    if (num > strlen((char*)userdata)) {
+    if (num > (int)strlen((char*)userdata)) {
         strncpy(buf, (char*)userdata, num);
     }
     return strlen((char*)userdata);

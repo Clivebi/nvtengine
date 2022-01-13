@@ -20,8 +20,8 @@
 <INITIAL>"["         return LB;
 <INITIAL>"]"         return RB;
 <INITIAL>":"         return COLON;
-<INITIAL>"true"      return TRUE;
-<INITIAL>"false"     return FALSE;
+<INITIAL>"true"      return TRUETOKEN;
+<INITIAL>"false"     return FALSETOKEN;
 <INITIAL>"null"      return NIL;
 
 <INITIAL>\" {

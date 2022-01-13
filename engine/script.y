@@ -18,7 +18,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %}
 %union {
     const char* identifier;
-    long        value_integer;
+    int64_t     value_integer;
     double      value_double; 
     unsigned char   value_byte;
     Interpreter::Instruction* object;

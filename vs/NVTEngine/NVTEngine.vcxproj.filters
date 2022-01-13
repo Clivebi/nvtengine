@@ -13,5 +13,138 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="modules">
+      <UniqueIdentifier>{754f37ea-ef71-474c-95b2-079d77292cf0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\openvas">
+      <UniqueIdentifier>{db8e70dc-6cac-4dd5-8377-c9e030894ebf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\openvas\api">
+      <UniqueIdentifier>{ca2248a3-8dd4-4af6-b89d-7aeabd260092}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\openvas\support">
+      <UniqueIdentifier>{0c8b1cef-15c1-42de-8fb4-f6f3411fe3ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\net">
+      <UniqueIdentifier>{a70dee07-e827-4c16-9541-ddfafa0402a0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\fileio.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\filepath.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\taskmgr.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\modules.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\api.hpp">
+      <Filter>modules\openvas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\knowntext.hpp">
+      <Filter>modules\openvas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\ovacontext.hpp">
+      <Filter>modules\openvas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\support\nvtidb.hpp">
+      <Filter>modules\openvas\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\support\prefsdb.hpp">
+      <Filter>modules\openvas\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\support\scriptstorage.hpp">
+      <Filter>modules\openvas\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\openvas\support\sqlitedb.hpp">
+      <Filter>modules\openvas\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\con.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\dial.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\socket.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\sslhelper.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\tcp.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\net\udp.hpp">
+      <Filter>modules\net</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\nvtengine.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\taskmgr.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\module.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\libs\c\sqlite3.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\bytes.cc">
+      <Filter>modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\http.cc">
+      <Filter>modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\json.cc">
+      <Filter>modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\netcon.cc">
+      <Filter>modules</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\crypto.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\net.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\packet.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\script.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\ssh.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\time.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\util.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\winrm.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\winrm_win.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api.cc">
+      <Filter>modules\openvas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\ovacontext.cc">
+      <Filter>modules\openvas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\net\dial.cc">
+      <Filter>modules\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\net\sslhelper.cc">
+      <Filter>modules\net</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

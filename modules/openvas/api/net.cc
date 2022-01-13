@@ -54,7 +54,7 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string data = GetString(args, 1);
     int length = GetInt(args, 2, 0);
     int option = GetInt(args, 3, 0);
-    if (length <= 0 || length > args[1].Length()) {
+    if (length <= 0 || length > (int)args[1].Length()) {
         length = args[1].Length();
     }
     if (!net::Conn::IsConn(args[0].resource)) {
@@ -151,7 +151,7 @@ std::string SockAddressToString(struct sockaddr* addr) {
 std::string ResolveHostName(const std::string& host, int family) {
     std::string result = "";
     struct addrinfo hints, *info, *p;
-    bzero(&hints, sizeof(hints));
+    memset(&hints,0, sizeof(hints));
     hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
@@ -173,7 +173,7 @@ std::string ResolveHostName(const std::string& host, int family) {
 std::vector<std::string> ResolveHostNameToList(const std::string& host, int family) {
     std::vector<std::string> result;
     struct addrinfo hints, *info, *p;
-    bzero(&hints, sizeof(hints));
+    memset(&hints,0, sizeof(hints));
     hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;

@@ -33,7 +33,7 @@ Value HasSuffixBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor*
     if (p0.size() < p1.size()) {
         return Value(false);
     }
-    int pos = p0.size() - p1.size();
+    size_t pos = p0.size() - p1.size();
     if (p0.substr(pos) == p1) {
         return Value(true);
     }
@@ -81,7 +81,7 @@ Value TrimRightBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor*
         return Value("");
     }
     size_t remove_size = 0;
-    for (int i = p0.size() - 1; i > 0; i--) {
+    for (size_t i = p0.size() - 1; i > 0; i--) {
         if (ContainsByte(p1, p0[i])) {
             remove_size++;
             continue;
@@ -117,7 +117,7 @@ Value TrimBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
     }
     p0 = p0.substr(head_remove);
     size_t remove_size = 0;
-    for (int i = p0.size() - 1; i > 0; i--) {
+    for (size_t i = p0.size() - 1; i > 0; i--) {
         if (ContainsByte(p1, p0[i])) {
             remove_size++;
             continue;
@@ -153,7 +153,7 @@ Value LastIndexBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor*
 
 Value RepeatBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    int count = GetInt(args, 1);
+    size_t count = (size_t)GetInt(args, 1);
     std::string p0 = GetString(args, 0);
     std::string result = "";
     for (size_t i = 0; i < count; i++) {
@@ -335,7 +335,7 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         char buffer[6] = {0};
         for (int j = 0; j < 16; j++, i++) {
             if (i < n) {
-                sprintf(buffer, "%02X ", (BYTE)src[i]);
+                sprintf_s(buffer,6, "%02X ", (BYTE)src[i]);
                 hex += buffer;
                 if (isprint(src[i])) {
                     str += (char)src[i];

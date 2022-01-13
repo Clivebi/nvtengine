@@ -118,7 +118,7 @@ Value ConnReadUntil(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
                 }
             }
         }
-        if (cache.size() > limit) {
+        if (cache.size() >(size_t) limit) {
             return cache;
         }
     }

@@ -1,6 +1,7 @@
+extern "C" {
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
-
+}
 #include "../../net/con.hpp"
 #include "../api.hpp"
 

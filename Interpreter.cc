@@ -38,10 +38,9 @@ public:
     }
 };
 
-bool ExecuteScript(std::string path) {
-    size_t i = path.rfind('/');
-    std::string dir = path.substr(0, i + 1);
-    std::string name = path.substr(i + 1);
+bool ExecuteScript(FilePath path) {
+    std::string dir = path.dir();
+    std::string name = path.base_name();
     OVAContext context(name, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
     InterpreterExecutorCallback callback(dir);
     Interpreter::Executor Engine(&callback, &context);

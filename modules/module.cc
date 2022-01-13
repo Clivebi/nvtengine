@@ -1,8 +1,9 @@
-#include "./openvas/api.cc"
 #include "bytes.cc"
 #include "http.cc"
 #include "json.cc"
 #include "netcon.cc"
+#include "base64.cc"
+#include "./openvas/api.cc"
 void RegisgerModulesBuiltinMethod(Executor* vm) {
     RegisgerBytesBuiltinMethod(vm);
     RegisgerNetConnBuiltinMethod(vm);

@@ -102,7 +102,7 @@ int32_t DecodeRune(std::string s, int& decode_size) {
     }
     int32_t sz = x & 7;
     acceptRange accept = acceptRanges[x >> 4];
-    if (s.size() < sz) {
+    if (s.size() <(size_t) sz) {
         decode_size = 1;
         return RuneError;
     }
@@ -143,14 +143,14 @@ std::string EncodeRune(int32_t r) {
         return "";
     }
     uint32_t i = uint32_t(r);
-    if (i <= rune1Max) {
+    if (i <= (size_t)rune1Max) {
         buffer[0] = r;
         ret.assign(buffer, 1);
-    } else if (i <= rune2Max) {
+    } else if (i <= (size_t)rune2Max) {
         buffer[0] = t2 | TO_BYTE(r >> 6);
         buffer[1] = tx | TO_BYTE(r) & maskx;
         ret.assign(buffer, 2);
-    } else if (i <= rune3Max) {
+    } else if (i <= (size_t)rune3Max) {
         buffer[0] = t3 | TO_BYTE(r >> 12);
         buffer[1] = tx | TO_BYTE(r >> 6) & maskx;
         buffer[2] = tx | TO_BYTE(r) & maskx;

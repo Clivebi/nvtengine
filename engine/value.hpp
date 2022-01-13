@@ -209,7 +209,7 @@ public:
 
     UDObject* Clone() const;
 
-    //元方法
+    //meta method
     size_t __length() const;
     Value __get_attr(Value key) const;
     Value __set_attr(Value key, Value val);
@@ -363,7 +363,9 @@ public:
     Value(INTVAR val);
     Value(int val);
     Value(unsigned int val);
+    #ifndef WIN_386
     Value(size_t val);
+    #endif
     Value(double val);
     Value(std::string val);
     Value(const char* str);

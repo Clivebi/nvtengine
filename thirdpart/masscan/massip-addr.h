@@ -12,9 +12,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#if defined(_MSC_VER) && !defined(inline)
-#define inline __inline
-#endif
 #if defined(_MSC_VER)
 #pragma warning(disable: 4201)
 #endif

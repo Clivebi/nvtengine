@@ -2,9 +2,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+int gettimeofday(struct timeval* tp, void* tzp) {
+    time_t clock;
+    struct tm tm;
+    SYSTEMTIME wtm;
+    GetLocalTime(&wtm);
+    tm.tm_year = wtm.wYear - 1900;
+    tm.tm_mon = wtm.wMonth - 1;
+    tm.tm_mday = wtm.wDay;
+    tm.tm_hour = wtm.wHour;
+    tm.tm_min = wtm.wMinute;
+    tm.tm_sec = wtm.wSecond;
+    tm.tm_isdst = -1;
+    clock = mktime(&tm);
+    tp->tv_sec = (long)clock;
+    tp->tv_usec = wtm.wMilliseconds * 1000;
+    return (0);
+}
+#else
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#endif
 
 #include "../api.hpp"
 /*
@@ -25,16 +45,30 @@ Value GetTimeOfDay(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (gettimeofday(&t, NULL) < 0) {
         return "";
     }
-    sprintf(str, "%u.%06u", (unsigned int)t.tv_sec, (unsigned int)t.tv_usec);
+    sprintf_s(str,64, "%u.%06u", (unsigned int)t.tv_sec, (unsigned int)t.tv_usec);
     return str;
 }
 
 Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     time_t t = time(NULL);
-    struct tm* ptm;
     if (args.size()) {
         t = args[0].ToInteger();
     }
+    #ifdef _WIN32
+    struct tm d = {0};
+    localtime_s(&d, &t);
+    Value ret = Value::MakeMap();
+    ret["sec"] = d.tm_sec;
+    ret["min"] = d.tm_min;
+    ret["hour"] = d.tm_hour;
+    ret["mday"] = d.tm_mday;
+    ret["mon"] = d.tm_mon;
+    ret["year"] = d.tm_year + 1900;
+    ret["wday"] = d.tm_wday;
+    ret["yday"] = d.tm_yday;
+    ret["isdst"] = d.tm_isdst;
+    #else
+    struct tm* ptm;
     ptm = localtime(&t);
     Value ret = Value::MakeMap();
     ret["sec"] = ptm->tm_sec;
@@ -46,22 +80,23 @@ Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     ret["wday"] = ptm->tm_wday;
     ret["yday"] = ptm->tm_yday;
     ret["isdst"] = ptm->tm_isdst;
+    #endif
     return ret;
 }
 
 Value MakeTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     struct tm tm;
     CHECK_PARAMETER_COUNT(7);
-    tm.tm_sec = args[0].Integer;
-    tm.tm_min = args[1].Integer;
-    tm.tm_hour = args[2].Integer;
-    tm.tm_mday = args[3].Integer;
-    tm.tm_mon = args[4].Integer;
-    tm.tm_year = args[5].Integer;
+    tm.tm_sec = (int)args[0].Integer;
+    tm.tm_min = (int)args[1].Integer;
+    tm.tm_hour = (int)args[2].Integer;
+    tm.tm_mday = (int)args[3].Integer;
+    tm.tm_mon = (int)args[4].Integer;
+    tm.tm_year = (int)args[5].Integer;
     if (tm.tm_year > 1900) {
         tm.tm_year -= 1900;
     }
-    tm.tm_isdst = args[6].Integer;
+    tm.tm_isdst = (int)args[6].Integer;
     return (int64_t)mktime(&tm);
 }
 
@@ -92,6 +127,15 @@ static void epoch2isotime(my_isotime_t timebuf, time_t atime) {
     if (atime == (time_t)(-1))
         *timebuf = 0;
     else {
+        #ifdef _WIN32
+        struct tm d = {0};
+        gmtime_s(&d, &atime);
+        if (snprintf(timebuf, ISOTIME_SIZE, "%04d%02d%02dT%02d%02d%02d", 1900 + d.tm_year,
+                     d.tm_mon + 1, d.tm_mday, d.tm_hour, d.tm_min, d.tm_sec) < 0) {
+            *timebuf = '\0';
+            return;
+        }
+        #else
         struct tm* tp;
 
         tp = gmtime(&atime);
@@ -100,6 +144,7 @@ static void epoch2isotime(my_isotime_t timebuf, time_t atime) {
             *timebuf = '\0';
             return;
         }
+        #endif
     }
 }
 
@@ -474,10 +519,10 @@ Value ISOTimePrint(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     const char* string = args[0].text.c_str();
     char helpbuf[20];
     if (args[0].Length() < 15 || check_isotime(string)) {
-        strcpy(helpbuf, "[none]");
+        strcpy_s(helpbuf,20, "[none]");
     } else {
         //2021-06-01 01:16:03
-        snprintf(helpbuf, sizeof helpbuf, "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", string, string + 4,
+        snprintf(helpbuf, sizeof(helpbuf), "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", string, string + 4,
                  string + 6, string + 9, string + 11, string + 13);
     }
     return helpbuf;

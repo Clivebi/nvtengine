@@ -1,3 +1,7 @@
+
+#ifdef _WIN32
+#include "./winrm_win.cc"
+#else
 #include "../../../winrm/winrm.h"
 
 #include "../api.hpp"
@@ -71,3 +75,4 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     ret["ExitCode"] = result.r2;
     return ret;
 }
+#endif

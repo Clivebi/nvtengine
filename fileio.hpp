@@ -20,7 +20,7 @@ public:
         FILE* hFile = NULL;
         void* pData = NULL;
         size_t size = 0, read_size = 0;
-        hFile = fopen(path.c_str(), "r");
+        hFile = fopen(path.c_str(), "rb");
         if (hFile == NULL) {
             LOG_ERROR("fopen failed: ", errno, path);
             return NULL;
@@ -39,7 +39,7 @@ public:
             return NULL;
         }
         fclose(hFile);
-        for (int i = nSize; i < SuffixSize; i++) {
+        for (int i = (int)nSize; i < SuffixSize; i++) {
             ((char*)pData)[i] = 0;
         }
         return pData;

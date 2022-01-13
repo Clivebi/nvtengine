@@ -421,20 +421,20 @@ void HostsTask::DetectService(DetectServiceParamter* param) {
     }
 }
 
-void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, int thread_count) {
+void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count) {
     std::vector<size_t> Threads;
     std::vector<DetectServiceParamter*> Paramters;
     std::vector<std::vector<int>> groups;
     if (ports.size() < thread_count) {
         thread_count = ports.size();
     }
-    for (int i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < thread_count; i++) {
         groups.push_back(std::vector<int>());
     }
-    for (int i = 0; i < ports.size(); i++) {
+    for (size_t i = 0; i < ports.size(); i++) {
         groups[i % thread_count].push_back(ports[i]);
     }
-    for (int i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < thread_count; i++) {
         DetectServiceParamter* param = new DetectServiceParamter();
         param->tcb = tcb;
         param->ports = groups[i];
@@ -444,10 +444,10 @@ void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, int th
         Threads.push_back(thread);
     }
 
-    for (int i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < thread_count; i++) {
         pixie_thread_join(Threads[i]);
     }
-    for (int i = 0; i < thread_count; i++) {
+    for (size_t i = 0; i < thread_count; i++) {
         tcb->Storage->Combine(Paramters[i]->storage);
         delete (Paramters[i]);
     }

@@ -89,7 +89,7 @@ public:
 
     //const values
     Instruction* CreateConst(const std::string& value);
-    Instruction* CreateConst(long value);
+    Instruction* CreateConst(int64_t value);
     Instruction* CreateConst(double value);
     Instruction* CreateConst(BYTE value);
 

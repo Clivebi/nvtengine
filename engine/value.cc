@@ -1,9 +1,6 @@
 #include "value.hpp"
-
 #include <string.h>
-
 #include <sstream>
-
 #include "utf8.hpp"
 
 namespace Interpreter {
@@ -251,7 +248,7 @@ bool IsMatchString(std::string word, int n, std::string pattern, int m) {
     // if the input string reaches its end, return when the
     // remaining characters in the pattern are all '*'
     if (n == word.size()) {
-        for (int i = m; i < pattern.size(); i++) {
+        for (size_t i = m; i < pattern.size(); i++) {
             if (pattern[i] != '*') {
                 return false;
             }
@@ -401,7 +398,7 @@ std::string MapObject::ToDescription() const {
     return o.str();
 }
 
-//Value 众多的构造函数
+//Value construct
 Value::Value(char val) {
     Reset();
     Type = ValueType::kByte;
@@ -447,11 +444,13 @@ Value::Value(unsigned int val) {
     Integer = val;
 }
 
+#ifndef WIN_386
 Value::Value(size_t val) {
     Reset();
     Type = ValueType::kInteger;
     Integer = val;
 }
+#endif
 
 Value::Value(double val) {
     Reset();
@@ -745,7 +744,6 @@ bool IsVisableString(const std::string& src) {
     return true;
 }
 
-//描述信息
 std::string Value::ToDescription() const {
     switch (Type) {
     case ValueType::kArray:
@@ -914,7 +912,7 @@ const Value Value::operator[](const Value& key) const {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("index of bytes out of range");
         }
-        return Value((char)bytesView.GetAt(key.Integer));
+        return Value((char)bytesView.GetAt((size_t)key.Integer));
     }
     if (IsString()) {
         if (!key.IsInteger()) {
@@ -925,7 +923,7 @@ const Value Value::operator[](const Value& key) const {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("index of string out of range");
         }
-        return Value((BYTE)text[key.Integer]);
+        return Value((BYTE)text[(size_t)key.Integer]);
     }
     if (IsArray()) {
         if (!key.IsInteger()) {
@@ -939,9 +937,9 @@ const Value Value::operator[](const Value& key) const {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
             }
-            Array()->_array.resize(key.Integer + 1);
+            Array()->_array.resize((size_t)key.Integer + 1);
         }
-        return Array()->_array[key.Integer];
+        return Array()->_array[(size_t)key.Integer];
     }
     if (IsMap()) {
         return Map()->_map[key.MapKey()];
@@ -967,9 +965,9 @@ Value& Value::operator[](const Value& key) {
                 throw RuntimeException("index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
             }
-            Array()->_array.resize(key.Integer + 1);
+            Array()->_array.resize((size_t)key.Integer + 1);
         }
-        return _array()[key.Integer];
+        return _array()[(size_t)key.Integer];
     }
     if (Type == ValueType::kMap) {
         return _map()[key.MapKey()];
@@ -998,7 +996,7 @@ void Value::SetValue(const Value& key, const Value& val) {
             throw Interpreter::RuntimeException("set index of bytes out of range");
         }
         if (val.IsInteger()) {
-            bytesView.SetAt(key.Integer, (int)val.ToInteger());
+            bytesView.SetAt((size_t)key.Integer, (int)val.ToInteger());
             return;
         }
     }
@@ -1015,7 +1013,7 @@ void Value::SetValue(const Value& key, const Value& val) {
             DEBUG_CONTEXT();
             throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
-        text[key.Integer] = val.ToInteger() & 0xFF;
+        text[(size_t)key.Integer] = val.ToInteger() & 0xFF;
         return;
     }
     if (Type == ValueType::kArray) {
@@ -1030,9 +1028,9 @@ void Value::SetValue(const Value& key, const Value& val) {
                 throw RuntimeException("set index of array out of range ( " + ToString() + "," +
                                        key.ToString() + " )");
             }
-            Array()->_array.resize(key.Integer + 1);
+            Array()->_array.resize((size_t)key.Integer + 1);
         }
-        Array()->_array[key.Integer] = val;
+        Array()->_array[(size_t)key.Integer] = val;
         return;
     }
     if (Type == ValueType::kMap) {
@@ -1057,7 +1055,7 @@ Value Value::Slice(const Value& f, const Value& t) const {
     if (f.Type == ValueType::kNULL) {
         from = 0;
     } else if (f.Type == ValueType::kInteger) {
-        from = f.Integer;
+        from = (size_t)f.Integer;
     } else {
         DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");
@@ -1065,7 +1063,7 @@ Value Value::Slice(const Value& f, const Value& t) const {
     if (t.Type == ValueType::kNULL) {
         to = Length();
     } else if (t.Type == ValueType::kInteger) {
-        to = t.Integer;
+        to = (size_t)t.Integer;
     } else {
         DEBUG_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");

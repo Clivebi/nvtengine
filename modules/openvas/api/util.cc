@@ -5,7 +5,10 @@
 #include <openssl/sha.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#ifdef _WIN32
+#else
 #include <unistd.h>
+#endif
 
 #include <algorithm>
 #include <sstream>
@@ -39,7 +42,7 @@ Value USleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
 #ifdef _WIN32
-    Sleep(args[0].Integer);
+    Sleep((DWORD)args[0].Integer);
 #else
     usleep(args[0].Integer);
 #endif
@@ -50,7 +53,7 @@ Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
 #ifdef _WIN32
-    Sleep(args[0].Integer * 1000);
+    Sleep((DWORD)args[0].Integer * 1000);
 #else
     sleep(args[0].Integer);
 #endif

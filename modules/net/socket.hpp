@@ -1,6 +1,7 @@
 #pragma once
 #ifdef _WIN32
-#include <winsocks.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -18,8 +19,24 @@
 namespace net {
 class Socket {
 public:
+    static void InitLibrary() {
+        #ifdef _WIN32
+        static bool isInited = FALSE;
+        WSAData wsaData = {sizeof(WSAData)}; 
+        if (isInited) {
+            return;
+        }
+        WSAStartup(MAKEWORD(1, 1), &wsaData);
+        isInited = TRUE;
+        #endif
+    }
     static void SetBlock(int socket, int on) {
-        int flags;
+     
+        #ifdef _WIN32  
+        unsigned long flags = on;
+        flags = ioctlsocket(socket, FIONBIO, &flags);
+        #else
+        int flags = on;
         flags = fcntl(socket, F_GETFL, 0);
         if (on == 0) {
             fcntl(socket, F_SETFL, flags | O_NONBLOCK);
@@ -27,15 +44,17 @@ public:
             flags &= ~O_NONBLOCK;
             fcntl(socket, F_SETFL, flags);
         }
+        #endif
     }
     static void Close(int fd) {
         if (fd == -1) {
             return;
         }
-        shutdown(fd, SHUT_RDWR);
 #ifdef _WIN32
+        shutdown(fd, SD_BOTH);
         closesocket(fd);
 #else
+        shutdown(fd, SHUT_RDWR);
         close(fd);
 #endif
     }
@@ -60,7 +79,9 @@ public:
                                   int timeout) {
         int error = -1;
         int set = 1;
+        #ifndef _WIN32
         setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
+        #endif
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);
         if (error == 0) {
             return 0;
@@ -81,9 +102,15 @@ public:
         } else if (retval == 0) { //timeout
             return -3;
         } else {
+            #ifdef _WIN32
+            int error = 0;
+            int errlen = sizeof(error);
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*) & error, &errlen);
+            #else
             int error = 0;
             int errlen = sizeof(error);
             getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, (socklen_t*)&errlen);
+            #endif
             if (error != 0) {
                 return -4; //connect fail
             }
@@ -97,16 +124,17 @@ public:
         memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
+        InitLibrary();
         if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
             return rv;
         }
 
         for (p = servinfo; p != NULL; p = p->ai_next) {
-            if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            if ((sockfd = (int)socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
                 continue;
             }
             SetBlock(sockfd, 0);
-            if (ConnectWithTimeout(sockfd, (unsigned char*)p->ai_addr, p->ai_addrlen,
+            if (ConnectWithTimeout(sockfd, (unsigned char*)p->ai_addr, (int)p->ai_addrlen,
                                    timeout_sec) == -1) {
                 Close(sockfd);
                 continue;
@@ -126,16 +154,17 @@ public:
         memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
+        InitLibrary();
         if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
             return rv;
         }
 
         for (p = servinfo; p != NULL; p = p->ai_next) {
-            if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            if ((sockfd = (int)socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
                 continue;
             }
             SetBlock(sockfd, 0);
-            if (connect(sockfd, (sockaddr*)p->ai_addr, p->ai_addrlen)) {
+            if (connect(sockfd, (sockaddr*)p->ai_addr,(int) p->ai_addrlen)) {
                 Close(sockfd);
                 continue;
             }

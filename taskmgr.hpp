@@ -180,5 +180,5 @@ protected:
                      std::map<std::string, int>& loaded);
     bool CheckScript(OVAContext* ctx, Value& nvti);
 
-    void TCPDetectService(TCB* tcb, const std::vector<int>& ports, int thread_count);
+    void TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count);
 };

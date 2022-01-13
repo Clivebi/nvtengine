@@ -20,7 +20,7 @@ void parser_json_error(JSONParser * parser,const char *s);
 };
 
 
-%token  <text> NUMBER STRING_LITERAL LC RC COMMA LB RB COLON TRUE FALSE NIL
+%token  <text> NUMBER STRING_LITERAL LC RC COMMA LB RB COLON TRUETOKEN FALSETOKEN NIL
 
 %type <object> root value value_list object_member_list object array
 %type <member> object_member
@@ -49,12 +49,12 @@ value: NUMBER
        {
                 $$=parser->NewValue($1);
         }
-       |TRUE
+       |TRUETOKEN
        {
                 $$=parser->NewValue($1);
                 $$->Type = JSONValue::BOOL;
         }
-       |FALSE
+       |FALSETOKEN
        {
                 $$=parser->NewValue($1);
                 $$->Type = JSONValue::BOOL;

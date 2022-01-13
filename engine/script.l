@@ -134,6 +134,7 @@ int yywrap( yyscan_t yyscanner)
 }
 
 <INITIAL>\n ;
+<INITIAL>\r ;
 <INITIAL>[ \t] ;
 <INITIAL>#     BEGIN COMMENT;
 <INITIAL>.      {
@@ -164,7 +165,7 @@ int yywrap( yyscan_t yyscanner)
 }
 
 <STRING_LITERAL_STATE>\\[xX][0-9a-fA-F][0-9a-fA-F]        {
-    long val = strtoll(yytext+2,NULL,16);
+    int64_t val = strtoll(yytext+2,NULL,16);
     parser->AppendToScanningString((char)(val&0xFF));
 }
 <STRING_LITERAL_STATE>\\r       parser->AppendToScanningString('\r');

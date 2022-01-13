@@ -31,7 +31,7 @@ public:
         sqlite3_stmt* stmt = NULL;
         std::string sql, blob, oid, filename;
         sql = "INSERT OR REPLACE INTO nvti(oid,file,value) VALUES(?,?,?)";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::UpdateOne sql error");
         }
         auto iter = newVal.Array()->_array.begin();
@@ -42,9 +42,9 @@ public:
             filename = val["filename"].ToString();
             blob = val.ToJSONString(false);
 
-            sqlite3_bind_text(stmt, 1, oid.c_str(), oid.size(), NULL);
-            sqlite3_bind_text(stmt, 2, filename.c_str(), filename.size(), NULL);
-            sqlite3_bind_blob(stmt, 3, blob.c_str(), blob.size(), NULL);
+            sqlite3_bind_text(stmt, 1, oid.c_str(), (int)oid.size(), NULL);
+            sqlite3_bind_text(stmt, 2, filename.c_str(),(int) filename.size(), NULL);
+            sqlite3_bind_blob(stmt, 3, blob.c_str(), (int)blob.size(), NULL);
             if (SQLITE_DONE != sqlite3_step(stmt)) {
                 bSuccess = false;
                 break;
@@ -63,7 +63,7 @@ public:
     Value GetAll() {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int) sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::GetAll sql error");
         }
         Value ret = Value::MakeArray();
@@ -78,10 +78,10 @@ public:
     Value Get(std::string oid) {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti WHERE oid = ?";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int) sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::Get sql error");
         }
-        sqlite3_bind_text(stmt, 1, oid.c_str(), oid.size(), NULL);
+        sqlite3_bind_text(stmt, 1, oid.c_str(),(int) oid.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
             Value ret = ParseJSON(text,false);
@@ -95,10 +95,10 @@ public:
     Value GetFromFileName(std::string filename) {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti WHERE file = ?";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::GetFromFileName sql error");
         }
-        sqlite3_bind_text(stmt, 1, filename.c_str(), filename.size(), NULL);
+        sqlite3_bind_text(stmt, 1, filename.c_str(), (int)filename.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
             Value ret = ParseJSON(text,false);
@@ -118,13 +118,13 @@ public:
         oid = val["oid"].ToString();
         filename = val["filename"].ToString();
         sql = "INSERT OR REPLACE INTO nvti(oid,file,value) VALUES(?,?,?)";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::UpdateOne sql error");
         }
         blob = val.ToJSONString(false);
-        sqlite3_bind_text(stmt, 1, oid.c_str(), oid.size(), NULL);
-        sqlite3_bind_text(stmt, 2, filename.c_str(), filename.size(), NULL);
-        sqlite3_bind_blob(stmt, 3, blob.c_str(), blob.size(), NULL);
+        sqlite3_bind_text(stmt, 1, oid.c_str(),(int) oid.size(), NULL);
+        sqlite3_bind_text(stmt, 2, filename.c_str(), (int)filename.size(), NULL);
+        sqlite3_bind_blob(stmt, 3, blob.c_str(),(int) blob.size(), NULL);
         if (SQLITE_DONE != sqlite3_step(stmt)) {
             sqlite3_finalize(stmt);
             return false;

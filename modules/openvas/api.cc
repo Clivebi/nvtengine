@@ -102,7 +102,7 @@ BuiltinMethod ovaMethod[] = {
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod));
     vm->RegisgerFunction(ovaMethod, COUNT_OF(ovaMethod), "ova_");
 }

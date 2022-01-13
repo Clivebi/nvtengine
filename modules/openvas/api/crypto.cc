@@ -103,7 +103,7 @@ std::string Tls1PRF(const std::string& secret, const std::string& seed, size_t n
     }
     std::string part0 = TlsPRF(secret0, seed, "md5", needSize);
     std::string part1 = TlsPRF(secret1, seed, "sha1", needSize);
-    for (int i = 0; i < needSize; i++) {
+    for (size_t i = 0; i < needSize; i++) {
         BYTE c = (BYTE)part0[i];
         BYTE c1 = (BYTE)part1[i];
         c ^= c1;
@@ -126,7 +126,7 @@ Value TLSPRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_STRING(2);
     CHECK_PARAMETER_INTEGER(3);
-    return TlsPRF(args[0].text, args[1].text, args[2].text, args[3].Integer);
+    return TlsPRF(args[0].text, args[1].text, args[2].text, (size_t)args[3].Integer);
 }
 
 Value TLS1PRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -134,7 +134,7 @@ Value TLS1PRF(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_STRING(1);
     CHECK_PARAMETER_INTEGER(2);
-    return Tls1PRF(args[0].text, args[1].text, args[2].Integer);
+    return Tls1PRF(args[0].text, args[1].text, (size_t)args[2].Integer);
 }
 
 class SSLCipher : public Resource {
@@ -204,15 +204,15 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         LOG_DEBUG("invalid chiper name ", cipherName);
         return Value();
     }
-    if (EVP_CIPHER_key_length(cipher) > key.size()) {
+    if (EVP_CIPHER_key_length(cipher) > (int)key.size()) {
         LOG_DEBUG("invalid key size  ");
         return Value();
     }
-    if (EVP_CIPHER_iv_length(cipher) > iv.size()) {
+    if (EVP_CIPHER_iv_length(cipher) > (int)iv.size()) {
         LOG_DEBUG("invalid iv size  ");
         return Value();
     }
-    return Value((Resource*)new SSLCipher(cipher, padding, key, iv, args[4].Integer));
+    return Value((Resource*)new SSLCipher(cipher, padding, key, iv, (int)args[4].Integer));
 }
 
 Value CipherUpdate(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

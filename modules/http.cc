@@ -172,11 +172,11 @@ bool DeflateStream(std::string& src, std::string& out) {
     Bytef* data = (Bytef*)src.c_str();
 
     int ret = Z_OK;
-    strm.avail_in = src.size();
+    strm.avail_in = (uInt)src.size();
     strm.next_in = data;
     std::array<char, 8192> buffer {};
     while (strm.avail_in > 0) {
-        strm.avail_out = buffer.size();
+        strm.avail_out = (uInt)buffer.size();
         strm.next_out = (Bytef*)buffer.data();
         ret = inflate(&strm, Z_NO_FLUSH);
         assert(ret != Z_STREAM_ERROR);
@@ -254,7 +254,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     std::array<char, 8192> buffer {};
     int matched = 0;
     while (true) {
-        int size = stream->Read(buffer.data(), buffer.size());
+        int size = stream->Read(buffer.data(), (int)buffer.size());
         if (size <= 0) {
             LOG_DEBUG("Read Error " + ToString(size));
             return false;
@@ -304,7 +304,7 @@ bool DoHttpRequest(std::string& host, std::string& port, bool isSSL, std::string
         LOG_DEBUG("Dial error");
         return false;
     }
-    int size = tcp->Write(req.c_str(), req.size());
+    int size = tcp->Write(req.c_str(), (int)req.size());
     if (size != req.size()) {
         LOG_DEBUG("write Error");
         return false;
@@ -395,7 +395,7 @@ bool shouldEscape(char c, encoding mode) {
 std::string escape(const std::string& s, encoding mode) {
     char c;
     int spaceCount = 0, hexCount = 0;
-    for (int i = 0; i < s.size(); i++) {
+    for (size_t i = 0; i < s.size(); i++) {
         c = s[i];
         if (shouldEscape(c, mode)) {
             if (c == ' ' && mode == encodeQueryComponent) {
@@ -411,14 +411,14 @@ std::string escape(const std::string& s, encoding mode) {
     std::string t = "";
     if (hexCount == 0) {
         t = s;
-        for (int i = 0; i < t.size(); i++) {
+        for (size_t i = 0; i < t.size(); i++) {
             if (s[i] == ' ') {
                 t[i] = '+';
             }
         }
         return t;
     }
-    for (int i = 0; i < s.size(); i++) {
+    for (size_t i = 0; i < s.size(); i++) {
         static char upperhex[] = "0123456789ABCDEF";
         int c = s[i] & 0xFF;
         if (c == ' ' && mode == encodeQueryComponent) {

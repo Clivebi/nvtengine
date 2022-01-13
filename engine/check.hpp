@@ -12,7 +12,7 @@ inline std::string check_error(int i, std::string type, Interpreter::VMContext* 
 }
 
 inline std::string GetString(std::vector<Interpreter::Value>& args, int pos) {
-    if (pos >= args.size()) {
+    if ((unsigned int)pos >= args.size()) {
         return "";
     }
     Interpreter::Value& arg = args[pos];
@@ -20,7 +20,7 @@ inline std::string GetString(std::vector<Interpreter::Value>& args, int pos) {
 }
 
 inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal = -1) {
-    if (pos >= args.size()) {
+    if ((unsigned int)pos >= args.size()) {
         return defaultVal;
     }
     Interpreter::Value& arg = args[pos];

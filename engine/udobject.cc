@@ -149,7 +149,7 @@ size_t UDObject::__length() const {
         return mAttributes.size();
     }
     std::vector<Value> values;
-    return mEngine->CallObjectMethod(Value::MakeObject((UDObject*)this), func, values, NULL)
+    return (size_t)mEngine->CallObjectMethod(Value::MakeObject((UDObject*)this), func, values, NULL)
             .ToInteger();
 }
 } // namespace Interpreter

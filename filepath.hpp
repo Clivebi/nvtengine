@@ -35,6 +35,18 @@ public:
     }
 
     operator std::string() { return _full; }
+
+    std::string dir() {
+        std::string part = _full;
+        if (part.size() && part.back() == s_separator) {
+            part = _full.substr(0, part.size() - 1);
+        }
+        size_t i = part.rfind(s_separator);
+        if (i == part.npos) {
+            return part;
+        }
+        return part.substr(0,i);
+    }
     std::string base_name() {
         std::string part = _full;
         if (part.size() && part.back() == s_separator) {
@@ -44,7 +56,7 @@ public:
         if (i == part.npos) {
             return part;
         }
-        return part.substr(i);
+        return part.substr(i+1);
     }
 
     std::string extension_name() {
