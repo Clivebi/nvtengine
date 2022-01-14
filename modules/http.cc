@@ -268,7 +268,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
                 resp->RawHeader.append(buffer.data(), size);
             }
         }
-        int parse_size = http_parser_execute(&parser, &settings, buffer.data(), size);
+        int parse_size = (int)http_parser_execute(&parser, &settings, buffer.data(), (size_t)size);
         if (parser.http_errno != 0) {
             LOG_DEBUG("Http Parser Error");
             return false;

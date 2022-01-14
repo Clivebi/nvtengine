@@ -107,6 +107,9 @@ IDENTIFIER:IDENT
         }|DEFAULT
         {
                 $$="default";
+        }|OBJECTTOKEN
+        {
+                $$="object";
         };
 
 declarationlist:declarationlist COMMA declaration

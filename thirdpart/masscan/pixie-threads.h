@@ -17,11 +17,16 @@ unsigned pixie_cpu_get_count(void);
 /**
  * Launch a thread
  */
-size_t pixie_begin_thread(void (*worker_thread)(void*),
+#ifdef _WIN32
+#define thread_type void*
+#else
+#endif
+
+thread_type pixie_begin_thread(void (*worker_thread)(void*),
                           unsigned flags,
                           void *worker_data);
 
-void pixie_thread_join(size_t thread_handle);
+void pixie_thread_join(thread_type thread_handle);
 
 void pixie_cpu_set_affinity(unsigned processor);
 void pixie_cpu_raise_priority(void);

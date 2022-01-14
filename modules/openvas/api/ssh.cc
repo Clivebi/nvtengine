@@ -113,7 +113,7 @@ public:
     }
 
     int write(const std::string& data) {
-        return ssh_channel_write(mChannel, data.c_str(), data.size());
+        return ssh_channel_write(mChannel, data.c_str(), (int)data.size());
     }
 
     virtual void Close() {

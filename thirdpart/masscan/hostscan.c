@@ -407,6 +407,9 @@ struct HostScanTask* init_host_scan_task(const char* targets, const char* port_l
 
 void destory_host_scan_task(struct HostScanTask* task) {
     struct HostScanResult *seek, *temp;
+    if (task->thread_handle_recv == 0 || task->thread_handle_send == 0) {
+        return;
+    }
     join_host_scan_task(task);
     rangelist_remove_all(&task->targets.ipv4);
     rangelist_remove_all(&task->targets.ports);
@@ -439,6 +442,8 @@ void join_host_scan_task(struct HostScanTask* task) {
     task->shutdown = true;
     pixie_thread_join(task->thread_handle_recv);
     pixie_thread_join(task->thread_handle_send);
+    task->thread_handle_recv = 0;
+    task->thread_handle_send = 0;
 }
 
 static unsigned is_ipv6_multicast(ipaddress ip_me) {
@@ -700,7 +705,7 @@ static void send_thread(struct HostScanTask* task) {
 
     LOG(1, "[+] starting transmit thread");
     LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
-    throttler_start(&throttler, task->rate);
+    throttler_start(&throttler, (double)task->rate);
     blackrock_init(&blackrock, task->range, task->seed, 14);
     while (!task->shutdown) {
         if (task->range == 0 && task->range_ipv6 == 0) {

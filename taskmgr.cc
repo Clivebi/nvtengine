@@ -39,7 +39,7 @@ void HostsTask::Join() {
 }
 
 void HostsTask::Execute() {
-    MassIP target;
+    MassIP target = {0};
     massip_add_target_string(&target, mHosts.c_str());
     massip_add_port_string(&target, mPorts.c_str(), 0);
     bool bIsNeedARP = false;
@@ -242,7 +242,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
         if (pref.IsMap()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
-        loaded[nvti[knowntext::kNVTI_filename].ToString()] = loaded.size();
+        loaded[nvti[knowntext::kNVTI_filename].ToString()] = (int)loaded.size();
         if (!loadDep) {
             loadOrder.push_back(nvti);
             continue;
@@ -285,7 +285,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
         if (pref.IsMap()) {
             nvti[knowntext::kNVTI_preference] = pref;
         }
-        loaded[v] = loaded.size();
+        loaded[v] = (int)loaded.size();
         std::list<std::string> deps;
         Value dp = nvti[knowntext::kNVTI_dependencies];
         if (dp.IsNULL()) {
@@ -422,7 +422,7 @@ void HostsTask::DetectService(DetectServiceParamter* param) {
 }
 
 void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count) {
-    std::vector<size_t> Threads;
+    std::vector<thread_type> Threads;
     std::vector<DetectServiceParamter*> Paramters;
     std::vector<std::vector<int>> groups;
     if (ports.size() < thread_count) {
@@ -440,7 +440,7 @@ void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t
         param->ports = groups[i];
         param->storage = tcb->Storage->Clone();
         Paramters.push_back(param);
-        size_t thread = pixie_begin_thread(HostsTask::DetectServiceProxy, 0, param);
+        thread_type thread = pixie_begin_thread(HostsTask::DetectServiceProxy, 0, param);
         Threads.push_back(thread);
     }
 

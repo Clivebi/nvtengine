@@ -65,7 +65,7 @@ Value ParseJSON(std::string& str, bool unescape) {
     json::yyscan_t scanner;
     json::yylex_init(&scanner);
     json::JSONParser* parser = new json::JSONParser(scanner);
-    bp = json::yy_scan_bytes((char*)str.c_str(), str.size(), scanner);
+    bp = json::yy_scan_bytes((char*)str.c_str(), (int)str.size(), scanner);
     json::yy_switch_to_buffer(bp, scanner);
     int error = json::yyparse(parser);
     json::yy_flush_buffer(bp, scanner);

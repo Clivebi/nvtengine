@@ -85,7 +85,7 @@ Value ConnWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         throw RuntimeException("ConnWrite resource type mismatch");
     }
     net::Conn* con = (net::Conn*)(args[0].resource.get());
-    int size = con->Write(data.c_str(), data.size());
+    int size = con->Write(data.c_str(), (int)data.size());
     return Value(size);
 }
 

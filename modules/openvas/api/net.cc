@@ -55,7 +55,7 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     int length = GetInt(args, 2, 0);
     int option = GetInt(args, 3, 0);
     if (length <= 0 || length > (int)args[1].Length()) {
-        length = args[1].Length();
+        length = (int)args[1].Length();
     }
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("recv resource type mismatch");

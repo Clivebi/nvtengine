@@ -5,14 +5,14 @@ int password_callback(char* buf, int num, int rwflag, void* userdata) {
     if (num > (int)strlen((char*)userdata)) {
         strncpy(buf, (char*)userdata, num);
     }
-    return strlen((char*)userdata);
+    return (int)strlen((char*)userdata);
 }
 
 scoped_refptr<SSLObject<X509>> LoadX509FromBuffer(std::string& buffer, std::string& password,
                                                   int type) {
     BIO* in;
     X509* x509 = NULL;
-    in = BIO_new_mem_buf((char*)buffer.c_str(), buffer.size());
+    in = BIO_new_mem_buf((char*)buffer.c_str(), (int)buffer.size());
     if (in == NULL) {
         return new SSLObject<X509>(NULL, X509_free);
     }
@@ -29,7 +29,7 @@ scoped_refptr<SSLObject<EVP_PKEY>> LoadPrivateKeyFromBuffer(std::string& buffer,
                                                             std::string& password, int type) {
     BIO* in;
     EVP_PKEY* pKey = NULL;
-    in = BIO_new_mem_buf((char*)buffer.c_str(), buffer.size());
+    in = BIO_new_mem_buf((char*)buffer.c_str(),(int)buffer.size());
     if (in == NULL) {
         return new SSLObject<EVP_PKEY>(NULL, EVP_PKEY_free);
     }

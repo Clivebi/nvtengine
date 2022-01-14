@@ -82,7 +82,7 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         return Value();
     }
 
-    if (0 != raw_socket_send(hSocket, (const unsigned char*)pkt.c_str(), pkt.size())) {
+    if (0 != raw_socket_send(hSocket, (const unsigned char*)pkt.c_str(),(unsigned int)pkt.size())) {
         raw_close_socket(hSocket);
         return Value();
     }

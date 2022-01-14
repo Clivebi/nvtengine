@@ -4,7 +4,7 @@
 
 #ifndef _CHECK_HPP_
 #define _CHECK_HPP_
-inline std::string check_error(int i, std::string type, Interpreter::VMContext* ctx) {
+inline std::string check_error(size_t i, std::string type, Interpreter::VMContext* ctx) {
     std::stringstream s;
     LOG_ERROR(ctx->DumpContext(true));
     s << " : the #" << i << " argument must be an " << type << std::endl;

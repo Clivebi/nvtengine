@@ -87,8 +87,8 @@ struct HostScanTask {
     ipv6address src_ipv6;
     ipv6address src_ipv6_mask;
 
-    size_t thread_handle_send;
-    size_t thread_handle_recv;
+    thread_type thread_handle_send;
+    thread_type thread_handle_recv;
     struct HostScanResult* result;
     struct ARPItem* arp_table;
     unsigned arp_table_count;

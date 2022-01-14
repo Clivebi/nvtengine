@@ -69,7 +69,7 @@ std::string GetHMAC(std::string hashMethod, const std::string& key, const std::s
         return "";
     }
     HMAC_CTX* hCtx = HMAC_CTX_new();
-    HMAC_Init_ex(hCtx, key.c_str(), key.size(), engine, NULL);
+    HMAC_Init_ex(hCtx, key.c_str(), (int)key.size(), engine, NULL);
     HMAC_Update(hCtx, (BYTE*)input.c_str(), input.size());
     HMAC_Final(hCtx, buffer, &finalSize);
     HMAC_CTX_free(hCtx);
@@ -149,9 +149,9 @@ public:
         EVP_CIPHER_CTX_set_padding(mCtx, pading);
     }
     std::string Update(const std::string& data) {
-        BYTE* out = new BYTE[data.size() + EVP_MAX_BLOCK_LENGTH];
-        int outSize = data.size() + EVP_MAX_BLOCK_LENGTH;
-        EVP_CipherUpdate(mCtx, out, &outSize, (const BYTE*)data.c_str(), data.size());
+        BYTE* out = new BYTE[(int)data.size() + EVP_MAX_BLOCK_LENGTH];
+        int outSize = (int)data.size() + EVP_MAX_BLOCK_LENGTH;
+        EVP_CipherUpdate(mCtx, out, &outSize, (const BYTE*)data.c_str(), (int)data.size());
         std::string ret = "";
         ret.assign((char*)out, outSize);
         delete[] out;

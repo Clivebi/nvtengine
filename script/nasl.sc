@@ -211,7 +211,7 @@ func safe_checks(){
 }
 
 func set_kb_item(name, value){
-	#Println(name,"-->",value);
+	Println(name,"-->",value);
 	return ova_set_kb_item(name,value);
 }
 

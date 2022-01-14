@@ -42,7 +42,9 @@ Value USleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_INTEGER(0);
 #ifdef _WIN32
-    Sleep((DWORD)args[0].Integer);
+    DWORD nValue = (DWORD)args[0].Integer;
+    nValue = nValue * 1000 / 1000000;
+    Sleep(nValue);
 #else
     usleep(args[0].Integer);
 #endif

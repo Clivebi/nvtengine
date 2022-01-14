@@ -11,12 +11,12 @@
 
 std::wstring  A2W(std::string src, UINT codepage = CP_UTF8) {
     std::wstring return_value(L"");
-    int len = MultiByteToWideChar(codepage, 0, src.c_str(), src.size(), NULL, 0);
+    int len = MultiByteToWideChar(codepage, 0, src.c_str(), (int)src.size(), NULL, 0);
     if (len <= 0) {
         return return_value;
     }
     WCHAR* buffer = new WCHAR[len + 1];
-    MultiByteToWideChar(codepage, 0, src.c_str(), src.size(), buffer, len);
+    MultiByteToWideChar(codepage, 0, src.c_str(), (int)src.size(), buffer, len);
     buffer[len] = '\0';
     return_value.append(buffer);
     delete[] buffer;
@@ -25,12 +25,12 @@ std::wstring  A2W(std::string src, UINT codepage = CP_UTF8) {
 
 std::string W2A(std::wstring src, UINT codepage = CP_ACP) {
     std::string return_value("");
-    int len = WideCharToMultiByte(codepage, 0, src.c_str(), src.size(), NULL, 0, NULL, NULL);
+    int len = WideCharToMultiByte(codepage, 0, src.c_str(), (int)src.size(), NULL, 0, NULL, NULL);
     if (len <= 0) {
         return return_value;
     }
     char* buffer = new char[len + 1];
-    WideCharToMultiByte(codepage, 0, src.c_str(), src.size(), buffer, len, NULL, NULL);
+    WideCharToMultiByte(codepage, 0, src.c_str(), (int)src.size(), buffer, len, NULL, NULL);
     buffer[len] = '\0';
 
     return_value.append(buffer);
@@ -69,7 +69,7 @@ public:
             WSManSetSessionOption(mSession, WSMAN_OPTION_DEFAULT_OPERATION_TIMEOUTMS, &data);
             data.type = WSMAN_DATA_TYPE_TEXT;
             data.text.buffer = L"en-US";
-            data.text.bufferLength = wcslen(L"en-US");
+            data.text.bufferLength = (DWORD)wcslen(L"en-US");
             WSManSetSessionOption(mSession, WSMAN_OPTION_LOCALE, &data);
             WSManSetSessionOption(mSession, WSMAN_OPTION_UI_LANGUAGE, &data);
         }

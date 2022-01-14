@@ -180,17 +180,35 @@ pixie_cpu_get_count(void)
 #endif
 }
 
+
+#ifdef _WIN32
+struct _win_thread_arg {
+    void (*routine)(void*);
+    void* arg;
+};
+VOID CALLBACK _win_thread_proxy(void* arg) {
+    struct _win_thread_arg* pArg = (struct _win_thread_arg*)arg;
+    pArg->routine(pArg->arg);
+    free(pArg);
+}
+#endif
+
 /****************************************************************************
  ****************************************************************************/
-size_t
-pixie_begin_thread(
+thread_type pixie_begin_thread(
     void (*worker_thread)(void*),
     unsigned flags,
     void *worker_data)
 {
 #if defined(_WIN32)
     UNUSEDPARM(flags);
-    return _beginthread(worker_thread, 0, worker_data);
+    struct _win_thread_arg* pArg = (struct _win_thread_arg*)malloc(sizeof(struct _win_thread_arg));
+    if (pArg == NULL) {
+        return 0;
+    }
+    pArg->routine = worker_thread;
+    pArg->arg = worker_data;
+    return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)_win_thread_proxy, pArg, 0, NULL);
 #else
     typedef void *(*PTHREADFUNC)(void*);
     pthread_t thread_id = 0;
@@ -205,8 +223,7 @@ pixie_begin_thread(
 
 /****************************************************************************
  ****************************************************************************/
-void pixie_thread_join(size_t thread_handle)
-{
+void pixie_thread_join(thread_type thread_handle) {
 #if defined(_WIN32)
     WaitForSingleObject((HANDLE)thread_handle, INFINITE);
     CloseHandle((HANDLE)thread_handle);

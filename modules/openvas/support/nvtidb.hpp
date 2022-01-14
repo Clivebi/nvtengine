@@ -32,7 +32,7 @@ public:
         std::string sql, blob, oid, filename;
         sql = "INSERT OR REPLACE INTO nvti(oid,file,value) VALUES(?,?,?)";
         if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
-            throw std::runtime_error("NVTIDataBase::UpdateOne sql error");
+            throw std::runtime_error("sqlite3_prepare_v2 sql error");
         }
         auto iter = newVal.Array()->_array.begin();
         while (iter != newVal.Array()->_array.end()) {

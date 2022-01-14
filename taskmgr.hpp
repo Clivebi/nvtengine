@@ -105,7 +105,7 @@ class HostsTask {
 protected:
     friend class DetectServiceCallback;
     struct TCB {
-        size_t ThreadHandle;
+        thread_type ThreadHandle;
         std::string Host;
         bool Exit;
         HostsTask* Task;
@@ -127,11 +127,11 @@ protected:
 
     FileIO* mIO;
     Value mPrefs;
-    int mScriptCount;
+    size_t mScriptCount;
     std::string mHosts;
     std::string mPorts;
     std::string mTaskID;
-    size_t mMainThread;
+    thread_type mMainThread;
     ScriptCacheImplement mScriptCache;
 
     std::list<TCB*> mTCBGroup;

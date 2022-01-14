@@ -33,8 +33,13 @@ public:
     static void SetBlock(int socket, int on) {
      
         #ifdef _WIN32  
-        unsigned long flags = on;
-        flags = ioctlsocket(socket, FIONBIO, &flags);
+        unsigned long flags;
+        if (on) {
+            flags = 0;
+        } else {
+            flags = 1;
+        }
+        ioctlsocket(socket, FIONBIO, &flags);
         #else
         int flags = on;
         flags = fcntl(socket, F_GETFL, 0);
@@ -86,9 +91,17 @@ public:
         if (error == 0) {
             return 0;
         }
-        if (error == -1 && errno != EINPROGRESS) {
+        #ifdef _WIN32
+        if (error == -1 && WSAGetLastError() != WSAEWOULDBLOCK) {
+            LOG_ERROR("connect error :", WSAGetLastError());
             return error;
         }
+        #else
+        if (error == -1 && errno != EINPROGRESS) {
+            LOG_ERROR("connect error :", errno);
+            return error;
+        }
+        #endif
         fd_set fdwrite;
         struct timeval tvSelect;
         FD_ZERO(&fdwrite);

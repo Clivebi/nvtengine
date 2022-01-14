@@ -56,7 +56,7 @@ handle_udp(struct HostScanTask* task, time_t timestamp,
         const unsigned char *px, unsigned length, 
         struct PreprocessedInfo *parsed, uint64_t entropy)
 {
-    ipaddress ip_them = parsed->src_ip;
+    //ipaddress ip_them = parsed->src_ip;
     unsigned port_them = parsed->port_src;
     unsigned status = 0;
 
