@@ -45,7 +45,11 @@ Value GetTimeOfDay(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (gettimeofday(&t, NULL) < 0) {
         return "";
     }
-    sprintf_s(str,64, "%u.%06u", (unsigned int)t.tv_sec, (unsigned int)t.tv_usec);
+#ifdef _WIN32
+    sprintf_s(str, 64, "%u.%06u", (unsigned int)t.tv_sec, (unsigned int)t.tv_usec);
+#else
+    snprintf(str, 64, "%u.%06u", (unsigned int)t.tv_sec, (unsigned int)t.tv_usec);
+#endif
     return str;
 }
 
@@ -54,7 +58,7 @@ Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size()) {
         t = args[0].ToInteger();
     }
-    #ifdef _WIN32
+#ifdef _WIN32
     struct tm d = {0};
     localtime_s(&d, &t);
     Value ret = Value::MakeMap();
@@ -67,7 +71,7 @@ Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     ret["wday"] = d.tm_wday;
     ret["yday"] = d.tm_yday;
     ret["isdst"] = d.tm_isdst;
-    #else
+#else
     struct tm* ptm;
     ptm = localtime(&t);
     Value ret = Value::MakeMap();
@@ -80,7 +84,7 @@ Value LocalTime(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     ret["wday"] = ptm->tm_wday;
     ret["yday"] = ptm->tm_yday;
     ret["isdst"] = ptm->tm_isdst;
-    #endif
+#endif
     return ret;
 }
 
@@ -127,7 +131,7 @@ static void epoch2isotime(my_isotime_t timebuf, time_t atime) {
     if (atime == (time_t)(-1))
         *timebuf = 0;
     else {
-        #ifdef _WIN32
+#ifdef _WIN32
         struct tm d = {0};
         gmtime_s(&d, &atime);
         if (snprintf(timebuf, ISOTIME_SIZE, "%04d%02d%02dT%02d%02d%02d", 1900 + d.tm_year,
@@ -135,7 +139,7 @@ static void epoch2isotime(my_isotime_t timebuf, time_t atime) {
             *timebuf = '\0';
             return;
         }
-        #else
+#else
         struct tm* tp;
 
         tp = gmtime(&atime);
@@ -144,7 +148,7 @@ static void epoch2isotime(my_isotime_t timebuf, time_t atime) {
             *timebuf = '\0';
             return;
         }
-        #endif
+#endif
     }
 }
 
@@ -519,7 +523,11 @@ Value ISOTimePrint(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     const char* string = args[0].text.c_str();
     char helpbuf[20];
     if (args[0].Length() < 15 || check_isotime(string)) {
-        strcpy_s(helpbuf,20, "[none]");
+#ifdef _WIN32
+        strcpy_s(helpbuf, 20, "[none]");
+#else
+        strcpy(helpbuf, "[none]");
+#endif
     } else {
         //2021-06-01 01:16:03
         snprintf(helpbuf, sizeof(helpbuf), "%.4s-%.2s-%.2s %.2s:%.2s:%.2s", string, string + 4,

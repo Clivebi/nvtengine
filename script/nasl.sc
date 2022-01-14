@@ -1150,15 +1150,6 @@ func plugin_run_openvas_tcp_scanner(){
 
 #wmi support
 
-func _filter_item(item,keys){
-    var ret = {};
-    for v in keys{
-        ret[v] = item[v];
-    }
-    ret["Properties"] = item["Properties"];
-    return ret;
-}
-
 func _split_keys_from_query_string(query){
     query = TrimString(query,"\t ");
     var index = IndexString(query," ");
@@ -1175,6 +1166,9 @@ func _split_keys_from_query_string(query){
     }
     query = query[:index];
     query = TrimString(query," \t");
+    if(ContainsBytes(query,"*")){
+        return "";
+    }
     var list = SplitString(query,",");
     var keys =[];
     for v in list{
@@ -1184,13 +1178,17 @@ func _split_keys_from_query_string(query){
 }
 
 # "root\rsop\computer"
+# Get-WmiObject -Query {SELECT Name from Win32_Processor}| Format-List -Property *
 func WMIQuery(handle,query,namespace=nil){
     var cmd = "Get-WmiObject -Query {"+query+"}"+"| Format-List -Property *";
     if(namespace){
         cmd = "Get-WmiObject -Query {"+query+"}"+" -Namespace "+namespace+" | Format-List -Property *";
     }
     var result = WinRMCommand(handle,cmd,"",true);
-    var temp = [];
+    var ret = [];
+    if (result == nil){
+        return nil;
+    }
     if (result.ExitCode != 0 || len(result.StdErr) > 0){
         Println(result);
         return nil;
@@ -1215,7 +1213,7 @@ func WMIQuery(handle,query,namespace=nil){
         value = TrimString(value,"\r\n\t ");
         if(key=="PSComputerName"){
             if(len(item)){
-                temp = append(temp,item);
+                ret = append(ret,item);
                 item = {};
             }
             continue;
@@ -1225,15 +1223,8 @@ func WMIQuery(handle,query,namespace=nil){
         }
         item[key] = value;
     }
-    temp = append(temp,item);
-    var ret = [];
-    for v in temp{
-        var pros = TrimString(v["Properties"],"{}");
-        if(!ContainsBytes(pros,"...")){
-            ret = append(ret,_filter_item(v,SplitString(pros,", ")));
-        }else{
-            ret = append(ret,v);
-        }
+    if(len(item)){
+        ret = append(ret,item);
     }
     return ret;
 }
@@ -1282,18 +1273,14 @@ func wmi_connect_reg(host="",username,password){
 
 func wmi_query(handle,query,namespace=nil){
     var result = WMIQuery(handle,query,namespace);
-    if(len(result)==0){
+    if(result == nil || len(result)==0){
         return "";
     }
-    var pros = TrimString(result[0]["Properties"],"{}");
-    var keys = [];
-    if(!ContainsBytes(pros,"...")){
-        keys = _split_keys_from_query_string(query);
-    }else{
-        if (len(result)) {
-            for k,v in result[0]{
-                keys = append(keys,k);
-            }
+    var keys = _split_keys_from_query_string(query);
+    if(len(keys) ==0){
+        keys = [];
+        for k,v in result[0]{
+            keys = append(keys,k);
         }
     }
     var pts = "";

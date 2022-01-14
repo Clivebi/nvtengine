@@ -335,7 +335,11 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         char buffer[6] = {0};
         for (int j = 0; j < 16; j++, i++) {
             if (i < n) {
-                sprintf_s(buffer,6, "%02X ", (BYTE)src[i]);
+#ifdef _WIN32
+                sprintf_s(buffer, 6, "%02X ", (BYTE)src[i]);
+#else
+                snprintf(buffer, 6, "%02X ", (BYTE)src[i]);
+#endif
                 hex += buffer;
                 if (isprint(src[i])) {
                     str += (char)src[i];
@@ -360,7 +364,7 @@ Value CopyBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_BYTES(0);
     CHECK_PARAMETER_STRING_OR_BYTES(1);
     std::string src = GetString(args, 1);
-    args[0].bytesView.CopyFrom(src.c_str(),src.size());
+    args[0].bytesView.CopyFrom(src.c_str(), src.size());
     return args[0];
 }
 

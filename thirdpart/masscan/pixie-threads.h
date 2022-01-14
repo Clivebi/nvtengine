@@ -20,6 +20,7 @@ unsigned pixie_cpu_get_count(void);
 #ifdef _WIN32
 #define thread_type void*
 #else
+#define thread_type size_t
 #endif
 
 thread_type pixie_begin_thread(void (*worker_thread)(void*),
