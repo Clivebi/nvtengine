@@ -331,7 +331,7 @@ static int initialize_task_adapter(struct HostScanTask* task) {
 
 struct HostScanTask* init_host_scan_task(const char* targets, const char* port_list,
                                          unsigned is_arp, unsigned is_icmp, const char* ifname,
-                                         struct ARPItem* arp_table, unsigned arp_table_size) {
+                                         struct ARPItem* arp_table, unsigned arp_table_size,unsigned rate) {
     time_t now = time(0);
     struct HostScanTask* task = MALLOC(sizeof(struct HostScanTask));
     memset(task, 0, sizeof(struct HostScanTask));
@@ -354,7 +354,7 @@ struct HostScanTask* init_host_scan_task(const char* targets, const char* port_l
     task->range_ipv6 = task->count_ipv6 * rangelist_count(&task->targets.ports);
     task->total_count = (task->range + task->range_ipv6) * task->retries;
     task->send_count = 0;
-    task->rate = 1000;
+    task->rate = rate;
     if (task->total_count == 0) {
         free(task);
         return NULL;
@@ -602,7 +602,7 @@ static void recv_thread(struct HostScanTask* task) {
             }
             continue;
         case FOUND_ARP:
-            LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
+            //LOGip(2, ip_them, 0, "-> ARP [%u] \n", px[parsed.found_offset]);
 
             switch (parsed.opcode) {
             case 1: /* request */
@@ -859,7 +859,7 @@ struct ARPItem* resolve_mac_address(const char* host, unsigned* item, unsigned t
     struct ARPItem* arp_array = NULL;
     address.version = 4;
     struct HostScanResult* seek = NULL;
-    struct HostScanTask* task = init_host_scan_task(host, "", true, false, "", NULL, 0);
+    struct HostScanTask* task = init_host_scan_task(host, "", true, false, "", NULL, 0,50);
     start_host_scan_task(task);
     while (!task->send_done) {
         pixie_mssleep(250);

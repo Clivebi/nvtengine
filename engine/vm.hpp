@@ -18,9 +18,10 @@ typedef struct _BuiltinMethod {
     RUNTIME_FUNCTION func;
 } BuiltinMethod;
 
+#define SHARED_SCRIPT_BASE (0x80000000)
 class ScriptCache {
 public:
-    virtual void OnNewScript(scoped_refptr<Script> Script) = 0;
+    virtual bool OnNewScript(scoped_refptr<Script> Script) = 0;
     virtual scoped_refptr<const Script> GetScriptFromName(const char* name) = 0;
 };
 
@@ -76,7 +77,7 @@ protected:
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);
-    Value ConvertNil(Value index,VMContext* ctx);
+    Value ConvertNil(Value index, VMContext* ctx);
     Value ExecuteReadObjectVar(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateMap(const Instruction* ins, VMContext* ctx);
     Value ExecuteCreateArray(const Instruction* ins, VMContext* ctx);
@@ -111,12 +112,21 @@ protected:
     std::vector<Value> InstructionToValue(std::vector<const Instruction*> ins, VMContext* ctx);
     std::vector<Value> ObjectPathToIndexer(const Instruction* ins, VMContext* ctx);
 
+    void Reset() {
+        mCurrentVMContxt = NULL;
+        mScripts.clear();
+        mSharedScripts.clear();
+    }
+
 protected:
     void* mContext;
     VMContext* mCurrentVMContxt;
     ExecutorCallback* mCallback;
     ScriptCache* mCacheProvider;
-    std::list<scoped_refptr<const Script>> mScriptList;
+    std::list<scoped_refptr<Script>> mScripts;
+    std::list<scoped_refptr<const Script>> mSharedScripts;
     std::map<std::string, RUNTIME_FUNCTION> mBuiltinMethods;
 };
+
+void InitializeLibray();
 } // namespace Interpreter

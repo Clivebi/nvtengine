@@ -6,7 +6,7 @@ using namespace Interpreter;
 #include "script.lex.hpp"
 #include "script.tab.hpp"
 
-#define ALGINTO(a, b) (((a / b) + 1) * b)
+#define ALGINTO(a, b) ((((a) / b) + 1) * b)
 
 #ifdef _DEBUG_MEMORY_BROKEN
 void* operator new(size_t sz) {
@@ -56,7 +56,7 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 namespace Interpreter {
 
 Executor::Executor(ExecutorCallback* callback, void* userContext)
-        : mScriptList(), mCallback(callback), mCacheProvider(NULL) {
+        : mScripts(), mSharedScripts(), mCallback(callback), mCacheProvider(NULL) {
     mContext = userContext;
     RegisgerEngineBuiltinMethod(this);
 }
@@ -64,6 +64,7 @@ Executor::Executor(ExecutorCallback* callback, void* userContext)
 bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
     bool bRet = false;
     std::string error = "";
+    Reset();
     scoped_refptr<const Script> script = LoadScript(name, error);
     if (script == NULL) {
         mCallback->OnScriptError(this, name, error.c_str());
@@ -85,15 +86,16 @@ bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
         mCallback->OnScriptError(this, name, error.c_str());
     }
     mCallback->OnScriptExecuted(this, script, context);
-    mScriptList.clear();
     return bRet;
 }
 
 scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& error) {
+    bool bShared = false;
     if (mCacheProvider != NULL) {
         scoped_refptr<const Script> preview = mCacheProvider->GetScriptFromName(name);
         if (preview != NULL) {
-            mScriptList.push_back(preview);
+            bShared = true;
+            mSharedScripts.push_back(preview);
             return preview;
         }
     }
@@ -102,14 +104,20 @@ scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& 
         return NULL;
     }
     if (mCacheProvider != NULL) {
-        mCacheProvider->OnNewScript(script);
+        if (mCacheProvider->OnNewScript(script)) {
+            mSharedScripts.push_back(script);
+            bShared = true;
+        }
     }
-    if (!script->IsRelocated() && mScriptList.size()) {
-        scoped_refptr<const Script> last = mScriptList.back();
+    if (bShared) {
+        return script;
+    }
+    if (mScripts.size() > 0) {
+        scoped_refptr<const Script> last = mScripts.back();
         script->RelocateInstruction(ALGINTO((last->GetNextInstructionKey() + 1), 1000),
                                     ALGINTO((last->GetNextConstKey() + 1), 1000));
     }
-    mScriptList.push_back(script);
+    mScripts.push_back(script);
     return script;
 }
 
@@ -154,7 +162,12 @@ RUNTIME_FUNCTION Executor::GetBuiltinMethod(const std::string& name) {
 }
 
 void Executor::RequireScript(const std::string& name, VMContext* ctx) {
-    for (auto iter : mScriptList) {
+    for (auto iter : mScripts) {
+        if (iter->Name == name) {
+            return;
+        }
+    }
+    for (auto iter : mSharedScripts) {
         if (iter->Name == name) {
             return;
         }
@@ -181,7 +194,14 @@ Value Executor::GetAvailableFunction(VMContext* ctx) {
 }
 
 const Instruction* Executor::GetInstruction(Instruction::keyType key) {
-    for (auto iter : mScriptList) {
+    if (key >= SHARED_SCRIPT_BASE) {
+        for (auto iter : mSharedScripts) {
+            if (iter->IsContainInstruction(key)) {
+                return iter->GetInstruction(key);
+            }
+        }
+    }
+    for (auto iter : mScripts) {
         if (iter->IsContainInstruction(key)) {
             return iter->GetInstruction(key);
         }
@@ -195,27 +215,39 @@ std::vector<const Instruction*> Executor::GetInstructions(std::vector<Instructio
     if (keys.size() == 0) {
         return std::vector<const Instruction*>();
     }
-    std::list<scoped_refptr<const Script>>::iterator iter = mScriptList.begin();
-    while (iter != mScriptList.end()) {
-        if ((*iter)->IsContainInstruction(keys[0])) {
-            return (*iter)->GetInstructions(keys);
+    if (keys[0] >= SHARED_SCRIPT_BASE) {
+        for (auto iter : mSharedScripts) {
+            if (iter->IsContainInstruction(keys[0])) {
+                return iter->GetInstructions(keys);
+            }
         }
-        iter++;
+    }
+    for (auto iter : mScripts) {
+        if (iter->IsContainInstruction(keys[0])) {
+            return iter->GetInstructions(keys);
+        }
     }
     char buf[16] = {0};
     snprintf(buf, 16, "%08X", keys[0]);
-    throw RuntimeException(std::string("unknown instruction key:") + buf);
+    throw RuntimeException(std::string("unknown instructions first key:") + buf);
 }
 
 Value Executor::GetConstValue(Instruction::keyType key) {
-    std::list<scoped_refptr<const Script>>::iterator iter = mScriptList.begin();
-    while (iter != mScriptList.end()) {
-        if ((*iter)->IsContainConst(key)) {
-            return (*iter)->GetConstValue(key);
+    if (key >= SHARED_SCRIPT_BASE) {
+        for (auto iter : mSharedScripts) {
+            if (iter->IsContainConst(key)) {
+                return iter->GetConstValue(key);
+            }
         }
-        iter++;
     }
-    throw RuntimeException("unknown const key");
+    for (auto iter : mScripts) {
+        if (iter->IsContainConst(key)) {
+            return iter->GetConstValue(key);
+        }
+    }
+    char buf[16] = {0};
+    snprintf(buf, 16, "%08X", key);
+    throw RuntimeException(std::string("unknown const key") + buf);
 }
 
 Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
@@ -1255,6 +1287,12 @@ Value Executor::ExecuteObjectDeclaration(const Instruction* ins, VMContext* ctx)
     creator->Initialzed = false;
     ctx->AddObjectCreator(ins->Name, creator);
     return Value();
+}
+
+void InitializeLibray() {
+#ifdef _DEBUG_SCRIPT
+    VMContext::sTlsIndex = TLS::Allocate();
+#endif
 }
 
 } // namespace Interpreter

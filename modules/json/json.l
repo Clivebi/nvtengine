@@ -12,7 +12,7 @@
 %option yylineno
 %option reentrant
 
-%start STRING_LITERAL_STATE 
+%start STRING_LITERAL_STATE COMMENT
 %%
 <INITIAL>"{"         return LC;
 <INITIAL>"}"         return RC;
@@ -42,6 +42,12 @@
 <INITIAL>\n ;
 <INITIAL>[ \t] ;
 <INITIAL>\r ;
+
+<INITIAL>#     BEGIN COMMENT;
+<COMMENT>\n     {
+    BEGIN INITIAL;
+}
+<COMMENT>.      ;
 
 
 <STRING_LITERAL_STATE>\"        {

@@ -48,6 +48,7 @@ bool ExecuteScript(FilePath path) {
 
 int main(int argc, char* argv[]) {
     masscan_init();
+    InitializeLibray();
     g_LogLevel = LEVEL_DEBUG;
     if (argc > 1) {
         ExecuteScript(argv[1]);

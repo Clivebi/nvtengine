@@ -49,22 +49,25 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
     closedir(dir);
 }
 
-void UpdateNVTIFromLocalFS(std::string Folder, std::string home) {
+void UpdateNVTIFromLocalFS(NVTPref& helper) {
     std::list<std::string> result;
-    StdFileIO IO(Folder);
-    CollectAllScript(Folder, "", result);
+    StdFileIO IO(helper.script_folder());
+    CollectAllScript(helper.script_folder(), "", result);
     Value ret = Value::MakeArray();
+    ScriptCacheImplement cache;
+    DefaultExecutorCallback callback(helper.builtin_script_path(), &IO);
+    callback.mDescription = true;
+    Interpreter::Executor exe(&callback, NULL);
+    RegisgerModulesBuiltinMethod(&exe);
+    exe.SetScriptCacheProvider(&cache);
     for (auto iter : result) {
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
-        DefaultExecutorCallback callback("", &IO);
-        callback.mDescription = true;
-        Interpreter::Executor exe(&callback, &context);
-        RegisgerModulesBuiltinMethod(&exe);
-        bool ok = exe.Execute(iter.c_str(), false);
+        exe.SetUserContext(&context);
+        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning());
         if (ok) {
             ret._array().push_back(context.Nvti);
             if (ret.Length() > 5000) {
-                support::NVTIDataBase db(FilePath(home) + "attributes.db");
+                support::NVTIDataBase db(FilePath(helper.app_data_folder()) + "attributes.db");
                 db.UpdateAll(ret);
                 ret._array().clear();
             }
@@ -74,28 +77,31 @@ void UpdateNVTIFromLocalFS(std::string Folder, std::string home) {
         }
     }
     {
-        support::NVTIDataBase db(FilePath(home) + "attributes.db");
+        support::NVTIDataBase db(FilePath(helper.app_data_folder()) + "attributes.db");
         db.UpdateAll(ret);
         ret._array().clear();
     }
 }
 
-void UpdateNVTIFromVFS(std::string package, std::string home) {
+void UpdateNVTIFromVFS(NVTPref& helper) {
     std::list<std::string> result;
-    VFSFileIO IO(package);
+    VFSFileIO IO(helper.script_package());
     IO.EnumFile(result);
     Value ret = Value::MakeArray();
+    ScriptCacheImplement cache;
+    DefaultExecutorCallback callback(helper.builtin_script_path(), &IO);
+    callback.mDescription = true;
+    Interpreter::Executor exe(&callback, NULL);
+    RegisgerModulesBuiltinMethod(&exe);
+    exe.SetScriptCacheProvider(&cache);
     for (auto iter : result) {
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
-        DefaultExecutorCallback callback("", &IO);
-        callback.mDescription = true;
-        Interpreter::Executor exe(&callback, &context);
-        RegisgerModulesBuiltinMethod(&exe);
-        bool ok = exe.Execute(iter.c_str(), false);
+        exe.SetUserContext(&context);
+        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning());
         if (ok) {
             ret._array().push_back(context.Nvti);
             if (ret.Length() > 5000) {
-                support::NVTIDataBase db(FilePath(home) + "attributes.db");
+                support::NVTIDataBase db(FilePath(helper.app_data_folder()) + "attributes.db");
                 db.UpdateAll(ret);
                 ret._array().clear();
             }
@@ -105,7 +111,7 @@ void UpdateNVTIFromVFS(std::string package, std::string home) {
         }
     }
     {
-        support::NVTIDataBase db(FilePath(home) + "attributes.db");
+        support::NVTIDataBase db(FilePath(helper.app_data_folder()) + "attributes.db");
         db.UpdateAll(ret);
         ret._array().clear();
     }
@@ -119,9 +125,9 @@ void UpdateNVTI(Interpreter::Value& pref) {
         return;
     }
     if (helper.script_package().size()) {
-        UpdateNVTIFromVFS(helper.script_package(), helper.app_data_folder());
+        UpdateNVTIFromVFS(helper);
     } else {
-        UpdateNVTIFromLocalFS(helper.script_folder(), helper.app_data_folder());
+        UpdateNVTIFromLocalFS(helper);
     }
 }
 
@@ -130,6 +136,7 @@ void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::str
     //load from db
     if (option.GetOIDFilter().size()) {
         support::ScanConfig db(FilePath(helper.app_data_folder()) + "scanconfig.db");
+        LOG_DEBUG("load oid list  from database with filter:", option.GetOIDFilter());
         return db.Get(option.GetOIDFilter(), result);
     }
     //load from file
@@ -142,9 +149,11 @@ void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::str
             rule.assign(data, size);
             free(data);
             result = Interpreter::split(rule, ';');
+            LOG_DEBUG("load oid list from ./rule.txt");
             return;
         }
     }
+    LOG_DEBUG("load oid list from builtin list");
     result = Interpreter::split(test_oids, ';');
 }
 
@@ -187,6 +196,8 @@ bool LoadJsonFromFile(std::string path, Interpreter::Value& pref) {
         text.assign((char*)data, length);
         pref = ParseJSON(text, true);
         free(data);
+        LOG_DEBUG("user config on the:", path);
+        LOG_DEBUG("Preferences:", pref.ToJSONString());
         return true;
     }
     return false;
@@ -208,7 +219,16 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
             return true;
         }
     }
-    return LoadJsonFromFile("./nvtengine.conf", pref);
+    if (LoadJsonFromFile("./nvtengine.conf", pref)) {
+        return true;
+    }
+    if (LoadJsonFromFile("./etc/nvtengine.conf", pref)) {
+        return true;
+    }
+    if (LoadJsonFromFile("../etc/nvtengine.conf", pref)) {
+        return true;
+    }
+    return false;
 }
 
 int main(int argc, char* argv[]) {
@@ -216,7 +236,12 @@ int main(int argc, char* argv[]) {
     signal(SIGPIPE, SIG_IGN);
 #endif
     masscan_init();
+    InitializeLibray();
     ParseArgs options(argc, argv);
+    if (!options.IsHaveScanCommand() && !options.IsHaveUpdateNVTDatabaseCommand()) {
+        options.PrintHelp();
+        return -1;
+    }
     std::string configFile = options.GetConfigFile();
     Interpreter::Value pref;
     if (configFile.size() == 0) {
@@ -233,8 +258,10 @@ int main(int argc, char* argv[]) {
     }
     g_LogLevel = NVTPref(pref).log_level();
     if (options.IsHaveScanCommand()) {
+        std::cout << "do scan target command" << std::endl;
         DoNVTTest(pref, options);
     } else if (options.IsHaveUpdateNVTDatabaseCommand()) {
+        std::cout << "do update nvti database command" << std::endl;
         UpdateNVTI(pref);
     } else {
         options.PrintHelp();

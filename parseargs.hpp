@@ -14,6 +14,8 @@ protected:
 public:
     void PrintHelp() {
         std::cout << "NVTEngine [update scan] options" << std::endl;
+        std::cout << "command update \t:update nvti database" << std::endl;
+        std::cout << "command scan \t:scan target" << std::endl;
         std::cout << "options:" << std::endl;
         std::cout << "\t"
                   << "-c "

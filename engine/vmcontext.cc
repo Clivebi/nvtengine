@@ -18,11 +18,14 @@ BuiltinValue g_builtinVar[] = {
 #define COUNT_OF(a) (sizeof(a) / sizeof(a[0]))
 
 #ifdef _DEBUG_SCRIPT
-VMContext* VMContext::sLastContext = NULL;
+size_t VMContext::sTlsIndex = 0;
 
 void DebugContext() {
-    if (VMContext::sLastContext != NULL) {
-        LOG_DEBUG(VMContext::sLastContext->DumpContext(false));
+    if (VMContext::sTlsIndex != 0) {
+        VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
+        if (ptr) {
+            LOG_DEBUG(ptr->DumpContext(false));
+        }
     }
 }
 #endif
@@ -47,13 +50,17 @@ VMContext::VMContext(Type type, VMContext* Parent, int timeout_second, std::stri
     Status::sVMContextCount++;
     LoadBuiltinVar();
 #ifdef _DEBUG_SCRIPT
-    VMContext::sLastContext = this;
+    if (VMContext::sTlsIndex != 0) {
+        TLS::SetValue(VMContext::sTlsIndex, this);
+    }
 #endif
 }
 VMContext::~VMContext() {
     Status::sVMContextCount--;
 #ifdef _DEBUG_SCRIPT
-    VMContext::sLastContext = mParent;
+    if (VMContext::sTlsIndex != 0) {
+        TLS::SetValue(VMContext::sTlsIndex, mParent);
+    }
 #endif
     for (auto iter : mObjectCreator) {
         delete iter.second;

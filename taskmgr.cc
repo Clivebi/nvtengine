@@ -9,6 +9,7 @@ extern "C" {
 #include "modules/modules.h"
 #include "modules/openvas/api.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
+#include "ntvpref.hpp"
 #include "taskmgr.hpp"
 
 HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO)
@@ -18,9 +19,8 @@ HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, FileIO* 
           mPrefs(prefs),
           mMainThread(0),
           mIO(IO),
-          mScriptCache() {
-    masscan_init();
-}
+          mScriptCache(),
+          mTaskCount(0) {}
 
 bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     if (IsRuning()) {
@@ -29,6 +29,7 @@ bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     if (!InitScripts(scripts)) {
         return false;
     }
+    mTaskCount = 0;
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
     mTaskID = TaskID;
     return true;
@@ -39,6 +40,7 @@ void HostsTask::Join() {
 }
 
 void HostsTask::Execute() {
+    NVTPref helper(mPrefs);
     MassIP target = {0};
     massip_add_target_string(&target, mHosts.c_str());
     massip_add_port_string(&target, mPorts.c_str(), 0);
@@ -59,8 +61,9 @@ void HostsTask::Execute() {
     if (bIsNeedARP) {
         arpItem = resolve_mac_address(mHosts.c_str(), &arpItemSize, 15);
     }
-    HostScanTask* task = init_host_scan_task(mHosts.c_str(), mPorts.c_str(), false, false, "",
-                                             arpItem, arpItemSize);
+    HostScanTask* task = init_host_scan_task(mHosts.c_str(), mPorts.c_str(), false, false,
+                                             helper.default_network_interface().c_str(), arpItem,
+                                             arpItemSize, helper.port_scan_send_packet_rate());
     if (task == NULL) {
         LOG_ERROR("init_host_scan_task failed");
         return;
@@ -71,7 +74,9 @@ void HostsTask::Execute() {
     }
     pixie_mssleep(1000 * 10);
     join_host_scan_task(task);
+    LOG_DEBUG("ports scan complete...");
     HostScanResult* seek = task->result;
+    int taskLimit = helper.number_of_concurrent_tasks();
     while (seek != NULL) {
         ipaddress_formatted_t host = ipaddress_fmt(seek->address);
         TCB* tcb = new TCB(host.string);
@@ -137,7 +142,10 @@ void HostsTask::Execute() {
         tcb->Task = this;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
-        //TODO check we can start more task??
+        while (mTaskCount >=taskLimit)
+        {
+            pixie_mssleep(200);
+        }
         seek = seek->next;
     }
     //wait_all_thread_exit
@@ -153,8 +161,9 @@ void HostsTask::Execute() {
 }
 
 void HostsTask::ExecuteOneHost(TCB* tcb) {
+    NVTPref helper(mPrefs);
     LOG_DEBUG("\n", tcb->Host, " start detect service");
-    TCPDetectService(tcb, tcb->TCPPorts, 6);
+    TCPDetectService(tcb, tcb->TCPPorts, helper.service_detection_thread_count());
     LOG_DEBUG(tcb->Host, " detect service complete...");
     if (tcb->Exit) {
         return;
@@ -163,7 +172,8 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
-    DefaultExecutorCallback callback(mPrefs["scripts_folder"].ToString(), mIO);
+    NVTPref helper(mPrefs);
+    DefaultExecutorCallback callback(helper.builtin_script_path(), mIO);
     Interpreter::Executor Engine(&callback, NULL);
     Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
@@ -179,7 +189,8 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             }
             LOG_DEBUG("execute script " + ctx.ScriptFileName);
             Engine.SetUserContext(&ctx);
-            Engine.Execute(ctx.ScriptFileName.c_str(), 120, false);
+            Engine.Execute(ctx.ScriptFileName.c_str(), helper.script_default_timeout_second(),
+                           helper.log_engine_warning());
             if (tcb->Exit) {
                 break;
             }
@@ -187,11 +198,13 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
                 ctx.Fork.Snapshot = ctx.Storage->Clone();
                 ctx.IsForkedTask = true;
                 while (ctx.Fork.PrepareForNextScriptExecute() && !tcb->Exit) {
-                   // LOG_DEBUG("execute forked script " + ctx.ScriptFileName);
+                    // LOG_DEBUG("execute forked script " + ctx.ScriptFileName);
                     for (auto v : ctx.Fork.Names) {
-                   //     LOG_DEBUG("forked value named:", v);
+                        //     LOG_DEBUG("forked value named:", v);
                     }
-                    Engine.Execute(ctx.ScriptFileName.c_str(), 120, false);
+                    Engine.Execute(ctx.ScriptFileName.c_str(),
+                                   helper.script_default_timeout_second(),
+                                   helper.log_engine_warning());
                 }
             }
             tcb->ExecutedScriptCount++;
@@ -202,23 +215,26 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     }
     LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
               " Executed count: ", tcb->ExecutedScriptCount);
-    std::cout << "*********************************************" << std::endl;
+    std::stringstream o;
+    o <<"********"<<tcb->Host<<"*******"<<std::endl;
     Value result = tcb->Storage->GetItemKeys("HostDetails*");
     if (result.IsArray()) {
         for (auto v : result._array()) {
             Value dataList = tcb->Storage->GetItemList(v.ToString());
             if (dataList.IsArray()) {
                 for (auto iter : dataList._array()) {
-                    std::cout << v.ToString() << " :" << iter.ToString() << std::endl;
+                    o << v.ToString() << " :" << iter.ToString() << std::endl;
                 }
             }
         }
     }
+    std::cout << o.str();
 }
 
 bool HostsTask::InitScripts(std::list<std::string>& scripts) {
-    support::NVTIDataBase nvtiDB("attributes.db");
-    support::Prefs prefsDB("prefs.db");
+    NVTPref helper(mPrefs);
+    support::NVTIDataBase nvtiDB(FilePath(helper.app_data_folder()) + "attributes.db");
+    support::Prefs prefsDB(FilePath(helper.app_data_folder()) + "prefs.db");
     std::map<std::string, int> loaded;
     std::list<Value> loadOrder;
     bool loadDep = true;
@@ -407,15 +423,16 @@ public:
 };
 
 void HostsTask::DetectService(DetectServiceParamter* param) {
-    DetectServiceCallback callback(mPrefs["scripts_folder"].ToString(), mIO, param->tcb,
-                                   param->ports);
+    NVTPref helper(mPrefs);
+    DetectServiceCallback callback(helper.builtin_script_path(), mIO, param->tcb, param->ports);
     Interpreter::Executor Engine(&callback, NULL);
     Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
     OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);
     ctx.Host = param->tcb->Host;
     Engine.SetUserContext(&ctx);
-    Engine.Execute(ctx.ScriptFileName.c_str(), false);
+    Engine.Execute(ctx.ScriptFileName.c_str(), helper.script_default_timeout_second(),
+                   helper.log_engine_warning());
     if (param->tcb->Exit) {
         return;
     }

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "script.hpp"
+#include "tls.hpp"
 #include "value.hpp"
 
 namespace Interpreter {
@@ -23,8 +24,7 @@ public:
     };
 #ifdef _DEBUG_SCRIPT
     void DebugContext();
-    static VMContext* sLastContext;
-
+    static size_t sTlsIndex;
 #endif
 
 protected:

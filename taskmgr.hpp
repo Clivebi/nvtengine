@@ -11,9 +11,8 @@
 #include "modules/openvas/support/prefsdb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
 
-
 using namespace Interpreter;
-#define ALGINTO(a, b) (((a / b) + 1) * b)
+#define ALGINTO(a, b) ((((a) / b) + 1) * b)
 class DefaultExecutorCallback : public Interpreter::ExecutorCallback {
 public:
     bool mSyntaxError;
@@ -24,14 +23,14 @@ protected:
     FileIO* mFileIO;
 
 public:
-    DefaultExecutorCallback(FilePath folder, FileIO* IO)
-            : mBuiltinScriptDirectory(folder), mDescription(0), mFileIO(IO) {}
+    DefaultExecutorCallback(FilePath builtin, FileIO* IO)
+            : mBuiltinScriptDirectory(builtin), mDescription(0), mFileIO(IO) {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm,
                              scoped_refptr<const Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {
-        ctx->SetVarValue("description", Value(mDescription));
-        ctx->SetVarValue("COMMAND_LINE", Value(false));
+        ctx->SetVarValue("description", Value(mDescription), true);
+        ctx->SetVarValue("COMMAND_LINE", Value(false), true);
         vm->RequireScript("nasl.sc", ctx);
     }
     virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,
@@ -63,41 +62,46 @@ class ScriptCacheImplement : public ScriptCache {
 protected:
     std::mutex mLock;
     std::map<std::string, scoped_refptr<Script>> mCache;
-    scoped_refptr<Script> mLast;
     Interpreter::Instruction::keyType mNextInsKey;
     Interpreter::Instruction::keyType mNextConstKey;
+    DISALLOW_COPY_AND_ASSIGN(ScriptCacheImplement);
 
 public:
     ScriptCacheImplement()
-            : mLock(), mCache(), mNextInsKey(0x80000000), mNextConstKey(0x80000000), mLast(NULL) {}
-    void OnNewScript(scoped_refptr<Script> Script) {
-        mLock.lock();
+            : mLock(),
+              mCache(),
+              mNextInsKey(SHARED_SCRIPT_BASE),
+              mNextConstKey(SHARED_SCRIPT_BASE) {}
+    bool OnNewScript(scoped_refptr<Script> Script) {
         static const char knownCache[][30] = {
                 "nasl.sc",
                 "http_func.inc.sc",
                 "http_keepalive.inc.sc",
         };
-        for (size_t i = 0; i < sizeof(knownCache) / sizeof(knownCache[1]); i++) {
-            if (knownCache[i] == Script->Name) {
-                Script->RelocateInstruction(mNextInsKey, mNextInsKey);
-                mNextInsKey = ALGINTO(Script->GetNextInstructionKey() + 1, 1000);
-                mNextConstKey = ALGINTO(Script->GetNextConstKey() + 1, 1000);
-                mCache[Script->Name] = Script;
+        bool bRet = false;
+        mLock.lock();
+        auto item = mCache.find(Script->Name);
+        if (item == mCache.end()) {
+            for (size_t i = 0; i < sizeof(knownCache) / sizeof(knownCache[1]); i++) {
+                if (knownCache[i] == Script->Name) {
+                    Script->RelocateInstruction(mNextInsKey, mNextInsKey);
+                    mNextInsKey = ALGINTO(Script->GetNextInstructionKey() + 1, 1000);
+                    mNextConstKey = ALGINTO(Script->GetNextConstKey() + 1, 1000);
+                    mCache[Script->Name] = Script;
+                    LOG_DEBUG("Add Script Cache:", Script->Name);
+                    bRet = true;
+                }
             }
         }
-        mLast = Script;
         mLock.unlock();
+        return bRet;
     }
     scoped_refptr<const Script> GetScriptFromName(const char* name) {
         scoped_refptr<Script> ret = NULL;
         mLock.lock();
-        if (mLast != NULL && mLast->Name == name) {
-            ret = mLast;
-        } else {
-            auto item = mCache.find(name);
-            if (item != mCache.end()) {
-                ret = item->second;
-            }
+        auto item = mCache.find(name);
+        if (item != mCache.end()) {
+            ret = item->second;
         }
         mLock.unlock();
         return ret;
@@ -135,10 +139,12 @@ protected:
     std::string mPorts;
     std::string mTaskID;
     thread_type mMainThread;
+    int mTaskCount;
     ScriptCacheImplement mScriptCache;
 
     std::list<TCB*> mTCBGroup;
     std::list<Value> mGroupedScripts[11];
+    DISALLOW_COPY_AND_ASSIGN(HostsTask);
 
 public:
     HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO);
@@ -159,7 +165,17 @@ protected:
     void ExecuteScriptOnHost(TCB* tcb);
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
+#ifdef _WIN32
+        InterlockedIncrement(&tcb->Task->mTaskCount);
+#else
+        __sync_fetch_and_add(&tcb->Task->mTaskCount, 1);
+#endif
         tcb->Task->ExecuteOneHost(tcb);
+#ifdef _WIN32
+        InterlockedDecrement(&tcb->Task->mTaskCount);
+#else
+        __sync_sub_and_fetch(&tcb->Task->mTaskCount, 1);
+#endif
     }
     static void ExecuteThreadProxy(void* p) {
         HostsTask* ptr = (HostsTask*)p;

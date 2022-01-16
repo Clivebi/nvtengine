@@ -25,4 +25,5 @@ add_library(engine STATIC
     builtin.cc
     utf8.cc
     udobject.cc 
+    tls.cc
 )

@@ -100,7 +100,7 @@ struct HostScanResult* lookup_or_new_host_scan_result(struct HostScanTask* task,
 
 struct HostScanTask* init_host_scan_task(const char* targets, const char* port, unsigned is_arp,
                                          unsigned is_icmp, const char* ifname,
-                                         struct ARPItem* arp_table, unsigned arp_table_size);
+                                         struct ARPItem* arp_table, unsigned arp_table_size,unsigned rate);
 
 void destory_host_scan_task(struct HostScanTask* task);
 
