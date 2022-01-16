@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static int global_debug_level = 6; /* yea! a global variable!! */
+static int global_debug_level = 0; /* yea! a global variable!! */
 void LOG_add_level(int x)
 {
     global_debug_level += x;

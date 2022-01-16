@@ -5,10 +5,14 @@
     "service_detection_thread_count":6,
     "default_network_interface":"",
     "log_level":2,
-    "log_parse_script_progress":false,
-    "log_engine_warning":true,
-    "tcp_connect_timeout_second":5, 
-    "trace_object_storage":false,
+    "log_engine_warning":1,
+    "tcp_connect_timeout_second":15, 
+    "tcp_read_write_timeout_second":15, 
+    "trace_object_storage":0,
     "script_log_format":"json",
-    "host_details_format":"json"
+    "host_details_format":"json",
+    "script_package":"",
+    "script_folder":"",
+    "app_data_folder":"",
+    "builtin_script_path":""
 }

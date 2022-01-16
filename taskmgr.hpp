@@ -11,6 +11,7 @@
 #include "modules/openvas/support/prefsdb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
 
+
 using namespace Interpreter;
 #define ALGINTO(a, b) (((a / b) + 1) * b)
 class DefaultExecutorCallback : public Interpreter::ExecutorCallback {
@@ -19,12 +20,12 @@ public:
     bool mDescription;
 
 protected:
-    FilePath mFolder;
-    FileIO* mIO;
+    FilePath mBuiltinScriptDirectory;
+    FileIO* mFileIO;
 
 public:
     DefaultExecutorCallback(FilePath folder, FileIO* IO)
-            : mFolder(folder), mDescription(0), mIO(IO) {}
+            : mBuiltinScriptDirectory(folder), mDescription(0), mFileIO(IO) {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm,
                              scoped_refptr<const Interpreter::Script> Script,
@@ -39,13 +40,10 @@ public:
                           scoped_refptr<const Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
-        std::string path = (mFolder + FilePath(name));
         if (std::string(name) == "nasl.sc" || std::string(name) == "servicedetect.sc") {
-            path = "../script/" + std::string(name);
+            return LoadBuiltinScriptFile(name, size);
         }
-        FileIO io;
-        void* ptr = io.Read(path, size);
-        return ptr;
+        return mFileIO->Read(name, size);
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
         std::string error = msg;
@@ -53,6 +51,11 @@ public:
             mSyntaxError = true;
         }
         LOG_ERROR(std::string(name) + " " + msg);
+    }
+
+    void* LoadBuiltinScriptFile(std::string name, size_t& size) {
+        StdFileIO io(mBuiltinScriptDirectory);
+        return io.Read(name, size);
     }
 };
 

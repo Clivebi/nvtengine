@@ -14,10 +14,10 @@ extern "C" {
 
 class InterpreterExecutorCallback : public Interpreter::ExecutorCallback {
 protected:
-    FilePath mFolder;
+    StdFileIO IO;
 
 public:
-    InterpreterExecutorCallback(FilePath folder) : mFolder(folder) {}
+    InterpreterExecutorCallback(FilePath folder) : IO(folder) {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm,
                              scoped_refptr<const Interpreter::Script> Script,
@@ -27,9 +27,7 @@ public:
                           Interpreter::VMContext* ctx) {}
     void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {}
     void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
-        std::string path = (mFolder + FilePath(name));
-        FileIO io;
-        void* ptr = io.Read(path, size);
+        void* ptr = IO.Read(name, size);
         return ptr;
     }
     void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {

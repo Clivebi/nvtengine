@@ -76,6 +76,7 @@ add_executable(NVTEngine
     nvtengine.cc 
     taskmgr.cc
     modules/module.cc
+    vfs/vfsreader.c
 )
 
 add_executable(Interpreter
