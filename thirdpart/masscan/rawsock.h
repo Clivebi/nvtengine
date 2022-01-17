@@ -74,6 +74,7 @@ rawsock_send_probe_ipv4(
 
 void
 rawsock_send_probe_ipv6(
+    struct HostScanTask* task,
     struct Adapter *adapter,
     ipv6address ip_them, unsigned port_them,
     ipv6address ip_me, unsigned port_me,

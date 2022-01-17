@@ -7,6 +7,7 @@
 #include "../engine/check.hpp"
 #include "net/dial.hpp"
 #include "thirdpart/http-parser/http_parser.h"
+#include "streamsearch.hpp"
 using namespace Interpreter;
 
 struct HeaderValue {
@@ -219,24 +220,6 @@ bool BrotliDecompress(std::string& src, std::string& out) {
     return result == BROTLI_DECODER_RESULT_SUCCESS;
 }
 
-struct StreamSearch {
-    std::string keyword;
-    int pos;
-    StreamSearch(const char* key) : keyword(key), pos(0) {}
-    int process(const char* buf, int size) {
-        for (int i = 0; i < size; i++) {
-            if (keyword[pos] != buf[i]) {
-                pos = 0;
-                continue;
-            }
-            pos++;
-            if (pos == keyword.size()) {
-                return i;
-            }
-        }
-        return 0;
-    }
-};
 
 bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     StreamSearch search("\r\n\r\n");

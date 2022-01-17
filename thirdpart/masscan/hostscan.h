@@ -28,10 +28,6 @@ struct ARPItem {
 };
 
 struct HostScanResult {
-    unsigned res_alive : 1;
-    unsigned res_mac : 1;
-    unsigned res_tcp : 1;
-    unsigned res_udp : 1;
     ipaddress address;
     macaddress_t mac_address;
 

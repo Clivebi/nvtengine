@@ -12,6 +12,8 @@ namespace Interpreter {
 #ifdef _DEBUG_SCRIPT
 void DebugContext();
 
+void GlobalShortStack();
+
 #endif
 
 class VMContext : public CRefCountedThreadSafe<VMContext> {

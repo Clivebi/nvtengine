@@ -2,8 +2,10 @@
 #include <array>
 
 #include "../engine/check.hpp"
+#include "../engine/funcpref.hpp"
 #include "./net/dial.hpp"
 #include "./net/tcp.hpp"
+#include "streamsearch.hpp"
 using namespace Interpreter;
 Value TCPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(4);
@@ -25,6 +27,7 @@ Value UDPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string port = GetString(args, 1);
     Resource* res = net::Dial("udp", host, port, 0, 0, false);
     if (res == NULL) {
+        LOG_ERROR("Connect Error:", host, ":", port);
         return Value();
     }
     return Value(res);
@@ -47,8 +50,8 @@ Value ConnRead(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         delete[] buffer;
         return Value();
     }
-    std::string ret= "";
-    ret.append((char*)buffer,size);
+    std::string ret = "";
+    ret.append((char*)buffer, size);
     delete[] buffer;
     return ret;
 }
@@ -92,7 +95,7 @@ Value ConnWrite(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 Value ConnReadUntil(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
     CHECK_PARAMETER_RESOURCE(0);
-    std::string deadText = GetString(args, 1);
+    StreamSearch search(GetString(args, 1).c_str());
     int limit = GetInt(args, 2, 0);
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("ConnReadUntil resource type mismatch");
@@ -103,22 +106,16 @@ Value ConnReadUntil(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         limit = 4 * 1024 * 1024;
     }
     char buffer[2];
-    std::string& key = deadText;
     while (true) {
         int size = con->Read(buffer, 1);
         if (size != 1) {
             return Value();
         }
         cache += buffer[0];
-        if (buffer[0] == key.back()) {
-            if (cache.size() >= key.size()) {
-                if (!strncmp(cache.c_str() + (cache.size() - key.size()), key.c_str(),
-                             key.size())) {
-                    return cache;
-                }
-            }
+        if (search.process(buffer, 1)) {
+            return cache;
         }
-        if (cache.size() >(size_t) limit) {
+        if (cache.size() > (size_t)limit) {
             return cache;
         }
     }

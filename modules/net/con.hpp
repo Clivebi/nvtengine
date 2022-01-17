@@ -51,8 +51,8 @@ public:
     }
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
-            LOG_DEBUG("BaseConn read timeout:", mReadTimeout);
             UpdateLastError();
+            LOG_DEBUG("BaseConn read timeout:", mReadTimeout);
             return -1;
         }
         #ifdef _WIN32

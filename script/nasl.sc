@@ -198,6 +198,18 @@ func NASLTypeof(name){
 	return result;
 }
 
+func get_default_connect_timeout(){
+    return get_preference("tcp_connect_timeout_second");
+}
+
+func get_default_read_write_timeout(){
+    return get_preference("tcp_read_write_timeout_second");
+}
+
+func is_trace_object_storage_opend(){
+    return get_preference("trace_object_storage");
+}
+
 func script_tag(name, value){
 	return ova_script_tag(name,value);
 }
@@ -211,7 +223,9 @@ func safe_checks(){
 }
 
 func set_kb_item(name, value){
-	#Println(name,"-->",value);
+    if(is_trace_object_storage_opend()){
+        Println("object storage trace:",name,"-->",value);
+    }
 	return ova_set_kb_item(name,value);
 }
 
@@ -325,6 +339,9 @@ func recv_line(socket,length){
 
 
 func recv(socket,length,timeout,min){
+    if(length == 0&&min==0){
+        return "";
+    }
 	var ret = ova_recv(socket,length,timeout,min);
 	if(typeof(ret)=="bytes"){
 		return string(ret);
@@ -357,7 +374,7 @@ func script_get_preference_file_content(name,id=-1){
 #open_sock_tcp(port, transport: ENCAPS_IP)
 func open_sock_tcp(port,buffsz=nil,timeout=nil, transport=nil,priority=0){
 	if(!timeout){
-		timeout = 15;
+		timeout = get_default_connect_timeout();
 	}
 	var isTLS = false;
 	if(transport == nil){
@@ -368,8 +385,8 @@ func open_sock_tcp(port,buffsz=nil,timeout=nil, transport=nil,priority=0){
 	#Println(get_host_ip(),port,timeout,isTLS);
 	var soc = TCPConnect(get_host_ip(),ToInteger(port),timeout,isTLS);
 	if(soc){
-		ConnSetReadTimeout(soc,5);
-		ConnSetWriteTimeout(soc,5);
+		ConnSetReadTimeout(soc,get_default_read_write_timeout());
+		ConnSetWriteTimeout(soc,get_default_read_write_timeout());
 	}
 	return soc;
 }
@@ -424,13 +441,13 @@ func ssh_connect(socket=nil,keytype="",ip=""){
 		ip = get_host_ip();
 	}
 	if(socket == nil){
-		newSock = TCPConnect(ip,_get_ssh_port(),15,false,false);
+		newSock = TCPConnect(ip,_get_ssh_port(),get_default_connect_timeout(),false,false);
 		socket = newSock;
 	}
 	if(socket == nil){
 		return nil;
 	}
-	var session = SSHConnect(socket,15,ip,keytype,"","");
+	var session = SSHConnect(socket,get_default_connect_timeout(),ip,keytype,"","");
 	if(session == nil){
 		return nil;
 	}
@@ -820,7 +837,7 @@ func split(buffer, sep="\n",keep = -1){
 			list[i]+=sep;
 		}else{
 			if(sep=="\n"){
-				list[i] = TrimRightString(list[i]);
+				list[i] = TrimRightString(list[i],"\r\n");
 			}
 		}
 	}
@@ -835,6 +852,7 @@ func chomp(str){
 }
 
 func int(other){
+    other= ""+other;
 	return ToInteger(other);
 }
 
@@ -1087,7 +1105,7 @@ func get_port_transport(port){
 	}
 	var kb = get_kb_item("Transports/TCP/"+port);
 	if(kb == nil){
-		var soc = TCPConnect(get_host_ip(),ToInteger(port),15,true);
+		var soc = TCPConnect(get_host_ip(),ToInteger(port),get_default_connect_timeout(),true);
 		if(soc != nil){
 			replace_kb_item("Transports/TCP/"+port,ENCAPS_TLSv12);
 			return ENCAPS_TLSv12;
@@ -1104,8 +1122,8 @@ func http_open_socket(port){
 	var isTLS = get_port_transport(port) > 1;
 	var soc = TCPConnect(ip,ToInteger(port),30,isTLS);
 	if(soc){
-		ConnSetReadTimeout(soc,5);
-		ConnSetWriteTimeout(soc,5);
+		ConnSetReadTimeout(soc,get_default_read_write_timeout());
+		ConnSetWriteTimeout(soc,get_default_read_write_timeout());
 	}else{
 		Println("http_open_socket failed :",ip+":"+port);
 	}
@@ -1249,7 +1267,7 @@ func wmi_connect(username,password,ns=nil,host=""){
     if(host == "" || host == nil){
         host = get_host_ip();
     }
-    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",15,true);
+    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",get_default_connect_timeout(),true);
     if(winrm == nil){
         return nil;
     }
@@ -1264,7 +1282,7 @@ func wmi_connect_reg(host="",username,password){
     if(host == "" || host == nil){
         host = get_host_ip();
     }
-    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",15,true);
+    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",get_default_connect_timeout(),true);
     if(winrm == nil){
         return nil;
     }
@@ -1654,7 +1672,7 @@ func win_cmd_exec(host="",username,password,cmd){
     if(host == "" || host == nil){
         host = get_host_ip();
     }
-    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",15,true);
+    var winrm = CreateWinRM(host,5985,username,password,false,true,"","","",get_default_connect_timeout(),true);
     if(winrm == nil){
         return nil;
     }
@@ -2775,15 +2793,15 @@ func forge_igmp_v6_packet(){
 
 }
 
-func send_packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=5,allow_broadcast){
+func send_packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=get_default_read_write_timeout(),allow_broadcast){
     return PcapSend(packet,pcap_filter,pcap_timeout,pcap_active);
 }
 
-func send_v6packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=5,allow_broadcast){
+func send_v6packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=get_default_read_write_timeout(),allow_broadcast){
     return PcapSend(packet,pcap_filter,pcap_timeout,pcap_active);
 }
 
-func pcap_next(interface="",pcap_filter="",timeout=5){
+func pcap_next(interface="",pcap_filter="",timeout=get_default_read_write_timeout()){
     return CapturePacket(interface,pcap_filter,timeout);
 }
 

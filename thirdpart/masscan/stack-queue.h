@@ -45,4 +45,7 @@ stack_flush_packets(
 struct queue_stack *
 stack_create(macaddress_t source_mac, struct stack_src_t *src);
 
+void 
+stack_destory(struct queue_stack *stack);
+
 #endif

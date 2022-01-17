@@ -331,7 +331,8 @@ static int initialize_task_adapter(struct HostScanTask* task) {
 
 struct HostScanTask* init_host_scan_task(const char* targets, const char* port_list,
                                          unsigned is_arp, unsigned is_icmp, const char* ifname,
-                                         struct ARPItem* arp_table, unsigned arp_table_size,unsigned rate) {
+                                         struct ARPItem* arp_table, unsigned arp_table_size,
+                                         unsigned rate) {
     time_t now = time(0);
     struct HostScanTask* task = MALLOC(sizeof(struct HostScanTask));
     memset(task, 0, sizeof(struct HostScanTask));
@@ -380,9 +381,6 @@ struct HostScanTask* init_host_scan_task(const char* targets, const char* port_l
     }
 
     task->stack = stack_create(task->nic.source_mac, &task->nic.src);
-
-    task->payloads.udp = payloads_udp_create();
-    task->payloads.oproto = payloads_oproto_create();
     static ipv6address mask = {~0ULL, ~0ULL};
 
     task->src_ipv4 = task->nic.src.ipv4.first;
@@ -411,6 +409,7 @@ void destory_host_scan_task(struct HostScanTask* task) {
         return;
     }
     join_host_scan_task(task);
+    stack_destory(task->stack);
     rangelist_remove_all(&task->targets.ipv4);
     rangelist_remove_all(&task->targets.ports);
     range6list_remove_all(&task->targets.ipv6);
@@ -424,6 +423,8 @@ void destory_host_scan_task(struct HostScanTask* task) {
     if (task->arp_table != NULL) {
         free(task->arp_table);
     }
+    payloads_udp_destroy(task->payloads.udp);
+    payloads_udp_destroy(task->payloads.oproto);
     destory_TemplateSet(&task->tmplset[0]);
     free(task);
 }
@@ -440,10 +441,13 @@ void start_host_scan_task(struct HostScanTask* task) {
 
 void join_host_scan_task(struct HostScanTask* task) {
     task->shutdown = true;
-    pixie_thread_join(task->thread_handle_recv);
-    pixie_thread_join(task->thread_handle_send);
+    if (task->thread_handle_send != 0) {
+        pixie_thread_join(task->thread_handle_recv);
+        pixie_thread_join(task->thread_handle_send);
+    }
     task->thread_handle_recv = 0;
     task->thread_handle_send = 0;
+    stack_destory(task->stack);
 }
 
 static unsigned is_ipv6_multicast(ipaddress ip_me) {
@@ -791,8 +795,8 @@ static void send_thread(struct HostScanTask* task) {
 
                     cookie = syn_cookie_ipv6(ip_them, port_them, ip_me, port_me, task->seed);
 
-                    rawsock_send_probe_ipv6(task->nic.adapter, ip_them, port_them, ip_me, port_me,
-                                            (unsigned)cookie,
+                    rawsock_send_probe_ipv6(task, task->nic.adapter, ip_them, port_them, ip_me,
+                                            port_me, (unsigned)cookie,
                                             !batch_size, /* flush queue on last packet in batch */
                                             task->tmplset);
 
@@ -859,7 +863,7 @@ struct ARPItem* resolve_mac_address(const char* host, unsigned* item, unsigned t
     struct ARPItem* arp_array = NULL;
     address.version = 4;
     struct HostScanResult* seek = NULL;
-    struct HostScanTask* task = init_host_scan_task(host, "", true, false, "", NULL, 0,50);
+    struct HostScanTask* task = init_host_scan_task(host, "", true, false, "", NULL, 0, 50);
     start_host_scan_task(task);
     while (!task->send_done) {
         pixie_mssleep(250);

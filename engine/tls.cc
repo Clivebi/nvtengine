@@ -25,6 +25,7 @@ size_t TLS::Allocate() {
     size_t ret = 0;
     s_TlsLock.lock();
     ret = s_TlsSlot.size() + 1;
+    s_TlsSlot[ret] = std::map<pthread_t, void*>();
     s_TlsLock.unlock();
     return ret;
 }
