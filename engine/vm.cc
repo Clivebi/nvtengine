@@ -435,21 +435,21 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         break;
     case Instructions::kuINC:
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer " + ctx->ShortStack());
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer " + ctx->ShortStack());
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer " + ctx->ShortStack());
         }
         Value ret = oldVal;
@@ -1035,21 +1035,21 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         break;
     case Instructions::kuINC:
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         oldVal.Integer++;
         break;
     case Instructions::kuDEC:
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer ");
         }
         oldVal.Integer--;
         break;
     case Instructions::kuINCReturnOld: {
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("++ operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -1060,7 +1060,7 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
 
     case Instructions::kuDECReturnOld: {
         if (!oldVal.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("-- operation only can used on Integer ");
         }
         Value ret = oldVal;
@@ -1101,7 +1101,7 @@ Value Executor::ConvertNil(Value index, VMContext* ctx) {
         return ret;
     }
     if (index.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         LOG_WARNING(
                 "wanring please check auto convert nil to map use a integer key larger than "
                 "4096",
@@ -1258,7 +1258,7 @@ Value Executor::ExecuteNewObject(VMContext::ObjectCreator* creator, const Instru
             std::stringstream o;
             o << "actual:" << actual->ToString() << " Refs.size=" << actual->Refs.size();
             LOG_DEBUG(o.str());
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("initialize " + creator->Name +
                                    " object paramters not invalid " + ctx->ShortStack());
         }

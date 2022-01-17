@@ -61,7 +61,7 @@ Value ToByte(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     Value& arg = args.front();
     if (!arg.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw RuntimeException("only integer can convert to byte");
     }
     return Value((BYTE)arg.Integer);
@@ -110,14 +110,14 @@ Value append(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
                 to.bytesView = to.bytesView + iter->bytesView;
                 break;
             default:
-                DEBUG_CONTEXT();
+                DUMP_CONTEXT();
                 throw RuntimeException(iter->ToDescription() + " can't append to bytes");
             }
             iter++;
         }
         return to;
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     throw RuntimeException("first append value must an array or bytes");
 }
 
@@ -186,11 +186,11 @@ Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     Value& arg = args.front();
     if (!arg.IsString()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw RuntimeException("HexDecodeString parameter must a string");
     }
     if (arg.Length() % 2 || arg.Length() == 0) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw RuntimeException("HexDecodeString string length must be a multiple of 2");
     }
     size_t i = 0;
@@ -200,7 +200,7 @@ Value HexDecodeString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         buf[0] = arg.text[i];
         buf[1] = arg.text[i + 1];
         if (!IsHexChar(buf[0]) || !IsHexChar(buf[1])) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw RuntimeException("HexDecodeString parameter string is not a valid hex string");
         }
         unsigned char val = (BYTE)strtol(buf, NULL, 16);

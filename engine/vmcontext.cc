@@ -20,7 +20,7 @@ BuiltinValue g_builtinVar[] = {
 #ifdef _DEBUG_SCRIPT
 size_t VMContext::sTlsIndex = 0;
 
-void DebugContext() {
+void DumpContext() {
     if (VMContext::sTlsIndex != 0) {
         VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
         if (ptr) {
@@ -28,6 +28,16 @@ void DebugContext() {
         }
     }
 }
+
+void DumpShortStack(){
+    if (VMContext::sTlsIndex != 0) {
+        VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
+        if (ptr) {
+            LOG_DEBUG(ptr->ShortStack());
+        }
+    }
+}
+
 #endif
 
 VMContext::VMContext(Type type, VMContext* Parent, int timeout_second, std::string Name)
@@ -236,7 +246,7 @@ bool VMContext::GetVarValue(const std::string& name, Value& val) {
 Value VMContext::GetVarValue(const std::string& name) {
     Value ret;
     if (!GetVarValue(name, ret)) {
-        //DEBUG_CONTEXT();
+        //DUMP_CONTEXT();
         std::string func;
         IsInFunctionContext(func);
         LOG_DEBUG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);

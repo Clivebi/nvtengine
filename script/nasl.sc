@@ -111,7 +111,9 @@ object NASLArray(hash_table={},vector=[]){
 	func __enum_all__(){
 		var result = [];
 		for k,v in self.vector{
-			result = append(result,{"__key__":k,"__value__":v});
+            if(v != nil){
+                result = append(result,{"__key__":k,"__value__":v});
+            }
 		}
 		for k,v in self.hash_table{
 			for v2 in v{
@@ -2803,6 +2805,10 @@ func send_v6packet(packet,length,pcap_active=true,pcap_filter="",pcap_timeout=ge
 
 func pcap_next(interface="",pcap_filter="",timeout=get_default_read_write_timeout()){
     return CapturePacket(interface,pcap_filter,timeout);
+}
+
+func cgibin(){
+    return "/cgi-bin:/scripts";
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

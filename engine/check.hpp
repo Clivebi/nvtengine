@@ -38,7 +38,7 @@ inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal
 
 #define CHECK_PARAMETER_COUNT(count)                                                    \
     if (args.size() < count) {                                                          \
-        DEBUG_CONTEXT();                                                                \
+        DUMP_CONTEXT();                                                                \
         for (auto v : args) {                                                           \
             std::cerr << v.ToString() << std::endl;                                     \
         }                                                                               \

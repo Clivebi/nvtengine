@@ -1,6 +1,9 @@
 #include "value.hpp"
+
 #include <string.h>
+
 #include <sstream>
+
 #include "utf8.hpp"
 
 namespace Interpreter {
@@ -696,7 +699,7 @@ Value& Value::operator+=(const Value& right) {
         text = result;
         return *this;
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     LOG_ERROR(ToDescription(), right.ToDescription());
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
@@ -875,7 +878,7 @@ size_t Value::Length() const {
     if (IsObject()) {
         return Object()->__length();
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     throw Interpreter::RuntimeException("this value type not have length ");
 }
 bool Value::ToBoolean() const {
@@ -905,37 +908,35 @@ bool Value::ToBoolean() const {
 const Value Value::operator[](const Value& key) const {
     if (IsBytes()) {
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("index of bytes out of range");
         }
         return Value((char)bytesView.GetAt((size_t)key.Integer));
     }
     if (IsString()) {
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= text.size()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("index of string out of range");
         }
         return Value((BYTE)text[(size_t)key.Integer]);
     }
     if (IsArray()) {
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            //LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
-            //          " ) auto extend");
             if (key.Integer > 4096) {
-                throw RuntimeException("index of array out of range ( " + ToString() + "," +
-                                       key.ToString() + " )");
+                DUMP_SHORT_STACK();
+                LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -947,7 +948,7 @@ const Value Value::operator[](const Value& key) const {
     if (IsObject()) {
         return Object()->__get_attr(key);
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     throw Interpreter::RuntimeException("value type <" + ToDescription() +
                                         "> not support index operation");
 }
@@ -955,15 +956,15 @@ const Value Value::operator[](const Value& key) const {
 Value& Value::operator[](const Value& key) {
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
                       " ) auto extend");
             if (key.Integer > 4096) {
-                throw RuntimeException("index of array out of range ( " + ToString() + "," +
-                                       key.ToString() + " )");
+                DUMP_SHORT_STACK();
+                LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -972,7 +973,7 @@ Value& Value::operator[](const Value& key) {
     if (Type == ValueType::kMap) {
         return _map()[key.MapKey()];
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     throw RuntimeException("the value type <" + ToDescription() +
                            "> not have value[index]= val operation");
 }
@@ -984,15 +985,15 @@ Value Value::GetValue(const Value& key) const {
 void Value::SetValue(const Value& key, const Value& val) {
     if (IsBytes()) {
         if (!val.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set the value must a integer");
         }
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= bytesView.Length()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set index of bytes out of range");
         }
         if (val.IsInteger()) {
@@ -1002,15 +1003,15 @@ void Value::SetValue(const Value& key, const Value& val) {
     }
     if (IsString()) {
         if (!val.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set the value must a integer");
         }
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set index of string(bytes) out of range");
         }
         text[(size_t)key.Integer] = val.ToInteger() & 0xFF;
@@ -1018,15 +1019,13 @@ void Value::SetValue(const Value& key, const Value& val) {
     }
     if (Type == ValueType::kArray) {
         if (!key.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("set the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG_DEBUG("set index of array out of range ( " + ToString() + "," + key.ToString() +
-                      " ) auto extend");
             if (key.Integer > 4096) {
-                throw RuntimeException("set index of array out of range ( " + ToString() + "," +
-                                       key.ToString() + " )");
+                DUMP_SHORT_STACK();
+                LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -1041,7 +1040,7 @@ void Value::SetValue(const Value& key, const Value& val) {
         Object()->__set_attr(key, val);
         return;
     }
-    DEBUG_CONTEXT();
+    DUMP_CONTEXT();
     throw RuntimeException("set the value type <" + ToDescription() +
                            "> not have value[index]= val operation");
 }
@@ -1049,7 +1048,7 @@ void Value::SetValue(const Value& key, const Value& val) {
 Value Value::Slice(const Value& f, const Value& t) const {
     size_t from = 0, to = 0;
     if (!(IsBytes() || IsString()) && Type != ValueType::kArray) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("the value type must slice able");
     }
     if (f.Type == ValueType::kNULL) {
@@ -1057,7 +1056,7 @@ Value Value::Slice(const Value& f, const Value& t) const {
     } else if (f.Type == ValueType::kInteger) {
         from = (size_t)f.Integer;
     } else {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");
     }
     if (t.Type == ValueType::kNULL) {
@@ -1065,11 +1064,11 @@ Value Value::Slice(const Value& f, const Value& t) const {
     } else if (t.Type == ValueType::kInteger) {
         to = (size_t)t.Integer;
     } else {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("the index key type must a Integer");
     }
     if (to > Length() || from > Length()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("index out of range");
     }
 
@@ -1105,7 +1104,7 @@ Value operator-(const Value& left, const Value& right) {
         return replace_str(result, right.text, "", 1);
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("- operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1116,7 +1115,7 @@ Value operator-(const Value& left, const Value& right) {
 }
 Value operator*(const Value& left, const Value& right) {
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("* operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1127,7 +1126,7 @@ Value operator*(const Value& left, const Value& right) {
 }
 Value operator/(const Value& left, const Value& right) {
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("/ operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1139,7 +1138,7 @@ Value operator/(const Value& left, const Value& right) {
 
 Value operator%(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("% operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1154,7 +1153,7 @@ bool operator<(const Value& left, const Value& right) {
         return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("< operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1168,7 +1167,7 @@ bool operator<=(const Value& left, const Value& right) {
         return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("<= operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1182,7 +1181,7 @@ bool operator>(const Value& left, const Value& right) {
         return false;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("> operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1196,7 +1195,7 @@ bool operator>=(const Value& left, const Value& right) {
         return true;
     }
     if (!left.IsNumber() || !right.IsNumber()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException(">= operation not avaliable for this value ( " +
                                             left.ToString() + "," + right.ToString() + " )");
     }
@@ -1220,7 +1219,7 @@ bool operator==(const Value& left, const Value& right) {
     }
     if (left.IsString() && right.IsInteger()) {
         if (right.Type != ValueType::kByte) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
                         "<-->", right.ToDescription());
         }
@@ -1229,7 +1228,7 @@ bool operator==(const Value& left, const Value& right) {
     }
     if (right.IsString() && left.IsInteger()) {
         if (left.Type != ValueType::kByte) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
                         "<-->", right.ToDescription());
         }
@@ -1270,7 +1269,7 @@ bool operator!=(const Value& left, const Value& right) {
 
 Value operator|(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("| operation only can used on Integer ");
     }
     return Value(left.Integer | right.Integer);
@@ -1278,28 +1277,28 @@ Value operator|(const Value& left, const Value& right) {
 
 Value operator&(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("& operation only can used on Integer ");
     }
     return Value(left.Integer & right.Integer);
 }
 Value operator^(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("^ operation only can used on Integer ");
     }
     return Value(left.Integer ^ right.Integer);
 }
 Value operator<<(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException("<< operation only can used on Integer ");
     }
     return Value(left.Integer << right.Integer);
 }
 Value operator>>(const Value& left, const Value& right) {
     if (!left.IsInteger() || !right.IsInteger()) {
-        DEBUG_CONTEXT();
+        DUMP_CONTEXT();
         throw Interpreter::RuntimeException(">> operation only can used on Integer ");
     }
     return Value(left.Integer >> right.Integer);

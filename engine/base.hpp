@@ -12,15 +12,17 @@
 #define _DEBUG_SCRIPT
 
 #ifdef _DEBUG_SCRIPT
-#define DEBUG_CONTEXT() Interpreter::DebugContext()
+#define DUMP_CONTEXT() Interpreter::DumpContext()
+#define DUMP_SHORT_STACK() Interpreter::DumpShortStack()
 namespace Interpreter {
-void DebugContext();
+void DumpContext();
+void DumpShortStack();
 }
 
 #else
 
-#define DEBUG_CONTEXT() //
-
+#define DUMP_CONTEXT() //
+#define DUMP_SHORT_STACK //
 #endif
 
 class CRefCountedBase {

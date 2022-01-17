@@ -10,9 +10,9 @@
 namespace Interpreter {
 
 #ifdef _DEBUG_SCRIPT
-void DebugContext();
+void DumpContext();
 
-void GlobalShortStack();
+void DumpShortStack();
 
 #endif
 

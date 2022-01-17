@@ -408,7 +408,7 @@ public:
     Value& operator+=(const Value& right);
     Value& operator-=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("-= must used on integer or float " +
                                                 ToDescription() + "," + right.ToDescription());
         }
@@ -421,7 +421,7 @@ public:
     }
     Value& operator*=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("*= must used on integer or float " +
                                                 ToDescription() + "," + right.ToDescription());
         }
@@ -434,7 +434,7 @@ public:
     }
     Value& operator/=(const Value& right) {
         if (!IsNumber() || !right.IsNumber()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("/= must used on integer or float " +
                                                 ToDescription() + "," + right.ToDescription());
         }
@@ -447,7 +447,7 @@ public:
     }
     Value& operator%=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("%= must used on integer " + ToDescription() + "," +
                                                 right.ToDescription());
         }
@@ -457,7 +457,7 @@ public:
 
     Value& operator>>=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException(">>= must used on integer " + ToDescription() +
                                                 "," + right.ToDescription());
         }
@@ -466,7 +466,7 @@ public:
     }
     Value& operator<<=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException(">>= must used on integer " + ToDescription() +
                                                 "," + right.ToDescription());
         }
@@ -475,7 +475,7 @@ public:
     }
     Value& operator|=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("|= must used on integer " + ToDescription() + "," +
                                                 right.ToDescription());
         }
@@ -484,7 +484,7 @@ public:
     }
     Value& operator&=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("&= must used on integer " + ToDescription() + "," +
                                                 right.ToDescription());
         }
@@ -493,7 +493,7 @@ public:
     }
     Value& operator^=(const Value& right) {
         if (!IsInteger() || !right.IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("^= must used on integer " + ToDescription() + "," +
                                                 right.ToDescription());
         }
@@ -502,7 +502,7 @@ public:
     }
     Value operator~() {
         if (!IsInteger()) {
-            DEBUG_CONTEXT();
+            DUMP_CONTEXT();
             throw Interpreter::RuntimeException("~ must used on integer " + ToDescription());
         }
         return Value(~Integer);
