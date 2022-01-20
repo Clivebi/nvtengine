@@ -8,15 +8,12 @@
             "name": "clang++ - 生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/NVTEngine",
+            //"program": "${workspaceFolder}/build/NVTEngine",
             //scan -h 192.168.4.72 -p 21-1024,5900
-            "args": [
-                "scan",
-                "-h",
-                "192.168.3.24",
-                "-p",
-                "21-1024,5900"
-            ],
+            "program": "${workspaceFolder}/build/Interpreter",
+            //"args": [ "scan","-h", "192.168.3.96","-p", "111,2049,22,3142,34103,52293,55385,59037"],
+            //"args": ["update","-c","${workspaceFolder}/etc/test.conf"],
+            "args": ["../test/test1.sc"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],

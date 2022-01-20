@@ -72,7 +72,7 @@ void HostsTask::Execute() {
     while (!task->send_done) {
         pixie_mssleep(1000);
     }
-    pixie_mssleep(1000 * 10);
+    pixie_mssleep(1000 * 15);
     join_host_scan_task(task);
     LOG_DEBUG("ports scan complete...");
     HostScanResult* seek = task->result;
@@ -142,8 +142,7 @@ void HostsTask::Execute() {
         tcb->Task = this;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
-        while (mTaskCount >=taskLimit)
-        {
+        while (mTaskCount >= taskLimit) {
             pixie_mssleep(200);
         }
         seek = seek->next;
@@ -216,7 +215,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
               " Executed count: ", tcb->ExecutedScriptCount);
     std::stringstream o;
-    o <<"********"<<tcb->Host<<"*******"<<std::endl;
+    o << "********" << tcb->Host << "*******" << std::endl;
     Value result = tcb->Storage->GetItemKeys("HostDetails*");
     if (result.IsArray()) {
         for (auto v : result._array()) {
@@ -355,8 +354,8 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : require_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (val.IsNULL()) {
-                //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                //          " because require key is missing :", v.ToString());
+                LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                          " because require key is missing :", v.ToString());
                 return false;
             }
         }
@@ -364,23 +363,29 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
 
     Value require_ports = nvti[knowntext::kNVTI_require_ports];
     if (require_ports.IsArray()) {
+        bool found = false;
         for (auto v : require_ports._array()) {
-            if (!ctx->IsPortInOpenedRange(v, true)) {
-                //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                //          " because require_ports is missing :", v.ToString());
-                return false;
+            if (ctx->IsPortInOpenedRange(v, true)) {
+                found = true;
             }
+        }
+        if (!found) {
+            LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                      " because not one require tcp port exist ", require_ports.ToString());
+            return false;
         }
     }
 
     Value require_udp_ports = nvti[knowntext::kNVTI_require_udp_ports];
     if (require_udp_ports.IsArray()) {
+        bool found = false;
         for (auto v : require_udp_ports._array()) {
-            if (!ctx->IsPortInOpenedRange(v, false)) {
-                //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                //          " because require_udp_ports is missing :", v.ToString());
-                return false;
-            }
+            found = true;
+        }
+        if (!found) {
+            LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                      " because not one require udp port exist ", require_udp_ports.ToString());
+            return false;
         }
     }
 
@@ -389,8 +394,8 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : exclude_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (!val.IsNULL()) {
-                //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                //          " because exclude_keys is exist :", v.ToString());
+                LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                          " because exclude_keys is exist :", v.ToString());
                 return false;
             }
         }

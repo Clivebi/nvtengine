@@ -1,7 +1,7 @@
 #pragma once
 
 #include <iostream>
-
+#include <sstream>
 #define LEVEL_DEBUG 2
 #define LEVEL_WARNING 1
 #define LEVEL_ERROR 0
@@ -33,31 +33,36 @@ inline std::ostream& LogLevelStream(int level) {
 template <typename T1>
 void Log(int level, std::string where, int line, T1 msg) {
     if (level <= g_LogLevel) {
-        LogLevelStream(level) << LogLevelString(level) << where << ":" << line << "\t" << msg
-                              << std::endl;
+        std::stringstream o;
+        o << LogLevelString(level) << where << ":" << line << "\t" << msg << std::endl;
+        LogLevelStream(level) << o.str();
     }
 }
 template <typename T1, typename T2>
 void Log(int level, std::string where, int line, T1 msg, T2 a) {
     if (level <= g_LogLevel) {
-        LogLevelStream(level) << LogLevelString(level) << where << ":" << line << "\t" << msg << a
-                              << std::endl;
+        std::stringstream o;
+        o << LogLevelString(level) << where << ":" << line << "\t" << msg << a << std::endl;
+        LogLevelStream(level) << o.str();
     }
 }
 
 template <typename T1, typename T2, typename T3>
 void Log(int level, std::string where, int line, T1 msg, T2 a, T3 b) {
     if (level <= g_LogLevel) {
-        LogLevelStream(level) << LogLevelString(level) << where << ":" << line << "\t" << msg << a
-                              << b << std::endl;
+        std::stringstream o;
+        o << LogLevelString(level) << where << ":" << line << "\t" << msg << a << b << std::endl;
+        LogLevelStream(level) << o.str();
     }
 }
 
 template <typename T1, typename T2, typename T3, typename T4>
 void Log(int level, std::string where, int line, T1 msg, T2 a, T3 b, T4 c) {
     if (level <= g_LogLevel) {
-        LogLevelStream(level) << LogLevelString(level) << where << ":" << line << "\t" << msg << a
-                              << b << c << std::endl;
+        std::stringstream o;
+        o << LogLevelString(level) << where << ":" << line << "\t" << msg << a << b << c
+          << std::endl;
+        LogLevelStream(level) << o.str();
     }
 }
 

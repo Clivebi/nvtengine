@@ -389,6 +389,20 @@ std::vector<Value> Executor::ObjectPathToIndexer(const Instruction* ins, VMConte
     return InstructionToValue(GetInstructions(ins->Refs), ctx);
 }
 
+bool Executor::ConvertNilWhenUpdate(Value& oldVal, Value val, Instructions::Type opCode,
+                                    VMContext* ctx) {
+    if (opCode == Instructions::kuINC || opCode == Instructions::kuINCReturnOld) {
+        oldVal.Type = ValueType::kInteger;
+        oldVal.Integer = 0;
+        return true;
+    }
+    if (val.IsString() || val.IsBytes() || val.IsByte()) {
+        oldVal.Type = ValueType::kString;
+        return true;
+    }
+    return false;
+}
+
 Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type opCode,
                           VMContext* ctx) {
     Instructions::Type code = opCode & 0xFF;
@@ -400,10 +414,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
     Value oldVal;
     ctx->GetVarValue(name, oldVal);
     if (oldVal.IsNULL()) {
-        oldVal.Type = ValueType::kInteger;
-        if (val.IsString()) {
-            oldVal.Type = val.Type;
-        }
+        ConvertNilWhenUpdate(oldVal, val, code, ctx);
     }
     switch (code) {
     case Instructions::kuADD:
@@ -875,7 +886,7 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
             if (key.size() > 0) {
                 ctx->SetVarValue(key, Value((long)i));
             }
-            ctx->SetVarValue(val, Value((long)objVal.text[i]));
+            ctx->SetVarValue(val, Value((unsigned char)objVal.text[i]));
             Execute(body, ctx);
             ctx->CleanContinueFlag();
             if (ctx->IsExecutedInterupt()) {
@@ -888,7 +899,7 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
             if (key.size() > 0) {
                 ctx->SetVarValue(key, Value((long)i));
             }
-            ctx->SetVarValue(val, Value((long)objVal.text[i]));
+            ctx->SetVarValue(val, Value((unsigned char)objVal.text[i]));
             Execute(body, ctx);
             ctx->CleanContinueFlag();
             if (ctx->IsExecutedInterupt()) {
@@ -910,13 +921,11 @@ Value Executor::ExecuteForInStatement(const Instruction* ins, VMContext* ctx) {
         }
     } break;
     case ValueType::kMap: {
-        std::map<Value, Value>::iterator iter = objVal._map().begin();
-        while (iter != objVal._map().end()) {
+        for (auto iter : objVal._map()) {
             if (key.size() > 0) {
-                ctx->SetVarValue(key, iter->first);
+                ctx->SetVarValue(key, iter.first);
             }
-            ctx->SetVarValue(val, iter->second);
-            iter++;
+            ctx->SetVarValue(val, iter.second);
             Execute(body, ctx);
             ctx->CleanContinueFlag();
             if (ctx->IsExecutedInterupt()) {

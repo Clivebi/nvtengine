@@ -114,16 +114,16 @@ std::string decode_string(const std::string& src) {
             i++;
             break;
         default: {
-            if (src.size() > i + 1 && ishex(src[i]) && ishex(src[i + 1])) {
-                int x = http_unhex(src[i]);
+            if (src.size() > i + 2 && src[i] == 'x' && ishex(src[i + 1]) && ishex(src[i + 2])) {
+                int x = http_unhex(src[i + 1]);
                 x *= 16;
-                x += http_unhex(src[i + 1]);
+                x += http_unhex(src[i + 2]);
                 o << (char)(x & 0xFF);
-                i += 2;
+                i += 3;
             } else {
                 i++;
                 o << src[i];
-                LOG_WARNING("Parse string error :" + src);
+                LOG_WARNING("Parse string error :" + src, " current:", o.str());
             }
         }
         }

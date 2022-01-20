@@ -6,6 +6,7 @@
 Interpreter.dSYM/
 Interpreter
 test/test1.sc
+test/nasl.sc
 script/test1.sc
 vs/.vs
 vs/Debug

@@ -56,14 +56,14 @@ var ETIMEDOUT = 1;
 var ECONNRESET = 2;
 var EUNREACH = 3;
 var EUNKNOWN = 99;
-var OPENVAS_VERSION = "21.4.3~dev1~git-36d09619-openvas-21.04";
+var OPENVAS_VERSION = "22.0.0";
 
 func __index_nil__(index){
 	#Println("convet nil object to NASLArray",index,ShortStack());
 	return NASLArray();
 }
 
-object NASLArray(hash_table={},vector=[]){
+object NASLArray(hash_table={},vector={}){
 	func __len__(){
 		var res = 0;
 		for v in hash_table{
@@ -73,10 +73,7 @@ object NASLArray(hash_table={},vector=[]){
 	}
 	func __get_index__(key){
 		if(typeof(key) == "integer"){
-			if(key<len(self.vector)){
-				return self.vector[key];
-			}
-			return nil;
+			return self.vector[key];
 		}else{
 			var list = self.hash_table[key];
 			if(typeof(list)!= "array"){
@@ -111,9 +108,7 @@ object NASLArray(hash_table={},vector=[]){
 	func __enum_all__(){
 		var result = [];
 		for k,v in self.vector{
-            if(v != nil){
-                result = append(result,{"__key__":k,"__value__":v});
-            }
+            result = append(result,{"__key__":k,"__value__":v});
 		}
 		for k,v in self.hash_table{
 			for v2 in v{
@@ -130,7 +125,7 @@ object NASLArray(hash_table={},vector=[]){
 			}
 			return;
 		}
-		self.vector = append(self.vector,val);
+		self.vector[len(self.vector)] = val;
 	}
 
 	func add_var_to_array(index,val){
@@ -163,11 +158,11 @@ func nasl_make_list_unique(list...){
 		}
 		helper[v] = 1;
 	}
-	var ret = [];
+	var ret =  NASLArray();
 	for k,v in helper{
-		ret = append(ret,k);
+		ret.add_var_to_list(k);
 	}
-	return NASLArray(vector:ret,hash_table:{});
+	return ret;
 }
 
 func power(x,y){
@@ -2809,6 +2804,14 @@ func pcap_next(interface="",pcap_filter="",timeout=get_default_read_write_timeou
 
 func cgibin(){
     return "/cgi-bin:/scripts";
+}
+
+func find_in_path(cmd){
+    return false;
+}
+
+func smb_versioninfo(){
+    return nil;
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

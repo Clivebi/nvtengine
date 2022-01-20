@@ -75,6 +75,7 @@ protected:
     Value ExecuteForStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteForInStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
+    bool  ConvertNilWhenUpdate(Value& oldVal,Value val, Instructions::Type opCode,VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);
     Value ConvertNil(Value index, VMContext* ctx);

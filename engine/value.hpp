@@ -363,9 +363,9 @@ public:
     Value(INTVAR val);
     Value(int val);
     Value(unsigned int val);
-    #ifndef WIN_386
+#ifndef WIN_386
     Value(size_t val);
-    #endif
+#endif
     Value(double val);
     Value(std::string val);
     Value(const char* str);
@@ -388,6 +388,7 @@ public:
     bool IsNumber() const {
         return Type == ValueType::kInteger || Type == ValueType::kFloat || Type == ValueType::kByte;
     }
+    bool IsByte()const {return Type == ValueType::kByte;}
     bool IsString() const { return Type == ValueType::kString; }
     bool IsBytes() const { return Type == ValueType::kBytes; }
     bool IsSameType(const Value& right) const { return Type == right.Type; }
@@ -407,6 +408,11 @@ public:
 
     Value& operator+=(const Value& right);
     Value& operator-=(const Value& right) {
+        if (IsString() && right.IsString()) {
+            std::string result = text;
+            text = replace_str(result, right.text, "", 1);
+            return *this;
+        }
         if (!IsNumber() || !right.IsNumber()) {
             DUMP_CONTEXT();
             throw Interpreter::RuntimeException("-= must used on integer or float " +

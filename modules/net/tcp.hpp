@@ -124,7 +124,7 @@ public:
                 continue;
             } else {
                 LOG_DEBUG("SSL_do_handshake error " + ToString(err));
-                ERR_print_errors_fp(stdout);
+                //ERR_print_errors_fp(stdout);
                 UpdateLastError();
                 return false;
             }

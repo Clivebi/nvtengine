@@ -9,6 +9,17 @@ Value Println(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
     std::string result;
     std::string name;
     for (std::vector<Value>::iterator iter = values.begin(); iter != values.end(); iter++) {
+        result += iter->ToString();
+        result += " ";
+    }
+    std::cout << result << std::endl;
+    return Value();
+}
+
+Value DumpVar(std::vector<Value>& values, VMContext* ctx, Executor* vm) {
+    std::string result;
+    std::string name;
+    for (std::vector<Value>::iterator iter = values.begin(); iter != values.end(); iter++) {
         result += iter->ToDescription();
         result += " ";
     }
@@ -323,6 +334,7 @@ BuiltinMethod builtinFunction[] = {
         {"ToString", ToString},
         {"ToInteger", ToInteger},
         {"ToFloat", ToFloat},
+        {"DumpVar", DumpVar},
         {"HexDecodeString", HexDecodeString},
         {"HexEncode", HexEncode},
         {"DisplayContext", DisplayContext},

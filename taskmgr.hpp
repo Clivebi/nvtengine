@@ -31,6 +31,7 @@ public:
                              Interpreter::VMContext* ctx) {
         ctx->SetVarValue("description", Value(mDescription), true);
         ctx->SetVarValue("COMMAND_LINE", Value(false), true);
+        ctx->SetVarValue("SCRIPT_NAME",Value(Script->Name),true);
         vm->RequireScript("nasl.sc", ctx);
     }
     virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,

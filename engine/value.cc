@@ -391,7 +391,7 @@ std::string MapObject::ToDescription() const {
         if (!first) {
             o << ",";
         }
-        o << iter->first.MapKey();
+        o << iter->first.ToDescription();
         o << ":";
         o << iter->second.ToDescription();
         first = false;
@@ -757,7 +757,7 @@ std::string Value::ToDescription() const {
         return bytesView.ToDescription();
     case ValueType::kString: {
         if (IsVisableString(text)) {
-            return text;
+            return ValueType::ToString(Type) + "(" + text + ")";
         }
         return ValueType::ToString(Type) + "(" + HexEncode(text.c_str(), text.size()) + ")";
     }
@@ -943,7 +943,7 @@ const Value Value::operator[](const Value& key) const {
         return Array()->_array[(size_t)key.Integer];
     }
     if (IsMap()) {
-        return Map()->_map[key.MapKey()];
+        return Map()->_map[key];
     }
     if (IsObject()) {
         return Object()->__get_attr(key);
@@ -971,7 +971,7 @@ Value& Value::operator[](const Value& key) {
         return _array()[(size_t)key.Integer];
     }
     if (Type == ValueType::kMap) {
-        return _map()[key.MapKey()];
+        return _map()[key];
     }
     DUMP_CONTEXT();
     throw RuntimeException("the value type <" + ToDescription() +
@@ -1033,7 +1033,7 @@ void Value::SetValue(const Value& key, const Value& val) {
         return;
     }
     if (Type == ValueType::kMap) {
-        Map()->_map[key.MapKey()] = val;
+        Map()->_map[key] = val;
         return;
     }
     if (IsObject()) {

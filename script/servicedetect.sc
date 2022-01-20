@@ -1,6 +1,10 @@
 #service detect script 
 
+var _nasl_oid = "1.3.6.1.4.1.25623.1.0.10330";
+
 func regisger_service(name,banner,port){
+    replace_kb_item("HostDetails/NVT/"+_nasl_oid,"Service detection(1.3.6.1.4.1.25623.1.0.10330)");
+    set_kb_item("HostDetails/NVT/"+_nasl_oid+"/Services",port+",tcp,"+name);
     set_kb_item("Services/"+name,port);
     replace_kb_item("Known/tcp/"+port,name);
     replace_kb_item(name+"/banner/"+port,banner);

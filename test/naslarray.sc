@@ -5,7 +5,7 @@ func __index_nil__(index){
 	return NASLArray();
 }
 
-object NASLArray(hash_table={},vector=[]){
+object NASLArray(hash_table={},vector={}){
 	func __len__(){
 		var res = 0;
 		for v in hash_table{
@@ -52,8 +52,10 @@ object NASLArray(hash_table={},vector=[]){
 
 	func __enum_all__(){
 		var result = [];
+		DumpVar(self.vector);
 		for k,v in self.vector{
-			result = append(result,{"__key__":k,"__value__":v});
+            DumpVar(k,v);
+            result = append(result,{"__key__":k,"__value__":v});
 		}
 		for k,v in self.hash_table{
 			for v2 in v{
@@ -70,36 +72,18 @@ object NASLArray(hash_table={},vector=[]){
 			}
 			return;
 		}
-		self.vector = append(self.vector,val);
+		self.vector[len(self.vector)] = val;
 	}
 
 	func add_var_to_array(index,val){
 		self.__set_index__(index,val);
 	}
-
-	func object_method(arg0,arg1){
-		self.dsc();
-		Println(arg0,arg1);
-	}
-
-	func dsc(){
-		Println(self.hash_table,self.vector);
-	}
 }
 
 var res = NASLArray();
-res[0] = 100;
-Println(res[0]);
-res["0"] = 200;
-res["0"] = 300;
-Println(res["0"],len(res),typeof(res));
+res[100] = "100";
 for k,v in res{
-	Println("FOR IN ",k,":",v);
+	DumpVar(k,v);
 }
-res.object_method("100","200");
-
-var res2 = NASLArray(hash_table:{"1000":1000,"2000":2000},vector:[1,2,3,4,5,6]);
-res2.object_method("100","200");
-
 res3["100"] = 100;
 Println("res3",res3);

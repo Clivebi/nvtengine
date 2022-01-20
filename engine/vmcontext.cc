@@ -24,7 +24,7 @@ void DumpContext() {
     if (VMContext::sTlsIndex != 0) {
         VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
         if (ptr) {
-            LOG_DEBUG(ptr->DumpContext(false));
+            LOG_DEBUG(ptr->DumpContext(true));
         }
     }
 }

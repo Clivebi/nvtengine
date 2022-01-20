@@ -22,6 +22,9 @@ Value recv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (length < minSize) {
         length = minSize;
     }
+    if(length == 0){
+        return Value("");
+    }
     std::string data = "";
     unsigned char* buffer = new u_char[length];
     if (!net::Conn::IsConn(args[0].resource)) {
@@ -31,7 +34,6 @@ Value recv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     //con->SetReadTimeout(timeout);
     int size = ReadAtleast(con, buffer, length, minSize);
     if (size <= 0) {
-        LOG_DEBUG("ReadAtleast error ", size);
         delete[] buffer;
         return Value();
     }
