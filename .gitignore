@@ -8,6 +8,7 @@ Interpreter
 test/test1.sc
 test/nasl.sc
 script/test1.sc
+etc/test.conf
 vs/.vs
 vs/Debug
 vs/Release
