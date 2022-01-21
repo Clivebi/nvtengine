@@ -1,0 +1,14 @@
+{
+    "ssh":{
+        "login":"xx",
+        "password":"xx",
+        "privatekey":"",
+        "passphrase":"",
+        "port":22
+    },
+    "winrm":{
+        "login":"xx",
+        "password":"xx",
+        "port":5985
+    }
+}

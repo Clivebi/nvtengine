@@ -193,6 +193,7 @@ protected:
         DetectServiceParamter* param = (DetectServiceParamter*)p;
         param->tcb->Task->DetectService(param);
     }
+    void LoadCredential(TCB* tcb);
     void DetectService(DetectServiceParamter* p);
     bool InitScripts(std::list<std::string>& scripts);
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,

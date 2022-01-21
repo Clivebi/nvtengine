@@ -8,6 +8,7 @@ extern "C" {
 #include "engine/vm.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/api.hpp"
+#include "modules/openvas/support/creddb.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "ntvpref.hpp"
 #include "taskmgr.hpp"
@@ -159,8 +160,36 @@ void HostsTask::Execute() {
     }
 }
 
+void HostsTask::LoadCredential(TCB* tcb) {
+    NVTPref helper(mPrefs);
+    support::CredDB db(FilePath(helper.app_data_folder()) + "cred.db");
+    Value res = db.Get(tcb->Host);
+    if (res.IsMap()) {
+        Value ssh = res["ssh"];
+        Value winrm = res["winrm"];
+        if (ssh.IsMap()) {
+            tcb->Storage->SetItem("Secret/SSH/login", ssh["login"]);
+            tcb->Storage->SetItem("Secret/SSH/password", ssh["password"]);
+            tcb->Storage->SetItem("Secret/SSH/privatekey", ssh["privatekey"]);
+            tcb->Storage->SetItem("Secret/SSH/passphrase", ssh["passphrase"]);
+            if (ssh["port"].IsInteger()) {
+                tcb->Storage->SetItem("Secret/SSH/transport", ssh["port"]);
+            }
+        }
+        if (winrm.IsMap()) {
+            tcb->Storage->SetItem("SMB/login", winrm["login"]);
+            tcb->Storage->SetItem("SMB/password", winrm["password"]);
+            if (winrm["port"].IsInteger()) {
+                tcb->Storage->SetItem("SMB/transport", winrm["port"]);
+            }
+            tcb->Storage->SetItem("WinTM/Exist", 1);
+        }
+    }
+}
+
 void HostsTask::ExecuteOneHost(TCB* tcb) {
     NVTPref helper(mPrefs);
+    LoadCredential(tcb);
     LOG_DEBUG("\n", tcb->Host, " start detect service");
     TCPDetectService(tcb, tcb->TCPPorts, helper.service_detection_thread_count());
     LOG_DEBUG(tcb->Host, " detect service complete...");
@@ -365,23 +394,23 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 std::list<std::string> group = split(v.ToString(), '=');
                 Value val = ctx->Storage->GetItem(group.front(), -1);
                 if (val.IsNULL()) {
-                    //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                    //          " because mandatory key is missing :", v.ToString());
+                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                              " because mandatory key is missing :", v.ToString());
                     return false;
                 }
                 std::regex re = std::regex(group.back(), std::regex_constants::icase);
                 bool found = std::regex_search(val.text.begin(), val.text.end(), re);
                 if (!found) {
-                    //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                    //          " because mandatory key is missing :", v.ToString());
+                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                              " because mandatory key is missing :", v.ToString());
                     return false;
                 }
 
             } else {
                 Value val = ctx->Storage->GetItem(v.text, true);
                 if (val.IsNULL()) {
-                    //LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                    //          " because mandatory key is missing :", v.ToString());
+                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                              " because mandatory key is missing :", v.ToString());
                     return false;
                 }
             }
@@ -407,7 +436,11 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             if (ctx->IsPortInOpenedRange(v, true)) {
                 found = true;
             }
+            if (v == 139 && (ctx->Storage->GetItem("WinTM/Exist", -1) == 1)) {
+                found = true;
+            }
         }
+
         if (!found) {
             LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                       " because not one require tcp port exist ", require_ports.ToString());

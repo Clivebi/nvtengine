@@ -28,7 +28,7 @@ MAC、windows、linux、unix
 - [x] openvas WMI API  
 - [x] openvas SSH API  
 - [x] 配置选项实现
-- [ ] 凭据管理
+- [x] 凭据管理
 - [x] 实现windows/linux/mac完整跨平台
 
 0.1.2  版本  

@@ -1287,8 +1287,8 @@ func wmi_connect(username,password,ns=nil,host=""){
     return winrm;
 }
 
-func wmi_close(handle){
-    close(handle);
+func wmi_close(wmi_handle){
+    close(wmi_handle);
 }
 
 func wmi_connect_reg(host="",username,password){
@@ -1302,8 +1302,8 @@ func wmi_connect_reg(host="",username,password){
     return winrm;
 }
 
-func wmi_query(handle,query,namespace=nil){
-    var result = WMIQuery(handle,query,namespace);
+func wmi_query(wmi_handle,query,namespace=nil){
+    var result = WMIQuery(wmi_handle,query,namespace);
     if(result == nil || len(result)==0){
         return "";
     }
@@ -1328,8 +1328,8 @@ func wmi_query(handle,query,namespace=nil){
     return pts;
 }
 
-func wmi_query_rsop(handle,query){
-    return wmi_query(handle,query,"root\rsop\computer");
+func wmi_query_rsop(wmi_handle,query){
+    return wmi_query(wmi_handle,query,"root\rsop\computer");
 }
 
 func ExecuteRegCommand(handle,cmd){
@@ -2828,6 +2828,13 @@ func find_in_path(cmd){
 
 func smb_versioninfo(){
     return nil;
+}
+
+if(get_kb_item("WinTM/Exist")){
+    replace_kb_item( name: "SMB/registry_access", value: TRUE );
+	replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
+    replace_kb_item( name: "WMI/access_successful", value: TRUE );
+    replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
