@@ -875,6 +875,9 @@ func str_replace(string, find, replace,count = -1){
     if(!string){
         return nil;
     }
+    if(!replace){
+        replace = "";
+    }
 	return ReplaceString(string,find,replace,count);
 }
 
@@ -2157,7 +2160,7 @@ func update_tcp_checksum(ip,tcp,data){
         tcp = WriteUInt16(tcp,16,0);
         var total = append(ps_head,tcp);
         if(data!= nil){
-            total = append(total,data);
+            total = append(total,bytes(data));
         }
         var sum = cacl_ip_checksum(total,36+size);
         tcp = WriteUInt16(tcp,16,sum,false);
@@ -2175,7 +2178,7 @@ func update_tcp_checksum(ip,tcp,data){
         tcp = WriteUInt16(tcp,16,0);
         var total = append(ps_head,tcp);
         if(data!= nil){
-            total = append(total,data);
+            total = append(total,bytes(data));
         }
         var sum = cacl_ip_checksum(total,12+size);
         tcp = WriteUInt16(tcp,16,sum,false);
