@@ -13,7 +13,7 @@
             "program": "${workspaceFolder}/build/Interpreter",
             //"args": [ "scan","-h", "192.168.3.96","-p", "111,2049,22,3142,34103,52293,55385,59037"],
             //"args": ["update","-c","${workspaceFolder}/etc/test.conf"],
-            "args": ["../test/test1.sc"],
+            "args": ["../script/test1.sc"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],

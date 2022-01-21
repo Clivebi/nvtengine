@@ -400,7 +400,8 @@ bool Executor::ConvertNilWhenUpdate(Value& oldVal, Value val, Instructions::Type
         oldVal.Type = ValueType::kString;
         return true;
     }
-    return false;
+    oldVal.Type = ValueType::kInteger;
+    return true;
 }
 
 Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type opCode,

@@ -63,7 +63,7 @@ func __index_nil__(index){
 	return NASLArray();
 }
 
-object NASLArray(hash_table={},vector={}){
+object NASLArray(hash_table={},vector={},max_index=0){
 	func __len__(){
 		var res = 0;
 		for v in hash_table{
@@ -90,6 +90,7 @@ object NASLArray(hash_table={},vector={}){
 	func __set_index__(key,value){
 		if(typeof(key) == "integer"){
 			self.vector[key] = value;
+            self.max_index = key+1;
 			return value;
 		}
 		var list = self.hash_table[key];
@@ -126,6 +127,11 @@ object NASLArray(hash_table={},vector={}){
 			return;
 		}
 		self.vector[len(self.vector)] = val;
+        if(self.max_index > len(self.vector)){
+            Println("******* that may be have some bug....");
+            Println(ShortStack());
+        }
+        self.max_index = len(self.vector);
 	}
 
 	func add_var_to_array(index,val){
@@ -866,13 +872,15 @@ func stridx(str,sub,pos = 0){
 }
 
 func str_replace(string, find, replace,count = -1){
+    if(!string){
+        return nil;
+    }
 	return ReplaceString(string,find,replace,count);
 }
 
 func keys(obj){
 	var list = {};
 	if(typeof(obj)=="array"){
-		#DisplayContext();
 		Println("please check this may be have some bug**************");
 		Println(ShortStack());
 	}
@@ -888,8 +896,13 @@ func keys(obj){
 
 func max_index(obj){
 	if(typeof(obj)=="NASLArray"){
-		return len(obj.vector);
+		return obj.max_index;
 	}
+    if(typeof(obj)=="array"){
+        return len(obj);
+    }
+    Println("************that may have some bug....");
+    DisplayContext(true);
 	return 0;
 }
 
@@ -2206,7 +2219,7 @@ func forge_ip_v6_packet(data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6
 }
 
 func get_ip_element(ip,element){
-    if(!ip || !element){
+    if(!ip || !element||len(ip) < 20){
         return nil;
     }
     switch(element){
@@ -2346,7 +2359,7 @@ func forge_tcp_packet(ip,data=nil,th_ack=0,th_dport,th_flags,
     if(th_seq==0){
         th_seq = rand();
     }
-    var tcp = build_tcp_header(th_sport,th_dport,th_seq,th_ack,th_flags,th_win,th_urp);
+    var tcp = build_tcp_header(ToInteger(th_sport),ToInteger(th_dport),th_seq,th_ack,th_flags,th_win,th_urp);
     ip = set_ipv4_length(ip,len(tcp)+payloadsz+ipsz);
     ip = update_ipv4_checksum(ip);
     tcp = update_tcp_checksum(ip,tcp,data);

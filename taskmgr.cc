@@ -230,6 +230,41 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     std::cout << o.str();
 }
 
+void HostsTask::ThinNVTI(Value& nvti, bool lastPhase) {
+    /*
+    const std::string kNVTI_oid = "oid";
+const std::string kNVTI_name = "name";
+const std::string kNVTI_version = "version";
+const std::string kNVTI_timeout = "timeout";
+const std::string kNVTI_family = "family";
+const std::string kNVTI_require_keys = "require_keys";
+const std::string kNVTI_mandatory_keys = "mandatory_keys";
+const std::string kNVTI_require_ports = "require_ports";
+const std::string kNVTI_require_udp_ports = "require_udp_ports";
+const std::string kNVTI_exclude_keys = "exclude_keys";
+const std::string kNVTI_cve_id = "cve_id";
+const std::string kNVTI_bugtraq_id = "bugtraq_id";
+const std::string kNVTI_category = "category";
+const std::string kNVTI_dependencies = "dependencies";
+const std::string kNVTI_filename = "filename";
+const std::string kNVTI_preference = "preference";
+const std::string kNVTI_xref = "xref";
+const std::string kNVTI_tag = "tag";
+    */
+    if (nvti.IsMap()) {
+        nvti._map().erase(knowntext::kNVTI_name);
+        nvti._map().erase(knowntext::kNVTI_version);
+        nvti._map().erase(knowntext::kNVTI_cve_id);
+        nvti._map().erase(knowntext::kNVTI_bugtraq_id);
+        nvti._map().erase(knowntext::kNVTI_xref);
+        nvti._map().erase(knowntext::kNVTI_tag);
+        if (lastPhase) {
+            nvti._map().erase(knowntext::kNVTI_dependencies);
+            nvti._map().erase(knowntext::kNVTI_family);
+            nvti._map().erase(knowntext::kNVTI_category);
+        }
+    }
+}
 bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     NVTPref helper(mPrefs);
     support::NVTIDataBase nvtiDB(FilePath(helper.app_data_folder()) + "attributes.db");
@@ -250,6 +285,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
             //return false;
             continue;
         }
+        ThinNVTI(nvti, false);
         if (loaded.find(nvti[knowntext::kNVTI_filename].ToString()) != loaded.end()) {
             continue;
         }
@@ -280,7 +316,9 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     mScriptCount = loadOrder.size();
     for (auto nvti : loadOrder) {
         mGroupedScripts[nvti[knowntext::kNVTI_category].Integer].push_back(nvti);
+        ThinNVTI(nvti, true);
     }
+    LOG_DEBUG("Total load NVTI count:", mScriptCount);
     return true;
 }
 
@@ -296,6 +334,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
             LOG_ERROR("load " + v + " failed");
             return false;
         }
+        ThinNVTI(nvti, false);
         Value pref = prefsDB.Get(nvti[knowntext::kNVTI_oid].ToString());
         if (pref.IsMap()) {
             nvti[knowntext::kNVTI_preference] = pref;

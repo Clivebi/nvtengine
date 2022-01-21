@@ -62,6 +62,8 @@ bool IsMatchString(std::string word, std::string pattern);
 
 bool IsVisableString(const std::string& src);
 
+bool IsDigestString(const std::string& src);
+
 std::string& replace_str(std::string& str, const std::string& to_replaced,
                          const std::string& newchars, int maxcount);
 

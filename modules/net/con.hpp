@@ -80,7 +80,7 @@ public:
         #endif
         if (nSize == -1) {
             UpdateLastError();
-            LOG_DEBUG("BaseConn recv error ", mLastError);
+            LOG_DEBUG("BaseConn send error ", mLastError);
         }
         return nSize;
     }

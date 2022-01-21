@@ -6,7 +6,7 @@ using namespace Interpreter;
 
 Value ContainsBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
-    if (args[0].IsNULL()) {
+    if (args[0].IsNULL() || !(args[0].IsString() || args[0].IsBytes())) {
         return Value();
     }
     CHECK_PARAMETER_STRING_OR_BYTES(1);

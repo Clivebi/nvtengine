@@ -747,6 +747,19 @@ bool IsVisableString(const std::string& src) {
     return true;
 }
 
+bool IsDigestString(const std::string& src) {
+    if (src.size() == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < src.size(); i++) {
+        int c = ((int)src[i]) & 0xFF;
+        if (c < '0' || c > '9') {
+            return false;
+        }
+    }
+    return true;
+}
+
 std::string Value::ToDescription() const {
     switch (Type) {
     case ValueType::kArray:
@@ -896,8 +909,11 @@ bool Value::ToBoolean() const {
             return false;
         }
         if (text.size() == 1) {
-            return text == "0";
+            if (text == "0") {
+                return false;
+            }
         }
+        return true;
     }
     if (IsBytes()) {
         return bytesView.Length() > 0;
@@ -1218,19 +1234,30 @@ bool operator==(const Value& left, const Value& right) {
         return false == left.ToBoolean();
     }
     if (left.IsString() && right.IsInteger()) {
-        if (right.Type != ValueType::kByte) {
-            DUMP_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
-                        "<-->", right.ToDescription());
+        if (right.Integer == 0) {
+            return left.ToBoolean() == false;
         }
-
+        if (right.IsByte()) {
+            return left.text == right.ToString();
+        }
+        if (!IsDigestString(left.text)) {
+            DUMP_CONTEXT();
+            LOG_WARNING("compare string with integer,may be have bug <always false>",
+                        left.ToDescription(), "<-->", right.ToDescription());
+        }
         return left.text == right.ToString();
     }
     if (right.IsString() && left.IsInteger()) {
-        if (left.Type != ValueType::kByte) {
+        if (left.Integer == 0) {
+            return right.ToBoolean() == false;
+        }
+        if (left.IsByte()) {
+            return right.text == left.ToString();
+        }
+        if (!IsDigestString(right.text)) {
             DUMP_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug ", left.ToDescription(),
-                        "<-->", right.ToDescription());
+            LOG_WARNING("compare string with integer,may be have bug <always false>",
+                        left.ToDescription(), "<-->", right.ToDescription());
         }
         return right.text == left.ToString();
     }

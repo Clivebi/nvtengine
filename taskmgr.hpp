@@ -198,6 +198,7 @@ protected:
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
                      std::list<std::string>& scripts, std::list<Value>& loadOrder,
                      std::map<std::string, int>& loaded);
+    void ThinNVTI(Value&nvti,bool lastPhase);
     bool CheckScript(OVAContext* ctx, Value& nvti);
 
     void TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count);
