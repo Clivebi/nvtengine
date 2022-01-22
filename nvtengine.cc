@@ -6,7 +6,6 @@
 #endif // _WIN32
 
 #include <fstream>
-#include <regex>
 extern "C" {
 #include "thirdpart/masscan/hostscan.h"
 }
@@ -267,5 +266,6 @@ int main(int argc, char* argv[]) {
         options.PrintHelp();
         return -1;
     }
+    std::cout << Interpreter::Status::ToString() << std::endl;
     return 0;
 }

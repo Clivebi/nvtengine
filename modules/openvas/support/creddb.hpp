@@ -1,6 +1,5 @@
 #pragma once
 
-#pragma once
 #include "../../../engine/value.hpp"
 #include "sqlitedb.hpp"
 using namespace Interpreter;

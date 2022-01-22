@@ -831,10 +831,22 @@ func split(buffer, sep="\n",keep = -1){
 	if(keep==-1){
 		keep = true;
 	}
-	if(!buffer){
+	if(!buffer||len(buffer)==0){
 		return nil;
 	}
-	var list = SplitString(buffer,sep);
+	var temp = SplitString(buffer,sep);
+    var list = [];
+    if(keep==false){
+        for v in temp{
+            if(v == nil || len(v)==0){
+                continue;
+            }
+            list = append(list,v);
+        }
+    }else{
+        list = temp;
+    }
+    
 	for(var i = 0; i < len(list);i++){
 		if(keep){
 			list[i]+=sep;
@@ -2830,11 +2842,33 @@ func smb_versioninfo(){
     return nil;
 }
 
+#implement a shared method bettwen scripts
+#the value may be one resource such as connection
+func set_shared_object(key,value){
+    var fullkey = "global/shared_object/"+key;
+    return replace_kb_item(fullkey,value);
+}
+
+func get_shared_object(key){
+    var fullkey = "global/shared_object/"+key;
+    return get_kb_item(fullkey);
+}
+
+func delete_shared_object(key){
+    var fullkey = "global/shared_object/"+key;
+    return replace_kb_item(fullkey,nil);
+}
+
+#do some init for old nasl script on windows platform
 if(get_kb_item("WinTM/Exist")){
     replace_kb_item( name: "SMB/registry_access", value: TRUE );
 	replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
     replace_kb_item( name: "WMI/access_successful", value: TRUE );
     replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
+    replace_kb_item( name: "win/lsc/search_portable_apps", value: TRUE );
+    replace_kb_item( name: "SMB/WindowsVersion",value:TRUE);
+    replace_kb_item( name: "SMB/WindowsVersion",value:TRUE);
+    replace_kb_item( name: "SMB/Windows/Arch",value:"x64");
 }
 
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");
