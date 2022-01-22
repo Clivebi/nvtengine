@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <string.h>
 
 #include "base.hpp"
 #include "exception.hpp"

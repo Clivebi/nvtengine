@@ -436,7 +436,8 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             if (ctx->IsPortInOpenedRange(v, true)) {
                 found = true;
             }
-            if (v == 139 && (ctx->Storage->GetItem("WinTM/Exist", -1) == 1)) {
+            if (v.IsInteger() && v.Integer == 139 &&
+                (ctx->Storage->GetItem("WinTM/Exist", -1) == 1)) {
                 found = true;
             }
         }

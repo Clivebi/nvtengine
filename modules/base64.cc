@@ -1,7 +1,10 @@
+#include "../engine/check.hpp"
+using namespace Interpreter;
 #include <cassert>
+#include <cctype>
 #include <limits>
 #include <stdexcept>
-#include <cctype>
+
 static const char b64_table[65] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -57,8 +60,7 @@ static const char reverse_table[128] = {
             continue;
         }
         if ((c > 127) || (c < 0) || (reverse_table[c] > 63)) {
-            throw ::std::invalid_argument(
-                    "This contains characters not legal in a base64 encoded string.");
+            return "";
         }
         accumulator = (accumulator << 6) | reverse_table[c];
         bits_collected += 6;
@@ -68,4 +70,27 @@ static const char reverse_table[128] = {
         }
     }
     return retval;
+}
+
+Value StdBase64Encode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    return base64_encode(args[0].ToString());
+}
+
+Value StdBase64Decode(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
+    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_STRING_OR_BYTES(0);
+    std::string res = base64_decode(args[0].ToString());
+    if (res.size() == 0) {
+        return Value();
+    }
+    return res;
+}
+
+BuiltinMethod base64Method[] = {{"StdBase64Encode", StdBase64Encode},
+                                {"StdBase64Decode", StdBase64Decode}};
+
+void RegisgerBase64BuiltinMethod(Executor* vm) {
+    vm->RegisgerFunction(base64Method, COUNT_OF(base64Method));
 }

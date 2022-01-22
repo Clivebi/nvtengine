@@ -120,6 +120,12 @@ Value append(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             case ValueType::kBytes:
                 to.bytesView = to.bytesView + iter->bytesView;
                 break;
+            case ValueType::kString:
+            case ValueType::kByte: {
+                Value temp = Value::MakeBytes(iter->ToString());
+                to.bytesView = to.bytesView + temp.bytesView;
+                break;
+            }
             default:
                 DUMP_CONTEXT();
                 throw RuntimeException(iter->ToDescription() + " can't append to bytes");
