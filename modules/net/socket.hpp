@@ -84,7 +84,7 @@ public:
                                   int timeout) {
         int error = -1;
         int set = 1;
-        #ifndef _WIN32
+        #ifdef __APPLE__
         setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
         #endif
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);

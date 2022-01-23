@@ -29,6 +29,7 @@ MAC、windows、linux、unix
 ## 依赖和编译  
 MAX、linux、unix使用CMake编译，本项目依赖如下一些第三方库：  
 zlib openssl sqlite3 libssh  libbrotlidec libkrb5-dev  
+sudo apt install libbrotli-dev libkrb5-dev libssh-dev libsqlite3-dev libssl-dev
 同时由于这几个平台使用winrm的golang版本，需要安装golang gcc开发工具  
 
 运行时依赖pcap，编译时不需要  

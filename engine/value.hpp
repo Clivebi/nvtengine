@@ -2,13 +2,13 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <list>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <string.h>
 
 #include "base.hpp"
 #include "exception.hpp"
@@ -41,7 +41,7 @@ std::list<std::string> split(const std::string& text, char split_char);
 
 std::string ToString(double val);
 
-std::string ToString(int64_t val);
+std::string ToString(long long val);
 
 std::string ToString(int val);
 
@@ -333,7 +333,7 @@ public:
 
 class Value {
 public:
-    typedef int64_t INTVAR;
+    typedef long long INTVAR;
     unsigned char Type;
     union {
         uint8_t Byte;
@@ -391,7 +391,7 @@ public:
     bool IsNumber() const {
         return Type == ValueType::kInteger || Type == ValueType::kFloat || Type == ValueType::kByte;
     }
-    bool IsByte()const {return Type == ValueType::kByte;}
+    bool IsByte() const { return Type == ValueType::kByte; }
     bool IsString() const { return Type == ValueType::kString; }
     bool IsBytes() const { return Type == ValueType::kBytes; }
     bool IsSameType(const Value& right) const { return Type == right.Type; }

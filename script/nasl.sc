@@ -261,10 +261,9 @@ func log_message(port,protocol,data,uri,proto){
 	if(proto != nil){
 		protocol = proto;
 	}
-    var oid = get_script_oid();
     var msg = [];
     msg += "log_message";
-    msg += oid;
+    msg += get_script_oid();
     msg += port;
     msg += protocol;
     msg += data;
@@ -279,7 +278,7 @@ func security_message(port,protocol,data,uri,proto){
 	}
 	var msg = [];
     msg += "security_message";
-    msg += oid;
+    msg += get_script_oid();
     msg += port;
     msg += protocol;
     msg += data;
@@ -294,7 +293,7 @@ func error_message(port,protocol,data,uri,proto){
 	}
     var msg = [];
     msg += "error_message";
-    msg += oid;
+    msg += get_script_oid();
     msg += port;
     msg += protocol;
     msg += data;

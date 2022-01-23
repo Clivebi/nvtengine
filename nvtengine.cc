@@ -35,14 +35,12 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
             }
             continue;
         }
-        if (entry->d_namlen > 0) {
-            FilePath short_path = relative_path;
-            short_path += entry->d_name;
-            std::string element = short_path;
-            if (element.find(".sc") != std::string::npos &&
-                element.find(".inc.") == std::string::npos) {
-                result.push_back(element);
-            }
+        FilePath short_path = relative_path;
+        short_path += entry->d_name;
+        std::string element = short_path;
+        if (element.find(".sc") != std::string::npos &&
+            element.find(".inc.") == std::string::npos) {
+            result.push_back(element);
         }
     }
     closedir(dir);

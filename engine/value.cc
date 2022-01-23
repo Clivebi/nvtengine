@@ -205,7 +205,7 @@ std::string ToString(unsigned int val) {
     return buffer;
 }
 
-std::string ToString(int64_t val) {
+std::string ToString(long long val) {
     char buffer[16] = {0};
     snprintf(buffer, 16, "%lld", val);
     return buffer;

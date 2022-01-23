@@ -21,12 +21,14 @@ execute_process (COMMAND krb5-config --libs gssapi
     OUTPUT_VARIABLE KRB5_LDFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+find_package(Threads REQUIRED)
+
 pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
 #https://github.com/google/brotli
-pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.9)
+pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.6)
 
 if(NOT OPENSSL_FOUND)
     message(FATAL_ERROR "openssl >=1.1.0 not found")
@@ -40,10 +42,10 @@ if(NOT ZLIB_FOUND)
     message(FATAL_ERROR "zlib>=1.1.0 not found")
 endif(NOT ZLIB_FOUND)
 
-message("${OPENSSL_LIBRARY_DIRS}")
-message("${BROTLI_LIBRARY_DIRS}")
-message("${ZLIB_LIBRARY_DIRS}")
-message("${SQLITE_LIBRARY_DIRS}")
+message("${OPENSSL_LDFLAGS}")
+message("${BROTLI_LDFLAGS}")
+message("${ZLIB_LDFLAGS}")
+message("${SQLITE_LDFLAGS}")
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${ZLIB_INCLUDE_DIRS} 
@@ -63,14 +65,17 @@ SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
 
 
 #开发机静态选项
-set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
-set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
-set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
-set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
-set(SSH_LDFLAGS "${CMAKE_BINARY_DIR}/libssh.a")
+#set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
+#set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
+#set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
+#set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
+#set(SSH_LDFLAGS "${CMAKE_BINARY_DIR}/libssh.a")
 
 set(WINRM_LDFLAGS "${CMAKE_BINARY_DIR}/winrm.a")
+
+IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")  
 set(EXTENAL_LDFLAGS "-framework CoreFoundation -framework Security")
+ENDIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 
 add_executable(NVTEngine
     nvtengine.cc 
@@ -86,25 +91,26 @@ add_executable(Interpreter
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
-#add_custom_command(TARGET NVTEngine
-#    PRE_LINK
-#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-#    COMMAND echo "build winrm complete" 
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+add_custom_command(TARGET NVTEngine
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
 #set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
 
 
-#add_custom_command(TARGET Interpreter
-#    PRE_LINK
-#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-#    COMMAND echo "build winrm complete" 
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+add_custom_command(TARGET Interpreter
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
 
 target_link_libraries(  NVTEngine  
                         engine  
                         masscan 
+                        -ldl 
                         ${WINRM_LDFLAGS}
                         "${KRB5_LDFLAGS}"
                         "-L${CMAKE_BINARY_DIR}"
@@ -113,11 +119,13 @@ target_link_libraries(  NVTEngine
                         ${ZLIB_LDFLAGS}
                         ${BROTLI_LDFLAGS}
                         ${SQLITE_LDFLAGS} 
+                        ${CMAKE_THREAD_LIBS_INIT}
                         ${SSH_LDFLAGS})
 
 target_link_libraries(  Interpreter  
                         engine  
                         masscan 
+                        -ldl
                         ${WINRM_LDFLAGS}
                         ${EXTENAL_LDFLAGS}
                         "${KRB5_LDFLAGS}"
@@ -126,4 +134,5 @@ target_link_libraries(  Interpreter
                         ${ZLIB_LDFLAGS}
                         ${BROTLI_LDFLAGS}
                         ${SQLITE_LDFLAGS}
+                        ${CMAKE_THREAD_LIBS_INIT}
                         ${SSH_LDFLAGS} )
