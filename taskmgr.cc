@@ -197,6 +197,28 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
         return;
     }
     ExecuteScriptOnHost(tcb);
+    OutputHostResult(tcb);
+}
+
+void HostsTask::OutputHostResult(TCB* tcb) {
+    std::stringstream o;
+    Value total = Value::MakeMap();
+    Value result = tcb->Storage->GetItemList("script/logs");
+    total["logs"] = result;
+    Value detail = Value::MakeArray();
+    total["HostDetails"] = detail;
+
+    result = tcb->Storage->GetItemKeys("HostDetails*");
+    if (result.IsArray()) {
+        for (auto v : result._array()) {
+            Value dataList = tcb->Storage->GetItemList(v.ToString());
+            Value item = Value::MakeMap();
+            item["key"] = v;
+            item["value"] = dataList;
+            detail._array().push_back(item);
+        }
+    }
+    std::cout << total.ToJSONString();
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
@@ -243,20 +265,6 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     }
     LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
               " Executed count: ", tcb->ExecutedScriptCount);
-    std::stringstream o;
-    o << "********" << tcb->Host << "*******" << std::endl;
-    Value result = tcb->Storage->GetItemKeys("HostDetails*");
-    if (result.IsArray()) {
-        for (auto v : result._array()) {
-            Value dataList = tcb->Storage->GetItemList(v.ToString());
-            if (dataList.IsArray()) {
-                for (auto iter : dataList._array()) {
-                    o << v.ToString() << " :" << iter.ToString() << std::endl;
-                }
-            }
-        }
-    }
-    std::cout << o.str();
 }
 
 void HostsTask::ThinNVTI(Value& nvti, bool lastPhase) {
@@ -301,9 +309,6 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     std::map<std::string, int> loaded;
     std::list<Value> loadOrder;
     bool loadDep = true;
-    if (mPrefs[knowntext::kPref_load_dependencies] == "no") {
-        loadDep = false;
-    }
     for (int i = 0; i < 11; i++) {
         mGroupedScripts[i] = std::list<Value>();
     }

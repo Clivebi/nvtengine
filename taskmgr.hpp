@@ -164,6 +164,7 @@ protected:
     void Execute();
     void ExecuteOneHost(TCB* tcb);
     void ExecuteScriptOnHost(TCB* tcb);
+    void OutputHostResult(TCB*tcb);
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
 #ifdef _WIN32

@@ -220,42 +220,6 @@ Value replace_kb_item(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     return Value();
 }
 
-Value security_message(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    OVAContext* script = GetOVAContext(vm);
-    auto iter = args.begin();
-    std::cout << "MSG\t";
-    while (iter != args.end()) {
-        std::cout << iter->ToString() << ",";
-        iter++;
-    }
-    std::cout << std::endl;
-    return Value();
-}
-
-Value log_message(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    OVAContext* script = GetOVAContext(vm);
-    auto iter = args.begin();
-    std::cout << "LOG \t";
-    while (iter != args.end()) {
-        std::cout << iter->ToString() << ",";
-        iter++;
-    }
-    std::cout << std::endl;
-    return Value();
-}
-
-Value error_message(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    OVAContext* script = GetOVAContext(vm);
-    auto iter = args.begin();
-    std::cout << "ERROR\t";
-    while (iter != args.end()) {
-        std::cout << iter->ToString() << ",";
-        iter++;
-    }
-    std::cout << std::endl;
-    return Value();
-}
-
 Value get_host_ip(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     OVAContext* script = GetOVAContext(vm);
     return script->Host;

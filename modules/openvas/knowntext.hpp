@@ -27,7 +27,4 @@ const std::string kENV_default_ifname = "default_ifname";
 const std::string kENV_route_ip = "route_ip";
 const std::string kENV_route_mac = "route_mac";
 const std::string kENV_local_mac = "local_mac";
-
-
-const std::string kPref_load_dependencies ="load_dependencies";
 } // namespace knowntext

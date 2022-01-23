@@ -261,21 +261,46 @@ func log_message(port,protocol,data,uri,proto){
 	if(proto != nil){
 		protocol = proto;
 	}
-	return ova_log_message(port,protocol,data,uri);
+    var oid = get_script_oid();
+    var msg = [];
+    msg += "log_message";
+    msg += oid;
+    msg += port;
+    msg += protocol;
+    msg += data;
+    msg += uri;
+    set_kb_item("script/logs",msg);
+    Println("log_message:",port,protocol,data,uri);
 }
 
 func security_message(port,protocol,data,uri,proto){
 	if(proto != nil){
 		protocol = proto;
 	}
-	return ova_security_message(port,protocol,data,uri);
+	var msg = [];
+    msg += "security_message";
+    msg += oid;
+    msg += port;
+    msg += protocol;
+    msg += data;
+    msg += uri;
+    set_kb_item("script/logs",msg);
+    Println("security_message:",port,protocol,data,uri);
 }
 
 func error_message(port,protocol,data,uri,proto){
 	if(proto != nil){
 		protocol = proto;
 	}
-	return ova_error_message(port,protocol,data,uri);
+    var msg = [];
+    msg += "error_message";
+    msg += oid;
+    msg += port;
+    msg += protocol;
+    msg += data;
+    msg += uri;
+    set_kb_item("script/logs",msg);
+    Println("error_message:",port,protocol,data,uri);
 }
 
 func build_http_req(method,item,port,data){
@@ -910,6 +935,9 @@ func keys(obj){
 }
 
 func max_index(obj){
+    if(!obj){
+        return 0;
+    }
 	if(typeof(obj)=="NASLArray"){
 		return obj.max_index;
 	}
