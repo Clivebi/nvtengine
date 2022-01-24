@@ -1,14 +1,9 @@
 #pragma once
 #include <fstream>
 
+#include "engine/file.hpp"
 #include "engine/logger.hpp"
 #include "filepath.hpp"
-
-class FileIO {
-public:
-    virtual bool Write(const std::string& path, const std::string& data) = 0;
-    virtual void* Read(const std::string& path, size_t& nSize) = 0;
-};
 
 class StdFileIO : public FileIO {
 protected:
@@ -30,34 +25,34 @@ public:
     }
 
 public:
-    bool Write(const std::string& path, const std::string& data) {
+    size_t Write(const std::string& name, const void* content, size_t contentSize) {
         FILE* hFile = NULL;
-        hFile = fopen(ResolvePath(path).c_str(), "wb");
+        hFile = fopen(ResolvePath(name).c_str(), "wb");
         if (hFile == NULL) {
             return false;
         }
-        size_t nWrite = fwrite(data.c_str(), 1, data.size(), hFile);
+        size_t nWrite = fwrite(content, 1, contentSize, hFile);
         fclose(hFile);
-        return nWrite == data.size();
+        return nWrite;
     }
-    void* Read(const std::string& path, size_t& nSize) {
+    void* Read(const std::string& name, size_t& contentSize) {
         FILE* hFile = NULL;
         void* pData = NULL;
         size_t size = 0, read_size = 0;
-        hFile = fopen(ResolvePath(path).c_str(), "rb");
+        hFile = fopen(ResolvePath(name).c_str(), "rb");
         if (hFile == NULL) {
-            LOG_ERROR("fopen failed: ", errno, " ",ResolvePath(path));
+            LOG_ERROR("fopen failed: ", errno, " ", ResolvePath(name));
             return NULL;
         }
         fseek(hFile, 0, SEEK_END);
-        nSize = ftell(hFile);
+        contentSize = ftell(hFile);
         fseek(hFile, 0, SEEK_SET);
-        pData = malloc(nSize);
+        pData = malloc(contentSize);
         if (pData == NULL) {
             fclose(hFile);
             return NULL;
         }
-        if (nSize != fread(pData, 1, nSize, hFile)) {
+        if (contentSize != fread(pData, 1, contentSize, hFile)) {
             fclose(hFile);
             free(pData);
             return NULL;

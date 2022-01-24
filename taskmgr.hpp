@@ -18,20 +18,15 @@ public:
     bool mSyntaxError;
     bool mDescription;
 
-protected:
-    FilePath mBuiltinScriptDirectory;
-    FileIO* mFileIO;
-
 public:
-    DefaultExecutorCallback(FilePath builtin, FileIO* IO)
-            : mBuiltinScriptDirectory(builtin), mDescription(0), mFileIO(IO) {}
+    DefaultExecutorCallback() : mDescription(false), mSyntaxError(false) {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm,
                              scoped_refptr<const Interpreter::Script> Script,
                              Interpreter::VMContext* ctx) {
         ctx->SetVarValue("description", Value(mDescription), true);
         ctx->SetVarValue("COMMAND_LINE", Value(false), true);
-        ctx->SetVarValue("SCRIPT_NAME",Value(Script->Name),true);
+        ctx->SetVarValue("SCRIPT_NAME", Value(Script->Name), true);
         vm->RequireScript("nasl.sc", ctx);
     }
     virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,
@@ -39,23 +34,13 @@ public:
     void OnScriptExecuted(Interpreter::Executor* vm,
                           scoped_refptr<const Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
-    void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
-        if (std::string(name) == "nasl.sc" || std::string(name) == "servicedetect.sc") {
-            return LoadBuiltinScriptFile(name, size);
-        }
-        return mFileIO->Read(name, size);
-    }
-    void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
+
+    void OnScriptError(Interpreter::Executor* vm, const std::string& name, const std::string& msg) {
         std::string error = msg;
         if (error.find("syntax error") != std::string::npos) {
             mSyntaxError = true;
         }
         LOG_ERROR(std::string(name) + " " + msg);
-    }
-
-    void* LoadBuiltinScriptFile(std::string name, size_t& size) {
-        StdFileIO io(mBuiltinScriptDirectory);
-        return io.Read(name, size);
     }
 };
 
@@ -97,7 +82,7 @@ public:
         mLock.unlock();
         return bRet;
     }
-    scoped_refptr<const Script> GetScriptFromName(const char* name) {
+    scoped_refptr<const Script> GetCachedScript(const std::string& name) {
         scoped_refptr<Script> ret = NULL;
         mLock.lock();
         auto item = mCache.find(name);
@@ -132,8 +117,7 @@ protected:
             Host = host;
         }
     };
-
-    FileIO* mIO;
+    ScriptLoader* mLoader;
     Value mPrefs;
     size_t mScriptCount;
     std::string mHosts;
@@ -148,7 +132,7 @@ protected:
     DISALLOW_COPY_AND_ASSIGN(HostsTask);
 
 public:
-    HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO);
+    HostsTask(std::string host, std::string ports, Value& prefs, ScriptLoader* IO);
 
 public:
     bool BeginTask(std::list<std::string>& scripts, std::string TaskID);
@@ -164,7 +148,7 @@ protected:
     void Execute();
     void ExecuteOneHost(TCB* tcb);
     void ExecuteScriptOnHost(TCB* tcb);
-    void OutputHostResult(TCB*tcb);
+    void OutputHostResult(TCB* tcb);
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
 #ifdef _WIN32
@@ -200,7 +184,7 @@ protected:
     bool InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefsDB,
                      std::list<std::string>& scripts, std::list<Value>& loadOrder,
                      std::map<std::string, int>& loaded);
-    void ThinNVTI(Value&nvti,bool lastPhase);
+    void ThinNVTI(Value& nvti, bool lastPhase);
     bool CheckScript(OVAContext* ctx, Value& nvti);
 
     void TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count);

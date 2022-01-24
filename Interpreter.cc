@@ -13,11 +13,8 @@ extern "C" {
 #include "modules/openvas/support/nvtidb.hpp"
 
 class InterpreterExecutorCallback : public Interpreter::ExecutorCallback {
-protected:
-    StdFileIO IO;
-
 public:
-    InterpreterExecutorCallback(FilePath folder) : IO(folder) {}
+    InterpreterExecutorCallback() {}
 
     void OnScriptWillExecute(Interpreter::Executor* vm,
                              scoped_refptr<const Interpreter::Script> Script,
@@ -26,11 +23,7 @@ public:
                           scoped_refptr<const Interpreter::Script> Script,
                           Interpreter::VMContext* ctx) {}
     void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {}
-    void* LoadScriptFile(Interpreter::Executor* vm, const char* name, size_t& size) {
-        void* ptr = IO.Read(name, size);
-        return ptr;
-    }
-    void OnScriptError(Interpreter::Executor* vm, const char* name, const char* msg) {
+    void OnScriptError(Interpreter::Executor* vm, const std::string& name, const std::string& msg) {
         std::string error = msg;
         LOG_ERROR(std::string(name) + " " + msg);
     }
@@ -39,11 +32,58 @@ public:
 bool ExecuteScript(FilePath path) {
     std::string dir = path.dir();
     std::string name = path.base_name();
+    StdFileIO IO(dir);
+    DefaultScriptLoader loader(&IO, false);
     OVAContext context(name, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
-    InterpreterExecutorCallback callback(dir);
-    Interpreter::Executor Engine(&callback, &context);
+    InterpreterExecutorCallback callback;
+    Interpreter::Executor Engine(&callback, &loader);
+    Engine.SetUserContext(&context);
     RegisgerModulesBuiltinMethod(&Engine);
     return Engine.Execute(name.c_str(), 5 * 60, true);
+}
+
+void StreamTest() {
+    StdFileIO IO("../test");
+    DefaultScriptLoader loader(&IO, false);
+    std::string error;
+    scoped_refptr<Script> script = loader.LoadScript("test.sc", error);
+    std::stringstream o;
+    script->WriteToStream(o);
+    std::string src = o.str();
+    size_t n = 64;
+    size_t i = 0;
+    std::string result = "";
+    while (i < n) {
+        std::string hex = "";
+        std::string str = "";
+        char buffer[6] = {0};
+        for (int j = 0; j < 16; j++, i++) {
+            if (i < n) {
+#ifdef _WIN32
+                sprintf_s(buffer, 6, "%02X ", (BYTE)src[i]);
+#else
+                snprintf(buffer, 6, "%02X ", (BYTE)src[i]);
+#endif
+                hex += buffer;
+                if (isprint(src[i])) {
+                    str += (char)src[i];
+                } else {
+                    str += ".";
+                }
+            } else {
+                hex += "   ";
+                str += " ";
+            }
+        }
+        result += hex;
+        result += "\t";
+        result += str;
+        result += "\n";
+    }
+    std::cout << result;
+
+    scoped_refptr<Script> second = new Script("");
+    second->ReadFromStream(o);
 }
 
 int main(int argc, char* argv[]) {

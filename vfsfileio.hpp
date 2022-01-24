@@ -3,8 +3,8 @@
 #include <mutex>
 
 #include "engine/exception.hpp"
-#include "fileio.hpp"
-
+#include "engine/file.hpp"
+#include "filepath.hpp"
 extern "C" {
 #include "vfs/vfsreader.h"
 }
@@ -12,13 +12,15 @@ extern "C" {
 class VFSFileIO : public FileIO {
 protected:
     vfs_handle_p mFile;
+    FilePath mWriteDir;
 
 public:
-    explicit VFSFileIO(const std::string& path) : mFile(NULL) {
+    explicit VFSFileIO(const std::string& path) : mFile(NULL), mWriteDir("") {
         mFile = vfs_open(path.c_str());
         if (mFile == NULL) {
             throw Interpreter::RuntimeException("vfs_open failed:" + path);
         }
+        mWriteDir = FilePath(path).dir();
     }
 
     void EnumFile(std::list<std::string>& files) {
@@ -33,16 +35,16 @@ public:
         }
     }
 
-    bool Write(const std::string& path, const std::string& data) {
-        StdFileIO w("");
-        return w.Write(path, data);
+    size_t Write(const std::string& name, const void* content, size_t contentSize) {
+        StdFileIO w(mWriteDir);
+        return w.Write(name, content, contentSize);
     }
 
-    void* Read(const std::string& path, size_t& nSize) {
+    void* Read(const std::string& name, size_t& contentSize) {
         int error = 0;
-        vfs_dir_entry_p pEntry = vfs_lookup(mFile, path.c_str());
+        vfs_dir_entry_p pEntry = vfs_lookup(mFile, name.c_str());
         if (pEntry == NULL) {
-            LOG_ERROR("file not found:", path);
+            LOG_ERROR("file not found:", name);
             return NULL;
         }
         void* pContext = vfs_get_file_all_content(mFile, pEntry, &error);
@@ -50,7 +52,7 @@ public:
             LOG_ERROR("vfs error ", error);
             return NULL;
         }
-        nSize = vfs_file_size(pEntry);
+        contentSize = vfs_file_size(pEntry);
         return pContext;
     }
 };

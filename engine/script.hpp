@@ -103,6 +103,37 @@ extern const char* kObjMethod;
 extern const char* kPath;
 }; // namespace KnownListName
 
+template <typename T>
+inline void BinaryRead(std::istream& stream, T& val) {
+    stream.read((char*)&val, sizeof(T));
+}
+
+template <>
+inline void BinaryRead(std::istream& stream, std::string& val) {
+    unsigned int Size = 0;
+    BinaryRead(stream, Size);
+    if (Size == 0) {
+        val = "";
+        return;
+    }
+    char* buffer = new char[Size];
+    stream.read(buffer, Size);
+    val.assign(buffer, Size);
+    delete[] buffer;
+}
+
+template <typename T>
+inline void BinaryWrite(std::ostream& stream, const T& val) {
+    stream.write((const char*)&val, sizeof(T));
+}
+
+template <>
+inline void BinaryWrite(std::ostream& stream, const std::string& val) {
+    unsigned int Size = val.size();
+    BinaryWrite(stream, Size);
+    stream.write(val.c_str(), Size);
+}
+
 class Instruction {
 public:
     typedef unsigned int keyType;
@@ -112,31 +143,27 @@ public:
     std::vector<keyType> Refs;
 
     void WriteToStream(std::ostream& o) const {
-        o << OpCode;
-        o << key;
-        o << (unsigned char)Name.size();
-        o.write(Name.c_str(), Name.size());
-        o << (int)Refs.size();
+        BinaryWrite(o, OpCode);
+        BinaryWrite(o, key);
+        BinaryWrite(o, Name);
+        unsigned int RefsSize = Refs.size();
+        BinaryWrite(o, RefsSize);
         for (auto iter : Refs) {
-            o << iter;
+            BinaryWrite(o, iter);
         }
     }
 
-    void ReadFromStream(std::iostream& stream) {
-        char name_size = 0;
-        int count = 0;
-        keyType value = 0;
-        stream >> OpCode;
-        stream >> key;
-        stream >> name_size;
-        char* buf = new char[name_size];
-        stream.read(buf, name_size);
-        Name.assign(buf, name_size);
-        delete[] buf;
-        stream >> count;
-        for (int i = 0; i < count; i++) {
-            stream >> value;
-            Refs.push_back(value);
+    void ReadFromStream(std::istream& i) {
+        BinaryRead(i, OpCode);
+        BinaryRead(i, key);
+        BinaryRead(i, Name);
+        unsigned int RefSize = 0;
+        BinaryRead(i, RefSize);
+        keyType cKey;
+        Refs.clear();
+        for (unsigned int n = 0; n < RefSize; n++) {
+            BinaryRead(i, cKey);
+            Refs.push_back(cKey);
         }
     }
 
@@ -426,15 +453,98 @@ public:
         return stream.str();
     }
     void WriteToStream(std::ostream& o) const {
-        o << EntryPoint->key;
-        o << (long)mInstructionTable.size();
-        o << (long)mConstTable.size();
+        unsigned int InsSize, ConstSize;
+        InsSize = mInstructionTable.size();
+        ConstSize = mConstTable.size();
+
+        BinaryWrite(o, EntryPoint->key);
+        BinaryWrite(o, Name);
+        BinaryWrite(o, InsSize);
+        BinaryWrite(o, ConstSize);
         for (auto iter : mInstructionTable) {
             (iter.second)->WriteToStream(o);
         }
+        for (auto iter : mConstTable) {
+            BinaryWrite(o, iter.first);
+            WriteConst(o, iter.second);
+        }
     }
 
-    void ReadFromStream(std::iostream& stream) {}
+    void ReadFromStream(std::istream& i) {
+        unsigned int InsSize, ConstSize;
+        Instruction::keyType cKey = 0, Entry = 0;
+        BinaryRead(i, Entry);
+        BinaryRead(i, Name);
+        BinaryRead(i, InsSize);
+        BinaryRead(i, ConstSize);
+
+        mInstructionTable.clear();
+        mConstTable.clear();
+        for (unsigned int n = 0; n < InsSize; n++) {
+            Instruction* ins = new Instruction();
+            ins->ReadFromStream(i);
+            mInstructionTable[ins->key] = ins;
+        }
+
+        for (unsigned int n = 0; n < ConstSize; n++) {
+            BinaryRead(i, cKey);
+            Value val = ReadConst(i);
+            mConstTable[cKey] = val;
+        }
+        EntryPoint = mInstructionTable[Entry];
+        mInstructionKey = mInstructionTable.size() + 1;
+        mConstKey = mConstTable.size() + 1;
+    }
+
+    void WriteConst(std::ostream& o, const Value& val) const {
+        assert(val.IsAtom());
+        if (!val.IsAtom()) {
+            return;
+        }
+        BinaryWrite(o, val.Type);
+        switch (val.Type) {
+        case ValueType::kByte:
+            BinaryWrite(o, val.Byte);
+            break;
+        case ValueType::kFloat:
+            BinaryWrite(o, val.Float);
+            break;
+        case ValueType::kInteger:
+            BinaryWrite(o, val.Integer);
+            break;
+        case ValueType::kString:
+            BinaryWrite(o, val.text);
+            break;
+        default:
+            break;
+        }
+    }
+
+    Value ReadConst(std::istream& i) {
+        Value val;
+        BinaryRead(i, val.Type);
+        assert(val.IsAtom());
+        if (!val.IsAtom()) {
+            return Value();
+        }
+        switch (val.Type) {
+        case ValueType::kByte:
+            BinaryRead(i, val.Byte);
+            break;
+        case ValueType::kInteger:
+            BinaryRead(i, val.Integer);
+            break;
+        case ValueType::kFloat:
+            BinaryRead(i, val.Float);
+            break;
+        case ValueType::kString:
+            BinaryRead(i, val.text);
+            break;
+        default:
+            throw RuntimeException("not a atom const value type");
+        }
+        return val;
+    }
 
 protected:
     std::string JoinRefsName(const Instruction* ins) const {

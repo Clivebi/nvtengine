@@ -386,6 +386,9 @@ public:
     static Value MakeObject(UDObject* obj);
 
 public:
+    bool IsAtom() const {
+        return Type == ValueType::kFloat || IsInteger() || IsString() || IsByte();
+    }
     bool IsNULL() const { return Type == ValueType::kNULL; }
     bool IsInteger() const { return Type == ValueType::kInteger || Type == ValueType::kByte; }
     bool IsNumber() const {

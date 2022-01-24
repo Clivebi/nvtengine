@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "exception.hpp"
+#include "file.hpp"
 #include "logger.hpp"
 #include "script.hpp"
 #include "value.hpp"
@@ -18,31 +19,61 @@ typedef struct _BuiltinMethod {
     RUNTIME_FUNCTION func;
 } BuiltinMethod;
 
+//shared script object
 #define SHARED_SCRIPT_BASE (0x80000000)
 class ScriptCache {
 public:
+    //called cache manger when engine create a new script
+    //if this script shared,the cache provider return true
     virtual bool OnNewScript(scoped_refptr<Script> Script) = 0;
-    virtual scoped_refptr<const Script> GetScriptFromName(const char* name) = 0;
+    //lookup a shared script object,if not exist ,return NULL
+    virtual scoped_refptr<const Script> GetCachedScript(const std::string& name) = 0;
+};
+
+//Script loader interface
+class ScriptLoader {
+public:
+    // load script from file by name
+    virtual scoped_refptr<Script> LoadScript(const std::string& name, std::string& error) = 0;
+};
+
+//default script loader implement
+class DefaultScriptLoader : public ScriptLoader {
+protected:
+    FileReader* mReader;
+    bool mEncoded;
+    DISALLOW_COPY_AND_ASSIGN(DefaultScriptLoader);
+
+    scoped_refptr<Script> LoadScriptFromEncodedFile(const std::string& name, std::string& error);
+
+public:
+    explicit DefaultScriptLoader(FileReader* reader, bool encodedFile)
+            : mReader(reader), mEncoded(encodedFile) {}
+    virtual scoped_refptr<Script> LoadScript(const std::string& name, std::string& error);
 };
 
 class ExecutorCallback {
 public:
+    // call befare main script execute
     virtual void OnScriptWillExecute(Executor* vm, scoped_refptr<const Script> Script,
                                      VMContext* ctx) = 0;
+    // call when main script entry executed
     virtual void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script,
                                        VMContext* ctx) = 0;
+    // call when script exected
     virtual void OnScriptExecuted(Executor* vm, scoped_refptr<const Script> Script,
                                   VMContext* ctx) = 0;
-    virtual void* LoadScriptFile(Executor* vm, const char* name, size_t& size) = 0;
-    virtual void OnScriptError(Executor* vm, const char* name, const char* msg) = 0;
+    // call when script error
+    virtual void OnScriptError(Executor* vm, const std::string& name, const std::string& msg) = 0;
 };
 
 class Executor {
 public:
-    Executor(ExecutorCallback* callback, void* userContext);
+    Executor(ExecutorCallback* callback, ScriptLoader* Loader);
 
 public:
-    bool Execute(const char* name, int timeout_second = 0, bool showWarning = false);
+    bool Execute(const std::string& name, int timeout_second = 0, bool showWarning = false,
+                 bool onlyParse = false);
 
     void RegisgerFunction(BuiltinMethod methods[], int count, std::string prefix = "");
 
@@ -63,8 +94,7 @@ public:
     void SetScriptCacheProvider(ScriptCache* ptr) { mCacheProvider = ptr; }
 
 protected:
-    scoped_refptr<const Script> LoadScript(const char* name, std::string& error);
-    scoped_refptr<Script> LoadScriptInternal(const char* name, std::string& error);
+    scoped_refptr<const Script> LoadScript(const std::string& name, std::string& error);
     Value Execute(const Instruction* ins, VMContext* ctx);
     Value ExecuteList(std::vector<const Instruction*> insList, VMContext* ctx);
     Value CallFunction(const Instruction* ins, VMContext* ctx);
@@ -75,7 +105,7 @@ protected:
     Value ExecuteForStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteForInStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
-    bool  ConvertNilWhenUpdate(Value& oldVal,Value val, Instructions::Type opCode,VMContext* ctx);
+    bool ConvertNilWhenUpdate(Value& oldVal, Value val, Instructions::Type opCode, VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);
     Value ConvertNil(Value index, VMContext* ctx);
@@ -123,6 +153,7 @@ protected:
     void* mContext;
     VMContext* mCurrentVMContxt;
     ExecutorCallback* mCallback;
+    ScriptLoader* mLoader;
     ScriptCache* mCacheProvider;
     std::list<scoped_refptr<Script>> mScripts;
     std::list<scoped_refptr<const Script>> mSharedScripts;

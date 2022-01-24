@@ -53,11 +53,11 @@ zlib openssl sqlite3 libssh  libbrotlidec
 - [x] 实现windows/linux/mac完整跨平台
 
 0.1.2  版本  
-- [ ] vfs集成
+- [x] vfs集成
 - [ ] openvas所有API实现支持
 - [ ] 安全性提升，数据加密，签名
 - [ ] 管理接口完善
-- [ ] 脚本序列化加速执行
+- [x] 脚本序列化加速执行
 
 0.1.3  版本  
 - [ ] 增强主机指纹识别功能

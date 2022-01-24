@@ -53,21 +53,82 @@ void yyerror(Interpreter::Parser* parser, const char* s) {
 
 void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
+struct membuf : std::streambuf {
+    membuf(char const* base, size_t size) {
+        char* p(const_cast<char*>(base));
+        this->setg(p, p, p + size);
+    }
+};
+struct InputMemstream : virtual membuf, std::istream {
+    InputMemstream(char const* base, size_t size)
+            : membuf(base, size), std::istream(static_cast<std::streambuf*>(this)) {}
+};
+
 namespace Interpreter {
 
-Executor::Executor(ExecutorCallback* callback, void* userContext)
-        : mScripts(), mSharedScripts(), mCallback(callback), mCacheProvider(NULL) {
-    mContext = userContext;
+scoped_refptr<Script> DefaultScriptLoader::LoadScriptFromEncodedFile(const std::string& name,
+                                                                     std::string& error) {
+    size_t size = 0;
+    void* data = mReader->Read(name, size);
+    if (data == NULL || size == 0) {
+        error = "read script data error";
+        return NULL;
+    }
+    std::string text = HexEncode((char*)data, 64);
+    scoped_refptr<Script> script = new Script("");
+    InputMemstream is((char*)data, size);
+    script->ReadFromStream(is);
+    free(data);
+    return script;
+}
+
+scoped_refptr<Script> DefaultScriptLoader::LoadScript(const std::string& name, std::string& error) {
+    if (mEncoded) {
+        return LoadScriptFromEncodedFile(name, error);
+    }
+    size_t size = 0;
+    void* data = mReader->Read(name, size);
+    if (data == NULL || size == 0) {
+        error = "read script data error";
+        return NULL;
+    }
+    YY_BUFFER_STATE bp = {0};
+    yyscan_t scanner = 0;
+    yylex_init(&scanner);
+    scoped_refptr<Parser> parser = new Parser(scanner);
+    bp = yy_scan_bytes((const char*)data, (int)size, scanner);
+    yy_switch_to_buffer(bp, scanner);
+    parser->Start(name);
+    int err = yyparse(parser.get());
+    yy_flush_buffer(bp, scanner);
+    yy_delete_buffer(bp, scanner);
+    yylex_destroy(scanner);
+    free(data);
+    if (err) {
+        error = parser->mLastError;
+        return NULL;
+    }
+    return parser->Finish();
+}
+
+Executor::Executor(ExecutorCallback* callback, ScriptLoader* Loader)
+        : mScripts(),
+          mSharedScripts(),
+          mCallback(callback),
+          mCacheProvider(NULL),
+          mContext(NULL),
+          mLoader(Loader) {
     RegisgerEngineBuiltinMethod(this);
 }
 
-bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
+bool Executor::Execute(const std::string& name, int timeout_second, bool showWarning,
+                       bool onlyParse) {
     bool bRet = false;
     std::string error = "";
     Reset();
     scoped_refptr<const Script> script = LoadScript(name, error);
     if (script == NULL) {
-        mCallback->OnScriptError(this, name, error.c_str());
+        mCallback->OnScriptError(this, name, error);
         return false;
     }
     scoped_refptr<VMContext> context = new VMContext(VMContext::File, NULL, timeout_second, name);
@@ -76,7 +137,9 @@ bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
 
     try {
         mCallback->OnScriptWillExecute(this, script, context);
-        Execute(script->EntryPoint, context);
+        if (!onlyParse) {
+            Execute(script->EntryPoint, context);
+        }
         bRet = true;
         mCallback->OnScriptEntryExecuted(this, script, context);
     } catch (const RuntimeException& e) {
@@ -89,17 +152,17 @@ bool Executor::Execute(const char* name, int timeout_second, bool showWarning) {
     return bRet;
 }
 
-scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& error) {
+scoped_refptr<const Script> Executor::LoadScript(const std::string& name, std::string& error) {
     bool bShared = false;
     if (mCacheProvider != NULL) {
-        scoped_refptr<const Script> preview = mCacheProvider->GetScriptFromName(name);
-        if (preview != NULL) {
+        scoped_refptr<const Script> cache = mCacheProvider->GetCachedScript(name);
+        if (cache != NULL) {
             bShared = true;
-            mSharedScripts.push_back(preview);
-            return preview;
+            mSharedScripts.push_back(cache);
+            return cache;
         }
     }
-    scoped_refptr<Script> script = LoadScriptInternal(name, error);
+    scoped_refptr<Script> script = mLoader->LoadScript(name, error);
     if (script == NULL) {
         return NULL;
     }
@@ -119,32 +182,6 @@ scoped_refptr<const Script> Executor::LoadScript(const char* name, std::string& 
     }
     mScripts.push_back(script);
     return script;
-}
-
-scoped_refptr<Script> Executor::LoadScriptInternal(const char* name, std::string& error) {
-    size_t size = 0;
-    void* data = mCallback->LoadScriptFile(this, name, size);
-    if (data == NULL) {
-        error = "callback LoadScriptFile failed";
-        return NULL;
-    }
-    YY_BUFFER_STATE bp;
-    yyscan_t scanner;
-    yylex_init(&scanner);
-    scoped_refptr<Parser> parser = new Parser(scanner);
-    bp = yy_scan_bytes((char*)data, (int)size, scanner);
-    yy_switch_to_buffer(bp, scanner);
-    parser->Start(name);
-    int err = yyparse(parser.get());
-    yy_flush_buffer(bp, scanner);
-    yy_delete_buffer(bp, scanner);
-    yylex_destroy(scanner);
-    free(data);
-    if (err) {
-        error = parser->mLastError;
-        return NULL;
-    }
-    return parser->Finish();
 }
 
 void Executor::RegisgerFunction(BuiltinMethod methods[], int count, std::string prefix) {

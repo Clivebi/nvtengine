@@ -112,4 +112,11 @@ public:
         }
         return "";
     }
+    int enable_code_cache() {
+        auto iter = mPref._map().find("enable_code_cache");
+        if (iter != mPref._map().end()) {
+            return iter->second.ToInteger();
+        }
+        return 1;
+    }
 };

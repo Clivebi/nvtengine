@@ -11,11 +11,13 @@ extern "C" {
 }
 #include "./modules/openvas/api.hpp"
 #include "./modules/openvas/support/sconfdb.hpp"
+#include "codecache.hpp"
 #include "engine/vm.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "ntvpref.hpp"
 #include "parseargs.hpp"
+#include "scriptloader.hpp"
 #include "taskmgr.hpp"
 #include "testoids.hpp"
 #include "vfsfileio.hpp"
@@ -38,8 +40,7 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
         FilePath short_path = relative_path;
         short_path += entry->d_name;
         std::string element = short_path;
-        if (element.find(".sc") != std::string::npos &&
-            element.find(".inc.") == std::string::npos) {
+        if (element.find(".sc") != std::string::npos) {
             result.push_back(element);
         }
     }
@@ -48,16 +49,29 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
 
 void UpdateNVTIFromLocalFS(NVTPref& helper) {
     std::list<std::string> result;
-    StdFileIO IO(helper.script_folder());
+    StdFileIO scriptIO(helper.script_folder());
+    StdFileIO builtinIO(helper.builtin_script_path());
+    DefaultScriptLoader scriptLoader(&scriptIO, false);
+    DefaultScriptLoader builtinLoader(&builtinIO, false);
+    ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
     CollectAllScript(helper.script_folder(), "", result);
     Value ret = Value::MakeArray();
+    ScriptCache* cachePtr = NULL;
     ScriptCacheImplement cache;
-    DefaultExecutorCallback callback(helper.builtin_script_path(), &IO);
+    CodeCacheWriter cache2(FilePath(helper.app_data_folder()) + FilePath("code_cache.bin"));
+    cachePtr = &cache;
+    if (helper.enable_code_cache()) {
+        cachePtr = &cache2;
+    }
+    DefaultExecutorCallback callback;
     callback.mDescription = true;
-    Interpreter::Executor exe(&callback, NULL);
+    Interpreter::Executor exe(&callback, &loader);
     RegisgerModulesBuiltinMethod(&exe);
-    exe.SetScriptCacheProvider(&cache);
+    exe.SetScriptCacheProvider(cachePtr);
     for (auto iter : result) {
+        if (iter.find(".inc.") != std::string::npos) {
+            continue;
+        }
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
         bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning());
@@ -78,19 +92,44 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
         db.UpdateAll(ret);
         ret._array().clear();
     }
+    if (!helper.enable_code_cache()) {
+        return;
+    }
+    //compire all left inc file
+    for (auto iter : result) {
+        if (iter.find(".inc.") == std::string::npos) {
+            continue;
+        }
+        OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
+        exe.SetUserContext(&context);
+        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning(),true);
+        if (callback.mSyntaxError) {
+            break;
+        }
+    }
 }
 
 void UpdateNVTIFromVFS(NVTPref& helper) {
     std::list<std::string> result;
-    VFSFileIO IO(helper.script_package());
-    IO.EnumFile(result);
+    VFSFileIO scriptIO(helper.script_package());
+    StdFileIO builtinIO(helper.builtin_script_path());
+    DefaultScriptLoader scriptLoader(&scriptIO, false);
+    DefaultScriptLoader builtinLoader(&builtinIO, false);
+    ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+    scriptIO.EnumFile(result);
     Value ret = Value::MakeArray();
+    ScriptCache* cachePtr = NULL;
     ScriptCacheImplement cache;
-    DefaultExecutorCallback callback(helper.builtin_script_path(), &IO);
+    CodeCacheWriter cache2(FilePath(helper.app_data_folder()) + FilePath("code_cache.bin"));
+    cachePtr = &cache;
+    if (helper.enable_code_cache()) {
+        cachePtr = &cache2;
+    }
+    DefaultExecutorCallback callback;
     callback.mDescription = true;
-    Interpreter::Executor exe(&callback, NULL);
+    Interpreter::Executor exe(&callback, &loader);
     RegisgerModulesBuiltinMethod(&exe);
-    exe.SetScriptCacheProvider(&cache);
+    exe.SetScriptCacheProvider(cachePtr);
     for (auto iter : result) {
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
@@ -165,20 +204,47 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
         std::cout << "You must provider target hosts and ports" << std::endl;
         return;
     }
+    if (helper.enable_code_cache()) {
+        std::list<std::string> oidList;
+        LoadOidList(option, pref, oidList);
+        BlockFile* block =
+                BlockFile::NewReader((FilePath)helper.app_data_folder() + "code_cache.bin");
+        if (block != NULL) {
+            StdFileIO builtinIO(helper.builtin_script_path());
+            DefaultScriptLoader scriptLoader(block, true);
+            DefaultScriptLoader builtinLoader(&builtinIO, false);
+            ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+
+            HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
+            task.BeginTask(oidList, "10000");
+            task.Join();
+            delete block;
+            return;
+        }
+    }
     if (helper.script_package().size()) {
         std::list<std::string> oidList;
         LoadOidList(option, pref, oidList);
-        VFSFileIO IO(helper.script_package());
+        VFSFileIO scriptIO(helper.script_package());
 
-        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &IO);
+        StdFileIO builtinIO(helper.builtin_script_path());
+        DefaultScriptLoader scriptLoader(&scriptIO, false);
+        DefaultScriptLoader builtinLoader(&builtinIO, false);
+        ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+
+        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
         task.BeginTask(oidList, "10000");
         task.Join();
     } else {
         std::list<std::string> oidList;
         LoadOidList(option, pref, oidList);
-        StdFileIO IO(helper.script_folder());
+        StdFileIO scriptIO(helper.script_folder());
+        StdFileIO builtinIO(helper.builtin_script_path());
+        DefaultScriptLoader scriptLoader(&scriptIO, false);
+        DefaultScriptLoader builtinLoader(&builtinIO, false);
+        ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
 
-        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &IO);
+        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
         task.BeginTask(oidList, "10000");
         task.Join();
     }

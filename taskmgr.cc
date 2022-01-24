@@ -13,13 +13,13 @@ extern "C" {
 #include "ntvpref.hpp"
 #include "taskmgr.hpp"
 
-HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, FileIO* IO)
+HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, ScriptLoader* IO)
         : mScriptCount(0),
           mHosts(host),
           mPorts(ports),
           mPrefs(prefs),
           mMainThread(0),
-          mIO(IO),
+          mLoader(IO),
           mScriptCache(),
           mTaskCount(0) {}
 
@@ -223,8 +223,8 @@ void HostsTask::OutputHostResult(TCB* tcb) {
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     NVTPref helper(mPrefs);
-    DefaultExecutorCallback callback(helper.builtin_script_path(), mIO);
-    Interpreter::Executor Engine(&callback, NULL);
+    DefaultExecutorCallback callback;
+    Interpreter::Executor Engine(&callback, mLoader);
     Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
     LOG_DEBUG("start execute script");
@@ -487,8 +487,8 @@ protected:
     std::vector<int> ports;
 
 public:
-    DetectServiceCallback(FilePath folder, FileIO* IO, HostsTask::TCB* tcb, std::vector<int>& ports)
-            : DefaultExecutorCallback(folder, IO), tcb(tcb), ports(ports) {}
+    DetectServiceCallback(HostsTask::TCB* tcb, std::vector<int>& ports)
+            : DefaultExecutorCallback(), tcb(tcb), ports(ports) {}
     void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {
         if (tcb->Exit) {
             return;
@@ -507,8 +507,8 @@ public:
 
 void HostsTask::DetectService(DetectServiceParamter* param) {
     NVTPref helper(mPrefs);
-    DetectServiceCallback callback(helper.builtin_script_path(), mIO, param->tcb, param->ports);
-    Interpreter::Executor Engine(&callback, NULL);
+    DetectServiceCallback callback(param->tcb, param->ports);
+    Interpreter::Executor Engine(&callback, mLoader);
     Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
     OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);
