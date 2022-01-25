@@ -43,6 +43,11 @@ bool ExecuteScript(FilePath path) {
 }
 
 void StreamTest() {
+    unsigned char buf[9];
+    long long llv;
+    varint::encode(0xFFFFFFFFFFF, buf);
+    varint::decode(buf, llv);
+
     StdFileIO IO("../test");
     DefaultScriptLoader loader(&IO, false);
     std::string error;
@@ -87,6 +92,7 @@ void StreamTest() {
 }
 
 int main(int argc, char* argv[]) {
+    StreamTest();
     masscan_init();
     InitializeLibray();
     g_LogLevel = LEVEL_DEBUG;

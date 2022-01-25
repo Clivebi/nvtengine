@@ -9,6 +9,7 @@
 
 #include "exception.hpp"
 #include "value.hpp"
+#include "varint.hpp"
 
 namespace Interpreter {
 namespace Instructions {
@@ -103,9 +104,84 @@ extern const char* kObjMethod;
 extern const char* kPath;
 }; // namespace KnownListName
 
+inline void BinaryWrite(std::ostream& stream, unsigned short val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, unsigned int val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, unsigned char val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, long long val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, short val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, int val) {
+    unsigned char buf[9] = {0};
+    int count = varint::encode((long long)val, buf);
+    if (count == -1) {
+        throw RuntimeException("val too larger");
+    }
+    stream.write((char*)buf, count);
+}
+
+inline void BinaryWrite(std::ostream& stream, double val) {
+    stream.write((const char*)&val, sizeof(val));
+}
+
+inline void BinaryWrite(std::ostream& stream, const std::string& val) {
+    unsigned int Size = (unsigned int)val.size();
+    BinaryWrite(stream, Size);
+    stream.write(val.c_str(), Size);
+}
+
+
 template <typename T>
 inline void BinaryRead(std::istream& stream, T& val) {
-    stream.read((char*)&val, sizeof(T));
+    long long result = 0;
+    int count = varint::decode(stream, result);
+    if (count == -1) {
+        throw RuntimeException("decode varint failed");
+    }
+    val = (T)result;
+}
+
+template <>
+inline void BinaryRead(std::istream& stream, double& val) {
+    stream.read((char*)&val, sizeof(double));
 }
 
 template <>
@@ -120,18 +196,6 @@ inline void BinaryRead(std::istream& stream, std::string& val) {
     stream.read(buffer, Size);
     val.assign(buffer, Size);
     delete[] buffer;
-}
-
-template <typename T>
-inline void BinaryWrite(std::ostream& stream, const T& val) {
-    stream.write((const char*)&val, sizeof(T));
-}
-
-template <>
-inline void BinaryWrite(std::ostream& stream, const std::string& val) {
-    unsigned int Size = (unsigned int)val.size();
-    BinaryWrite(stream, Size);
-    stream.write(val.c_str(), Size);
 }
 
 class Instruction {
@@ -493,8 +557,8 @@ public:
             mConstTable[cKey] = val;
         }
         EntryPoint = mInstructionTable[Entry];
-        mInstructionKey =(Instruction::keyType) mInstructionTable.size() + 1;
-        mConstKey =(Instruction::keyType) mConstTable.size() + 1;
+        mInstructionKey = (Instruction::keyType)mInstructionTable.size() + 1;
+        mConstKey = (Instruction::keyType)mConstTable.size() + 1;
     }
 
     void WriteConst(std::ostream& o, const Value& val) const {

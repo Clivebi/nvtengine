@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\engine\tls.hpp" />
     <ClInclude Include="..\..\engine\utf8.hpp" />
     <ClInclude Include="..\..\engine\value.hpp" />
+    <ClInclude Include="..\..\engine\varint.hpp" />
     <ClInclude Include="..\..\engine\vm.hpp" />
     <ClInclude Include="..\..\engine\vmcontext.hpp" />
   </ItemGroup>
