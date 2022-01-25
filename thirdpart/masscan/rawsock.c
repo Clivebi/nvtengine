@@ -27,6 +27,7 @@
 static int is_pcap_file = 0;
 
 #ifdef _WIN32
+#include<Windows.h>
 #include <iphlpapi.h>
 #include <winsock.h>
 

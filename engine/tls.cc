@@ -13,10 +13,10 @@ size_t TLS::Allocate() {
     return TlsAlloc();
 }
 void* TLS::GetValue(size_t index) {
-    return TlsGetValue(index);
+    return TlsGetValue((DWORD)index);
 }
 void TLS::SetValue(size_t index, void* value) {
-    TlsSetValue(index, value);
+    TlsSetValue((DWORD)index, value);
 }
 #else
 static std::mutex s_TlsLock;

@@ -10,32 +10,32 @@ public:
             throw Interpreter::RuntimeException("invalid config value");
         }
     }
-    int number_of_concurrent_tasks() {
+    unsigned int number_of_concurrent_tasks() {
         auto iter = mPref._map().find("number_of_concurrent_tasks");
         if (iter != mPref._map().end()) {
-            return (int)iter->second.ToInteger();
+            return (unsigned int)iter->second.ToInteger();
         }
         return 30;
     }
-    int port_scan_send_packet_rate() {
+    unsigned int port_scan_send_packet_rate() {
         auto iter = mPref._map().find("port_scan_send_packet_rate");
         if (iter != mPref._map().end()) {
-            return (int)iter->second.ToInteger();
+            return (unsigned int)iter->second.ToInteger();
         }
         return 1000;
     }
 
-    int script_default_timeout_second() {
+    unsigned int script_default_timeout_second() {
         auto iter = mPref._map().find("script_default_timeout_second");
         if (iter != mPref._map().end()) {
-            return (int)iter->second.ToInteger();
+            return (unsigned int)iter->second.ToInteger();
         }
         return 120;
     }
-    int service_detection_thread_count() {
+    unsigned int service_detection_thread_count() {
         auto iter = mPref._map().find("service_detection_thread_count");
         if (iter != mPref._map().end()) {
-            return (int)iter->second.ToInteger();
+            return (unsigned int)iter->second.ToInteger();
         }
         return 6;
     }
@@ -115,7 +115,7 @@ public:
     int enable_code_cache() {
         auto iter = mPref._map().find("enable_code_cache");
         if (iter != mPref._map().end()) {
-            return iter->second.ToInteger();
+            return (int)iter->second.ToInteger();
         }
         return 1;
     }

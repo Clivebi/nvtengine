@@ -27,6 +27,7 @@
     <ClInclude Include="..\..\engine\script.hpp" />
     <ClInclude Include="..\..\engine\script.lex.hpp" />
     <ClInclude Include="..\..\engine\script.tab.hpp" />
+    <ClInclude Include="..\..\engine\tls.hpp" />
     <ClInclude Include="..\..\engine\utf8.hpp" />
     <ClInclude Include="..\..\engine\value.hpp" />
     <ClInclude Include="..\..\engine\vm.hpp" />
@@ -37,6 +38,7 @@
     <ClCompile Include="..\..\engine\parser.cc" />
     <ClCompile Include="..\..\engine\script.lex.cpp" />
     <ClCompile Include="..\..\engine\script.tab.cpp" />
+    <ClCompile Include="..\..\engine\tls.cc" />
     <ClCompile Include="..\..\engine\udobject.cc" />
     <ClCompile Include="..\..\engine\utf8.cc" />
     <ClCompile Include="..\..\engine\value.cc" />

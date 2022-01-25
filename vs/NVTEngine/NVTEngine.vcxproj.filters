@@ -146,5 +146,8 @@
     <ClCompile Include="..\..\modules\net\sslhelper.cc">
       <Filter>modules\net</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\vfs\vfsreader.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

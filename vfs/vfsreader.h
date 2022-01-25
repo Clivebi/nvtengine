@@ -2,12 +2,13 @@
 //if define __USE_ZLIB__ ,use the zlib compress 
 //#define __USE_ZLIB__
 
-
+#ifndef _WIN32
 #define ERROR_SUCCESS (0)
-#define ERROR_NO_MEMORY (-1)
-#define ERROR_INVALID_VFS (-2)
 #define ERROR_BUFFER_OVERFLOW (-3)
 #define ERROR_INVALID_PARAMETER (-4)
+#endif
+#define ERROR_NO_MEMORY (-1)
+#define ERROR_INVALID_VFS (-2)
 
 //opaque handle for manger vfs object
 typedef struct _vfs_handle *vfs_handle_p;

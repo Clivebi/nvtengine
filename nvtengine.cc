@@ -102,7 +102,7 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
         }
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
-        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning(),true);
+        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning(), true);
         if (callback.mSyntaxError) {
             break;
         }
@@ -270,9 +270,21 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
     std::string search = "";
 #ifdef _WIN32
     search = getenv("AppData");
-#error("please implement on windows")
+    FilePath path = search;
+    path += PRODUCT_NAME;
+    path += "nvtengine.conf";
+    if (LoadJsonFromFile(path, pref)) {
+        return true;
+    }
+    if (LoadJsonFromFile(".\\etc\\nvtengine.conf", pref)) {
+        return true;
+    }
+
+    if (LoadJsonFromFile("..\\etc\\nvtengine.conf", pref)) {
+        return true;
+    }
     return false;
-#endif
+#else
     char _default_path[][120] = {"/etc/", "/usr/local"};
     for (int i = 0; i < sizeof(_default_path) / sizeof(_default_path[0]); i++) {
         FilePath path = _default_path[i];
@@ -292,6 +304,7 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
         return true;
     }
     return false;
+#endif
 }
 
 int main(int argc, char* argv[]) {

@@ -13,7 +13,7 @@ public:
     explicit StdFileIO(FilePath dir) : mDirectory(dir) {}
     std::string ResolvePath(const std::string& path) {
 #ifdef _WIN32
-        if (path.size() > 3 && path[1] == ':' && path[2] == "\\") {
+        if (path.size() > 3 && path[1] == ':' && path[2] == '\\') {
             return path;
         }
 #else

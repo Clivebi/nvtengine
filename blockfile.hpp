@@ -52,7 +52,7 @@ protected:
     bool WriteIndex(FILE* hFile, FileIndex* index) {
         unsigned short nameSize = 0;
         if (index->Name.size() > 65530) {
-            std::__throw_runtime_error("too larger file name");
+            throw Interpreter::RuntimeException("too larger file name");
         }
         if (sizeof(long long) != fwrite(&index->Offset, 1, sizeof(long long), hFile)) {
             return false;
@@ -63,7 +63,7 @@ protected:
         if (sizeof(unsigned int) != fwrite(&index->Crc32, 1, sizeof(unsigned int), hFile)) {
             return false;
         }
-        nameSize = index->Name.size();
+        nameSize =(unsigned short) index->Name.size();
         if (sizeof(unsigned short) != fwrite(&nameSize, 1, sizeof(nameSize), hFile)) {
             return false;
         }
@@ -140,13 +140,14 @@ public:
     bool IsFileExist(const std::string& name) { return mFileTable.end() != mFileTable.find(name); }
     bool ReadAt(void* buf, long long offset, int size) {
         size_t nRead = 0;
-        std::lock_guard guard(mLock);
+        mLock.lock();
         do {
-            if (0 != fseek(mhFile, offset, SEEK_SET)) {
+            if (0 != fseek(mhFile, (long)offset, SEEK_SET)) {
                 break;
             }
             nRead = fread(buf, 1, size, mhFile);
         } while (0);
+        mLock.unlock();
         return nRead == size;
     }
     void* Read(const std::string& name, size_t& contentSize) {
@@ -156,7 +157,7 @@ public:
         }
         void* ptr = malloc(iter->second->Size);
         contentSize = iter->second->Size;
-        if (ReadAt(ptr, iter->second->Offset, contentSize)) {
+        if (ReadAt(ptr, iter->second->Offset, (int)contentSize)) {
             return ptr;
         }
         free(ptr);
@@ -165,12 +166,12 @@ public:
     size_t Write(const std::string& name, const void* content, size_t contentSize) {
         FileIndex* index = new FileIndex();
         index->Offset = mOffset;
-        index->Size = contentSize;
+        index->Size = (unsigned int)contentSize;
         index->Crc32 = 0;
         index->Name = name;
         size_t nWrite = fwrite(content, 1, contentSize, mhFile);
         if (nWrite != contentSize) {
-            std::__throw_runtime_error("write block failed");
+            throw Interpreter::RuntimeException ("write block failed");
         }
         mFileTable[index->Name] = index;
         mOffset += contentSize;

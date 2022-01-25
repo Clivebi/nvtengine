@@ -124,7 +124,11 @@ protected:
     std::string mPorts;
     std::string mTaskID;
     thread_type mMainThread;
+    #ifdef _WIN32
+    DWORD mTaskCount;
+    #else
     int mTaskCount;
+    #endif
     ScriptCacheImplement mScriptCache;
 
     std::list<TCB*> mTCBGroup;

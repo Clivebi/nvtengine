@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include "engine/exception.hpp"
 class ParseArgs {
 protected:
     std::string mConfig;
@@ -40,7 +41,7 @@ public:
             if (str == "-c" || str == "--config" || str.find("--config") == 0) {
                 if (str == "-c" || str == "--config") {
                     if (argc < i + 1) {
-                        std::__throw_runtime_error("options -c not valid");
+                      throw Interpreter::RuntimeException ("options -c not valid");
                     }
                     mConfig = argv[i + 1];
                     i++;
@@ -52,7 +53,7 @@ public:
             if (str == "-h" || str == "--hosts" || str.find("--hosts") == 0) {
                 if (str == "-h" || str == "--hosts") {
                     if (argc < i + 1) {
-                        std::__throw_runtime_error("options -h not valid");
+                        throw Interpreter::RuntimeException("options -h not valid");
                     }
                     mHostList = argv[i + 1];
                     i++;
@@ -64,7 +65,7 @@ public:
             if (str == "-p" || str == "--ports" || str.find("--ports") == 0) {
                 if (str == "-p" || str == "--ports") {
                     if (argc < i + 1) {
-                        std::__throw_runtime_error("options -p not valid");
+                        throw Interpreter::RuntimeException("options -p not valid");
                     }
                     mPortList = argv[i + 1];
                     i++;
@@ -76,7 +77,7 @@ public:
             if (str == "-f" || str == "--filter" || str.find("--filter") == 0) {
                 if (str == "-f" || str == "--filter") {
                     if (argc < i + 1) {
-                        std::__throw_runtime_error("options -f not valid");
+                        throw Interpreter::RuntimeException("options -f not valid");
                     }
                     mOidFilter = argv[i + 1];
                     i++;

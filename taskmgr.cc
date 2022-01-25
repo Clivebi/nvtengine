@@ -77,7 +77,7 @@ void HostsTask::Execute() {
     join_host_scan_task(task);
     LOG_DEBUG("ports scan complete...");
     HostScanResult* seek = task->result;
-    int taskLimit = helper.number_of_concurrent_tasks();
+    unsigned int taskLimit = helper.number_of_concurrent_tasks();
     while (seek != NULL) {
         ipaddress_formatted_t host = ipaddress_fmt(seek->address);
         TCB* tcb = new TCB(host.string);

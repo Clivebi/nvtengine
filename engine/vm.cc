@@ -117,6 +117,7 @@ Executor::Executor(ExecutorCallback* callback, ScriptLoader* Loader)
           mCallback(callback),
           mCacheProvider(NULL),
           mContext(NULL),
+          mCurrentVMContxt(NULL),
           mLoader(Loader) {
     RegisgerEngineBuiltinMethod(this);
 }

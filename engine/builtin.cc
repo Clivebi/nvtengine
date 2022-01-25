@@ -277,7 +277,7 @@ Value VMEnv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 #ifdef __APPLE__
     ret._map()["OS"] = "Darwin";
 #endif
-#ifdef __WIN32__
+#ifdef WIN32
     ret._map()["OS"] = "Windows";
 #endif
 #ifdef __LINUX__

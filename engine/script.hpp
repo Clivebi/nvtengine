@@ -129,7 +129,7 @@ inline void BinaryWrite(std::ostream& stream, const T& val) {
 
 template <>
 inline void BinaryWrite(std::ostream& stream, const std::string& val) {
-    unsigned int Size = val.size();
+    unsigned int Size = (unsigned int)val.size();
     BinaryWrite(stream, Size);
     stream.write(val.c_str(), Size);
 }
@@ -146,7 +146,7 @@ public:
         BinaryWrite(o, OpCode);
         BinaryWrite(o, key);
         BinaryWrite(o, Name);
-        unsigned int RefsSize = Refs.size();
+        unsigned int RefsSize = (unsigned int)Refs.size();
         BinaryWrite(o, RefsSize);
         for (auto iter : Refs) {
             BinaryWrite(o, iter);
@@ -169,18 +169,19 @@ public:
 
 public:
     Instruction() : OpCode(Instructions::kNop), key(0) {}
-    Instruction(Instruction* one) : key(0) { Refs.push_back(one->key); }
-    Instruction(Instruction* one, Instruction* tow) : key(0) {
+    Instruction(Instruction* one) : OpCode(Instructions::kNop), key(0) { Refs.push_back(one->key); }
+    Instruction(Instruction* one, Instruction* tow) : OpCode(Instructions::kNop), key(0) {
         Refs.push_back(one->key);
         Refs.push_back(tow->key);
     }
-    Instruction(Instruction* one, Instruction* tow, Instruction* three) : key(0) {
+    Instruction(Instruction* one, Instruction* tow, Instruction* three)
+            : OpCode(Instructions::kNop), key(0) {
         Refs.push_back(one->key);
         Refs.push_back(tow->key);
         Refs.push_back(three->key);
     }
     Instruction(Instruction* one, Instruction* tow, Instruction* three, Instruction* four)
-            : key(0) {
+            : OpCode(Instructions::kNop), key(0) {
         Refs.push_back(one->key);
         Refs.push_back(tow->key);
         Refs.push_back(three->key);
@@ -454,8 +455,8 @@ public:
     }
     void WriteToStream(std::ostream& o) const {
         unsigned int InsSize, ConstSize;
-        InsSize = mInstructionTable.size();
-        ConstSize = mConstTable.size();
+        InsSize = (unsigned int)mInstructionTable.size();
+        ConstSize = (unsigned int)mConstTable.size();
 
         BinaryWrite(o, EntryPoint->key);
         BinaryWrite(o, Name);
@@ -492,8 +493,8 @@ public:
             mConstTable[cKey] = val;
         }
         EntryPoint = mInstructionTable[Entry];
-        mInstructionKey = mInstructionTable.size() + 1;
-        mConstKey = mConstTable.size() + 1;
+        mInstructionKey =(Instruction::keyType) mInstructionTable.size() + 1;
+        mConstKey =(Instruction::keyType) mConstTable.size() + 1;
     }
 
     void WriteConst(std::ostream& o, const Value& val) const {

@@ -51,6 +51,9 @@
     <ClInclude Include="..\..\engine\script.tab.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\engine\tls.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\engine\builtin.cc">
@@ -78,6 +81,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\engine\udobject.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\engine\tls.cc">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
