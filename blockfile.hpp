@@ -1,6 +1,7 @@
 #pragma once
 #include <mutex>
 
+#include "engine/script.hpp"
 #include "engine/vm.hpp"
 #include "filepath.hpp"
 class BlockFile : public FileIO {
@@ -16,6 +17,7 @@ protected:
             Crc32 = 0;
             Name = "";
         }
+        bool IsZero() { return Offset == 0 && Size == 0 && Name.size() == 0; }
     };
     FilePath mPath;
     FILE* mhFile;
@@ -49,91 +51,45 @@ public:
     }
 
 protected:
-    bool WriteIndex(FILE* hFile, FileIndex* index) {
-        unsigned short nameSize = 0;
-        if (index->Name.size() > 65530) {
-            throw Interpreter::RuntimeException("too larger file name");
-        }
-        if (sizeof(long long) != fwrite(&index->Offset, 1, sizeof(long long), hFile)) {
-            return false;
-        }
-        if (sizeof(unsigned int) != fwrite(&index->Size, 1, sizeof(unsigned int), hFile)) {
-            return false;
-        }
-        if (sizeof(unsigned int) != fwrite(&index->Crc32, 1, sizeof(unsigned int), hFile)) {
-            return false;
-        }
-        nameSize =(unsigned short) index->Name.size();
-        if (sizeof(unsigned short) != fwrite(&nameSize, 1, sizeof(nameSize), hFile)) {
-            return false;
-        }
-        if ((unsigned int)nameSize != fwrite(index->Name.c_str(), 1, nameSize, hFile)) {
-            return false;
-        }
-        return true;
+    void EncodeIndex(std::ostream& o, FileIndex* index) {
+        BinaryWrite(o, index->Offset);
+        BinaryWrite(o, index->Size);
+        BinaryWrite(o, index->Crc32);
+        BinaryWrite(o, index->Name);
     }
 
-    bool ReadIndex(FILE* hFile, FileIndex* index) {
-        unsigned short nameSize = 0;
-        if (sizeof(long long) != fread(&index->Offset, 1, sizeof(long long), hFile)) {
-            return feof(hFile);
-        }
-        if (sizeof(unsigned int) != fread(&index->Size, 1, sizeof(unsigned int), hFile)) {
-            return false;
-        }
-        if (sizeof(unsigned int) != fread(&index->Crc32, 1, sizeof(unsigned int), hFile)) {
-            return false;
-        }
-        if (sizeof(nameSize) != fread(&nameSize, 1, sizeof(nameSize), hFile)) {
-            return false;
-        }
-        char* buffer = new char[(unsigned int)nameSize];
-        if ((unsigned int)nameSize != fread(buffer, 1, nameSize, hFile)) {
-            delete[] buffer;
-            return false;
-        }
-        index->Name.assign(buffer, nameSize);
-        delete[] buffer;
-        return true;
+    void DecodeIndex(std::istream& i, FileIndex* index) {
+        BinaryRead(i, index->Offset);
+        BinaryRead(i, index->Size);
+        BinaryRead(i, index->Crc32);
+        BinaryRead(i, index->Name);
     }
     bool WriteIndexFile() {
         FilePath path = std::string(mPath) + ".index";
-        FILE* hFile = NULL;
-        hFile = fopen(((std::string)path).c_str(), "wb");
-        if (hFile == NULL) {
-            return false;
-        }
+        std::ofstream out(std::string(mPath) + ".index",std::ios::binary);
         for (auto iter : mFileTable) {
-            if (!WriteIndex(hFile, iter.second)) {
-                fclose(hFile);
-                return false;
-            }
+            EncodeIndex(out, iter.second);
         }
-        LOG_DEBUG("Total Size:",mOffset/1024/1024,"kb FileCount:",mFileTable.size());
-        fclose(hFile);
+        FileIndex empty;
+        EncodeIndex(out, &empty);
+        out.close();
+        LOG_DEBUG("Total Size : ", mOffset / 1024, " kb File Count:", mFileTable.size());
         return true;
     }
     bool LoadIndexFile() {
         FilePath path = std::string(mPath) + ".index";
-        FILE* hFile = NULL;
-        hFile = fopen(((std::string)path).c_str(), "rb");
-        if (hFile == NULL) {
-            return false;
-        }
+        std::ifstream input(std::string(mPath) + ".index", std::ios::binary);
         while (true) {
             FileIndex* index = new FileIndex();
-            if (!ReadIndex(hFile, index)) {
-                fclose(hFile);
-                return false;
-            }
-            if (index->Size == 0) {
+            DecodeIndex(input, index);
+            if (index->IsZero()) {
                 delete index;
                 break;
             }
             mFileTable[index->Name] = index;
         }
-        fclose(hFile);
-        return true;
+        input.close();
+        return mFileTable.size() > 0;
     }
 
 public:
@@ -171,7 +127,7 @@ public:
         index->Name = name;
         size_t nWrite = fwrite(content, 1, contentSize, mhFile);
         if (nWrite != contentSize) {
-            throw Interpreter::RuntimeException ("write block failed");
+            throw Interpreter::RuntimeException("write block failed");
         }
         mFileTable[index->Name] = index;
         mOffset += contentSize;

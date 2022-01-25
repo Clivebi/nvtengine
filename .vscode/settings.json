@@ -109,6 +109,23 @@
         "stack-queue.c": "cpp",
         "*.ds_store": "cpp",
         "unordered_set": "cpp",
-        "__bits": "cpp"
+        "__bits": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "xfacet": "cpp",
+        "xiosbase": "cpp",
+        "xlocale": "cpp",
+        "xlocbuf": "cpp",
+        "xlocinfo": "cpp",
+        "xlocmes": "cpp",
+        "xlocmon": "cpp",
+        "xlocnum": "cpp",
+        "xloctime": "cpp",
+        "xmemory": "cpp",
+        "xstddef": "cpp",
+        "xstring": "cpp",
+        "xtr1common": "cpp",
+        "xtree": "cpp",
+        "xutility": "cpp"
     }
 }
