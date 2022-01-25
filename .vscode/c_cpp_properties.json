@@ -6,14 +6,18 @@
                 "${default}",
                 "/usr/local//Cellar/brotli/1.0.9/include",
                 "/usr/local/Cellar/openssl@1.1/1.1.1m/include",
-                "/usr/local/Cellar/libssh/0.9.6/include"
+                "/usr/local/Cellar/libssh/0.9.6/include",
+                "D:/OpenCode/libs/include/brotli",
+                "D:/OpenCode/libs/include/libssh",
+                "D:/OpenCode/libs/include",
+                "D:/OpenCode/libs/include/zlib"
             ],
             "defines": [],
             "macFrameworkPath": [],
-            "compilerPath": "/usr/local/bin/gcc-11",
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.30.30705/bin/Hostx64/x64/cl.exe",
             "cStandard": "gnu17",
             "cppStandard": "gnu++17",
-            "intelliSenseMode": "macos-gcc-x64"
+            "intelliSenseMode": "windows-msvc-x64"
         }
     ],
     "version": 4

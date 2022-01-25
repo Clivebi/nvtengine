@@ -150,7 +150,7 @@ static int initialize_task_adapter(struct HostScanTask* task) {
      * Once we've figured out which adapter to use, we now need to
      * turn it on.
      */
-    task->nic.adapter = rawsock_init_adapter(ifname, 0, 0, 0, 0, NULL, false, 0);
+    task->nic.adapter = rawsock_init_adapter(ifname, 0, true, 0, 0, NULL, false, 0);
     if (task->nic.adapter == 0) {
         LOG(0, "[-] if:%s:init: failed\n", ifname);
         return -1;
@@ -702,13 +702,15 @@ static void send_thread(struct HostScanTask* task) {
     uint64_t i;
     uint64_t start = 0;
     uint64_t end = task->total_count;
+    unsigned int progress = 0;
+    unsigned int preprogress = 0;
     uint64_t packets_sent = 0;
     struct BlackRock blackrock;
     uint64_t repeats = 0; /* --infinite repeats */
     struct Throttler throttler;
 
     LOG(1, "[+] starting transmit thread");
-    LOG(3, "THREAD: xmit: starting main loop: [%llu..%llu]\n", start, end);
+    LOG(1, "THREAD: xmit: starting main loop: [%llu..%llu] rate=%d\n", start, end,task->rate);
     throttler_start(&throttler, (double)task->rate);
     blackrock_init(&blackrock, task->range, task->seed, 14);
     while (!task->shutdown) {
@@ -740,7 +742,11 @@ static void send_thread(struct HostScanTask* task) {
              * size will always be one. (--max-rate)
              */
             batch_size = throttler_next_batch(&throttler, packets_sent);
-
+            progress =(unsigned int)(i * 100 / end);
+            if (progress != preprogress) {
+                LOG(2, "current send progress:%ld packets:%llu batch_size:%llu\n", progress,packets_sent,batch_size);
+                preprogress = progress;
+            }
             /*
              * Transmit packets from other thread, when doing --banners. This
              * takes priority over sending SYN packets. If there is so much
@@ -850,6 +856,7 @@ static void send_thread(struct HostScanTask* task) {
 
             } /* end of batch */
         }
+        rawsock_send_packet(task->nic.adapter, NULL, 0, true);
         task->send_done = 1;
         pixie_usleep(700);
     }
