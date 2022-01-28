@@ -1247,6 +1247,15 @@ func _split_keys_from_query_string(query){
     return keys;
 }
 
+func _remove_some_properties(item){
+    if(item){
+        delete(item,"SystemProperties");
+        delete(item,"Qualifiers");
+        delete(item,"Scope");
+        delete(item,"Properties");
+    }
+}
+
 # "root\rsop\computer"
 # Get-WmiObject -Query {SELECT Name from Win32_Processor}| Format-List -Property *
 func WMIQuery(handle,query,namespace=nil){
@@ -1283,6 +1292,7 @@ func WMIQuery(handle,query,namespace=nil){
         value = TrimString(value,"\r\n\t ");
         if(key=="PSComputerName"){
             if(len(item)){
+                _remove_some_properties(item);
                 ret = append(ret,item);
                 item = {};
             }
@@ -1294,6 +1304,7 @@ func WMIQuery(handle,query,namespace=nil){
         item[key] = value;
     }
     if(len(item)){
+        _remove_some_properties(item);
         ret = append(ret,item);
     }
     return ret;

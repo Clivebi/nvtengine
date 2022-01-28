@@ -11,6 +11,7 @@ extern "C" {
 #include "filepath.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/support/nvtidb.hpp"
+#include "scriptloader.hpp"
 
 class InterpreterExecutorCallback : public Interpreter::ExecutorCallback {
 public:
@@ -32,8 +33,11 @@ public:
 bool ExecuteScript(FilePath path) {
     std::string dir = path.dir();
     std::string name = path.base_name();
-    StdFileIO IO(dir);
-    DefaultScriptLoader loader(&IO, false);
+    StdFileIO baseIO(dir);
+    StdFileIO builtinIO("../script/");
+    DefaultScriptLoader baseLoader(&baseIO, false);
+    DefaultScriptLoader builtinLoader(&builtinIO, false);
+    ScriptLoaderImplement loader(&baseLoader,&builtinLoader);
     OVAContext context(name, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
     InterpreterExecutorCallback callback;
     Interpreter::Executor Engine(&callback, &loader);
@@ -92,7 +96,6 @@ void StreamTest() {
 }
 
 int main(int argc, char* argv[]) {
-    StreamTest();
     masscan_init();
     InitializeLibray();
     g_LogLevel = LEVEL_DEBUG;

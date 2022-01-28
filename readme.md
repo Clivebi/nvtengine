@@ -38,6 +38,9 @@ windows 使用vs2022编译，解决方案位于vs目录，依赖如下一些库�
 zlib openssl sqlite3 libssh  libbrotlidec  
 运行时依赖winpcap   
 
+## 架构  
+![整体架构](https://github.com/Clivebi/nvtengine/blob/main/doc/nvtengie.png)
+
 ## 开发路径
 0.1.0 版本  
 - [x] 语法实现  
