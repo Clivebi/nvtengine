@@ -39,7 +39,7 @@ zlib openssl sqlite3 libssh  libbrotlidec
 运行时依赖winpcap   
 
 ## 架构  
-![整体架构](https://github.com/Clivebi/nvtengine/blob/main/doc/nvtengie.png)
+![整体架构](https://github.com/Clivebi/nvtengine/blob/main/doc/nvtengine.png)
 
 ## 开发路径
 0.1.0 版本  
