@@ -424,3 +424,113 @@ func win_cmd_exec(host="",username,password,cmd){
     }
     return res.Stdout;
 }
+
+func registry_key_exists( key, type=nil, query_cache=nil, save_cache=nil){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    if(RegEnumKey(GetWinRM(),full) || RegEnumValue(GetWinRM(),full)){
+        return true;
+    }
+    return false;
+}
+
+func registry_enum_keys( key, type=nil){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    return RegEnumKey(GetWinRM(),full);
+}
+
+func registry_get_sz(key, item, type=nil, multi_sz=nil, query_cache=nil, save_cache =nil ){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    var result = RegGetValue(GetWinRM(),full,item);
+    if(result){
+        if(!multi_sz){
+            return result["value"];
+        }
+        return ReplaceAllString(result["value"],"\\0","\n");
+    }
+    return nil;
+}
+
+func registry_enum_values( key, type ){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    var result = RegEnumValue(WinRM(),full);
+    if(!result){
+        return [];
+    }
+    var list = [];
+    for v in result{
+        list += v["value"];
+    }
+    return list;
+}
+
+func registry_get_dword( key, item, type ){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    var result = RegGetValue(GetWinRM(),full,item);
+    if(result){
+        return ToInteger(result["value"]);
+    }
+    return nil;
+}
+
+func registry_get_binary( key, item, type ){
+    var full = "";
+    if(!type){
+        full = "HKLM";
+    }else{
+        full = ToUpperString(type);
+    }
+    if(key[0] != '\\'){
+        full += "\\";
+    }
+    full += key;
+    var result = RegGetValue(GetWinRM(),full,item);
+    if(result){
+        return RegDecodeBinaryValue(result["value"]);
+    }
+    return nil;
+}
