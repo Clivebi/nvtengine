@@ -54,6 +54,9 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
     DefaultScriptLoader scriptLoader(&scriptIO, false);
     DefaultScriptLoader builtinLoader(&builtinIO, false);
     ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+    std::list<std::string> files;
+    CollectAllScript(helper.builtin_script_path(), "", files);
+    loader.AddBuiltinScriptFiles(files);
     CollectAllScript(helper.script_folder(), "", result);
     Value ret = Value::MakeArray();
     ScriptCache* cachePtr = NULL;
@@ -115,7 +118,12 @@ void UpdateNVTIFromVFS(NVTPref& helper) {
     StdFileIO builtinIO(helper.builtin_script_path());
     DefaultScriptLoader scriptLoader(&scriptIO, false);
     DefaultScriptLoader builtinLoader(&builtinIO, false);
+
     ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+
+    std::list<std::string> files;
+    CollectAllScript(helper.builtin_script_path(), "", files);
+    loader.AddBuiltinScriptFiles(files);
     scriptIO.EnumFile(result);
     Value ret = Value::MakeArray();
     ScriptCache* cachePtr = NULL;
@@ -214,6 +222,9 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
             DefaultScriptLoader scriptLoader(block, true);
             DefaultScriptLoader builtinLoader(&builtinIO, false);
             ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+            std::list<std::string> files;
+            CollectAllScript(helper.builtin_script_path(), "", files);
+            loader.AddBuiltinScriptFiles(files);
 
             HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
             task.BeginTask(oidList, "10000");
@@ -228,9 +239,12 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
         VFSFileIO scriptIO(helper.script_package());
 
         StdFileIO builtinIO(helper.builtin_script_path());
+        std::list<std::string> files;
+        CollectAllScript(helper.builtin_script_path(), "", files);
         DefaultScriptLoader scriptLoader(&scriptIO, false);
         DefaultScriptLoader builtinLoader(&builtinIO, false);
         ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+        loader.AddBuiltinScriptFiles(files);
 
         HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
         task.BeginTask(oidList, "10000");
@@ -240,9 +254,12 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
         LoadOidList(option, pref, oidList);
         StdFileIO scriptIO(helper.script_folder());
         StdFileIO builtinIO(helper.builtin_script_path());
+        std::list<std::string> files;
+        CollectAllScript(helper.builtin_script_path(), "", files);
         DefaultScriptLoader scriptLoader(&scriptIO, false);
         DefaultScriptLoader builtinLoader(&builtinIO, false);
         ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+        loader.AddBuiltinScriptFiles(files);
 
         HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
         task.BeginTask(oidList, "10000");

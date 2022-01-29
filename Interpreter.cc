@@ -30,14 +30,50 @@ public:
     }
 };
 
+void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::string>& result) {
+    struct dirent* entry = NULL;
+    DIR* dir = opendir(std::string(path).c_str());
+    if (dir == NULL) {
+        return;
+    }
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type & DT_DIR) {
+            if (entry->d_name[0] != '.') {
+                CollectAllScript(path + entry->d_name, relative_path + entry->d_name, result);
+            }
+            continue;
+        }
+        FilePath short_path = relative_path;
+        short_path += entry->d_name;
+        std::string element = short_path;
+        if (element.find(".sc") != std::string::npos) {
+            result.push_back(element);
+        }
+    }
+    closedir(dir);
+}
+
+std::string LoadBuiltinScriptList(std::list<std::string>& result) {
+    result.clear();
+    CollectAllScript("../script/", "", result);
+    if (result.size()) {
+        return "../script/";
+    }
+    CollectAllScript("./script/", "", result);
+    return "./script/";
+}
+
 bool ExecuteScript(FilePath path) {
     std::string dir = path.dir();
     std::string name = path.base_name();
+    std::list<std::string> files;
+    std::string builtinDir = LoadBuiltinScriptList(files);
     StdFileIO baseIO(dir);
-    StdFileIO builtinIO("../script/");
+    StdFileIO builtinIO(builtinDir);
     DefaultScriptLoader baseLoader(&baseIO, false);
     DefaultScriptLoader builtinLoader(&builtinIO, false);
-    ScriptLoaderImplement loader(&baseLoader,&builtinLoader);
+    ScriptLoaderImplement loader(&baseLoader, &builtinLoader);
+    loader.AddBuiltinScriptFiles(files);
     OVAContext context(name, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
     InterpreterExecutorCallback callback;
     Interpreter::Executor Engine(&callback, &loader);

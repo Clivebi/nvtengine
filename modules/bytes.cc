@@ -326,6 +326,8 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(1);
     CHECK_PARAMETER_STRING_OR_BYTES(0);
     std::string src = GetString(args, 0);
+    int withAddress = GetInt(args, 1, 0);
+    char address[12] = {0};
     size_t n = src.size();
     size_t i = 0;
     std::string result = "";
@@ -333,6 +335,13 @@ Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         std::string hex = "";
         std::string str = "";
         char buffer[6] = {0};
+#ifdef _WIN32
+        sprintf_s(address, 12, "%08x ", (int)i);
+#else
+        snprintf(address, 12, "%08x ", (int)i);
+#endif
+        result += address;
+        result += "  ";
         for (int j = 0; j < 16; j++, i++) {
             if (i < n) {
 #ifdef _WIN32

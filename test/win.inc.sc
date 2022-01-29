@@ -6,7 +6,16 @@ require("nasl.sc");
 func GetWinRM(){
     var winrm = get_shared_object("winrm_handle");
     if(!winrm){
-        winrm = CreateWinRM("192.168.4.180",5985,"Lewis","Lewis123",false,true,"","","",15,true);
+        var user = get_kb_item("Secret/WinRM/login");
+        var key = get_kb_item("Secret/WinRM/password");
+        var port = get_kb_item("Secret/WinRM/transport");
+        if(!port){
+            port = 5985;
+        }
+        if (!user || len(user) == 0 || !key || len(key) ==0){
+            return nil;
+        }
+        winrm = CreateWinRM(get_host_ip(),port,user,key,false,true,"","","",60,true);
         if(winrm == nil){
             return nil;
         }
@@ -25,6 +34,7 @@ func IsWindowsHostAccessable(){
     return winrm != nil;
 }
 
+#query system information 
 func GetOperatingSystemInformation(){
     if(!IsWindowsHostAccessable()){
         return nil;
@@ -80,6 +90,7 @@ func GetWindowsVersion(){
 }
 
 
+#query process information 
 func GetProcessInformation(){
     if(!IsWindowsHostAccessable()){
         return nil;
@@ -87,6 +98,7 @@ func GetProcessInformation(){
     return WMIQuery(GetWinRM(),"SELECT * FROM Win32_Process");
 }
 
+#query services information 
 func GetServicesInformation(){
     # Win32_Service
     if(!IsWindowsHostAccessable()){
@@ -108,6 +120,7 @@ func GetFileInformation(filepath){
     return WMIQuery(GetWinRM(),wql);
 }
 
+#File directory API
 func GetFileVersion(filepath){
     info = GetFileInformation(filepath);
     if(!info || len(info) == 0){
@@ -275,6 +288,19 @@ func GetChildFileNameList(path,retfullpath=true){
     return nil;
 }
 
+func GetFileContent(path){
+    var cmd = "[System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes("+_warp_single_qute_string(path) + "))";
+    var result = WinRMCommand(GetWinRM(),cmd,"",true);
+    if(!result){
+        return nil;
+    }
+    if (result.ExitCode != 0 || len(result.StdErr) > 0){
+        Println(result);
+        return nil;
+    }
+    return StdBase64Decode(result.Stdout);
+}
+
 
 
 
@@ -306,6 +332,11 @@ func test_dir(){
         Println(v.FileType,"\t\t",v.FileSize,"\t",GetFileBaseName(v.Name),"\t");
     }
 }
+#var content = GetFileContent("C:\\windows\\notepad.exe");
+#Println("Size=",len(content));
+#Println(HexEncode(SHA256(content)));
+
+#Println(HexDumpBytes(content));
 #test_dir();
 #Println(IsPathExist("C:\\Windows.old"));
 #Println(IsPathExist("C:\\Windows"));

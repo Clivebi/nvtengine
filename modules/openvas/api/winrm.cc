@@ -60,19 +60,27 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     WinRMExecute_return result = WinRMExecute(Handle->mHandle, (char*)args[1].text.c_str(),
                                               (char*)args[2].text.c_str(), args[3].Integer);
     Value ret = Value::MakeMap();
-    if (result.r3 != NULL) {
-        LOG_WARNING("WinRMExecute have error :", result.r3);
-        free(result.r3);
+    /* Return type for WinRMExecute */
+struct WinRMExecute_return {
+	char* r0; /* StdOut */
+	int r1; /* StdOutSize */
+	char* r2; /* StdErr */
+	int r3; /* ExitCode */
+	char* r4; /* ErrorMsg */
+};
+    if (result.r4 != NULL) {
+        LOG_WARNING("WinRMExecute have error :", result.r4);
+        free(result.r4);
         return Value();
     } else {
-        out = result.r0;
-        errOut = result.r1;
+        out.assign(result.r0,result.r1);
+        errOut = result.r2;
         free(result.r0);
-        free(result.r1);
+        free(result.r2);
     }
     ret["Stdout"] = out;
     ret["StdErr"] = errOut;
-    ret["ExitCode"] = result.r2;
+    ret["ExitCode"] = result.r3;
     return ret;
 }
 #endif

@@ -177,12 +177,12 @@ void HostsTask::LoadCredential(TCB* tcb) {
             }
         }
         if (winrm.IsMap()) {
-            tcb->Storage->SetItem("SMB/login", winrm["login"]);
-            tcb->Storage->SetItem("SMB/password", winrm["password"]);
+            tcb->Storage->SetItem("Secret/WinRM/login", winrm["login"]);
+            tcb->Storage->SetItem("Secret/WinRM/password", winrm["password"]);
             if (winrm["port"].IsInteger()) {
-                tcb->Storage->SetItem("SMB/transport", winrm["port"]);
+                tcb->Storage->SetItem("Secret/WinRM/transport", winrm["port"]);
             }
-            tcb->Storage->SetItem("WinTM/Exist", 1);
+            tcb->Storage->SetItem("WinRM/Connect/Exist", 1);
         }
     }
 }
@@ -442,7 +442,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 found = true;
             }
             if (v.IsInteger() && v.Integer == 139 &&
-                (ctx->Storage->GetItem("WinTM/Exist", -1) == 1)) {
+                (ctx->Storage->GetItem("WinRM/Connect/Exist", -1) == 1)) {
                 found = true;
             }
         }

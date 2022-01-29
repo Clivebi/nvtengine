@@ -78,9 +78,10 @@ extern void WinRMClose(GoUintptr h);
 /* Return type for WinRMExecute */
 struct WinRMExecute_return {
 	char* r0; /* StdOut */
-	char* r1; /* StdErr */
-	int r2; /* ExitCode */
-	char* r3; /* ErrorMsg */
+	int r1; /* StdOutSize */
+	char* r2; /* StdErr */
+	int r3; /* ExitCode */
+	char* r4; /* ErrorMsg */
 };
 extern struct WinRMExecute_return WinRMExecute(GoUintptr handle, char* cmd, char* input, int ps);
 

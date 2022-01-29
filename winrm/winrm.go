@@ -66,7 +66,7 @@ func WinRMClose(h uintptr) {
 }
 
 //export WinRMExecute
-func WinRMExecute(handle uintptr, cmd *C.char, input *C.char, ps C.int) (StdOut *C.char, StdErr *C.char, ExitCode C.int, ErrorMsg *C.char) {
+func WinRMExecute(handle uintptr, cmd *C.char, input *C.char, ps C.int) (StdOut *C.char, StdOutSize C.int, StdErr *C.char, ExitCode C.int, ErrorMsg *C.char) {
 	var out, errOut string
 	var code int
 	var err error
@@ -81,6 +81,7 @@ func WinRMExecute(handle uintptr, cmd *C.char, input *C.char, ps C.int) (StdOut 
 	if err != nil {
 		ErrorMsg = C.CString(err.Error())
 	} else {
+		StdOutSize = C.int(len(out))
 		StdOut = C.CString(out)
 		StdErr = C.CString(errOut)
 		ExitCode = C.int(code)
