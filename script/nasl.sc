@@ -834,6 +834,7 @@ func ereg_replace(pattern, string,replace,icase=false){
                 }
             }
 			Println("ereg_replace :this may be have some error");
+            DisplayContext(false);
         }
         newr += replace[i];
     }
@@ -2380,11 +2381,6 @@ if(get_kb_item("WinRM/Connect/Exist")){
     replace_kb_item( name: "SMB/registry_access", value: TRUE );
 	replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
     replace_kb_item( name: "WMI/access_successful", value: TRUE );
-    replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
-    replace_kb_item( name: "win/lsc/search_portable_apps", value: TRUE );
-    replace_kb_item( name: "SMB/WindowsVersion",value:TRUE);
-    replace_kb_item( name: "SMB/WindowsVersion",value:TRUE);
-    replace_kb_item( name: "SMB/Windows/Arch",value:"x64");
     replace_kb_item( name: "SMB/login",value:get_kb_item("Secret/WinRM/login"));
     replace_kb_item( name: "SMB/password",value:get_kb_item("Secret/WinRM/password"));
     replace_kb_item( name: "SMB/transport",value:get_kb_item("Secret/WinRM/transport"));

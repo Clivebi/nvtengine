@@ -190,7 +190,9 @@ func wmi_connect(username,password,ns=nil,host=""){
 }
 
 func wmi_close(wmi_handle){
-    close(wmi_handle);
+    if(wmi_handle){
+        close(wmi_handle);
+    }
 }
 
 func wmi_connect_reg(host="",username,password){
@@ -425,17 +427,23 @@ func win_cmd_exec(host="",username,password,cmd){
     return res.Stdout;
 }
 
-func registry_key_exists( key, type=nil, query_cache=nil, save_cache=nil){
-    var full = "";
+func registry_format_key(key, type=nil){
     if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
+        type = "HKLM";
     }
+    var full = ToUpperString(type);
     if(key[0] != '\\'){
         full += "\\";
     }
     full += key;
+    if(full[len(full)-1]=='\\'){
+        full = full[:len(full)-1];
+    }
+    return full;
+}
+
+func registry_key_exists( key, type=nil, query_cache=nil, save_cache=nil){
+    var full = registry_format_key(key,type);
     if(RegEnumKey(GetWinRM(),full) || RegEnumValue(GetWinRM(),full)){
         return true;
     }
@@ -443,30 +451,48 @@ func registry_key_exists( key, type=nil, query_cache=nil, save_cache=nil){
 }
 
 func registry_enum_keys( key, type=nil){
-    var full = "";
-    if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
+    var full = registry_format_key(key,type);
+    var result = RegEnumKey(GetWinRM(),full);
+    if(!result){
+        return [];
     }
-    if(key[0] != '\\'){
-        full += "\\";
+    var ret = [];
+    var part = len(full)+1;
+    for v in result{
+        if(len(v) > part){
+            ret += v[part:];
+        }
     }
-    full += key;
-    return RegEnumKey(GetWinRM(),full);
+    return ret;
+}
+
+func registry_enum_keys_full( key, type=nil){
+    var full = registry_format_key(key,type);
+    var result = RegEnumKey(GetWinRM(),full);
+    if(!result){
+        return [];
+    }
+    return result;
+}
+
+
+func registry_enum_keys_with_deep(key,deep,type= nil){
+    var list = registry_enum_keys_full(key,type);
+    for(var i = 1; i <deep;i++){
+        var temp = [];
+        for v in list{
+            var items = registry_enum_keys_full(v);
+            for v in items{
+                temp += v;
+            }
+        }
+        list = temp;
+    }
+    return list;
 }
 
 func registry_get_sz(key, item, type=nil, multi_sz=nil, query_cache=nil, save_cache =nil ){
-    var full = "";
-    if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
-    }
-    if(key[0] != '\\'){
-        full += "\\";
-    }
-    full += key;
+    var full = registry_format_key(key,type);
     var result = RegGetValue(GetWinRM(),full,item);
     if(result){
         if(!multi_sz){
@@ -478,16 +504,7 @@ func registry_get_sz(key, item, type=nil, multi_sz=nil, query_cache=nil, save_ca
 }
 
 func registry_enum_values( key, type ){
-    var full = "";
-    if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
-    }
-    if(key[0] != '\\'){
-        full += "\\";
-    }
-    full += key;
+    var full = registry_format_key(key,type);
     var result = RegEnumValue(WinRM(),full);
     if(!result){
         return [];
@@ -500,16 +517,7 @@ func registry_enum_values( key, type ){
 }
 
 func registry_get_dword( key, item, type ){
-    var full = "";
-    if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
-    }
-    if(key[0] != '\\'){
-        full += "\\";
-    }
-    full += key;
+    var full = registry_format_key(key,type);
     var result = RegGetValue(GetWinRM(),full,item);
     if(result){
         return ToInteger(result["value"]);
@@ -518,19 +526,76 @@ func registry_get_dword( key, item, type ){
 }
 
 func registry_get_binary( key, item, type ){
-    var full = "";
-    if(!type){
-        full = "HKLM";
-    }else{
-        full = ToUpperString(type);
-    }
-    if(key[0] != '\\'){
-        full += "\\";
-    }
-    full += key;
+    var full = registry_format_key(key,type);
     var result = RegGetValue(GetWinRM(),full,item);
     if(result){
         return RegDecodeBinaryValue(result["value"]);
     }
     return nil;
+}
+#这个函数命名并不准确，其实是得到Windows目录
+func smb_get_systemroot(){
+    return GetWindowsDirectory();
+}
+
+func smb_get_system32root(){
+    return GetSystemDirectory();
+}
+
+func registry_hku_subkeys(){
+    return RegEnumKey(GetWinRM(),"HKEY_USERS");
+}
+
+func fetch_file_version( sysPath, file_name ){
+    if(!sysPath || !file_name || len(sysPath) == 0 || len(file_name)==0){
+        return "";
+    }
+    if(sysPath[len(sysPath)-1] != '\\' && file_name[0] != '\\'){
+        sysPath += "\\";
+    }
+    sysPath += file_name;
+    return GetFileVersion(GetWinRM(),sysPath);
+}
+
+func GetVersionFromFile( file, verstr="", offset=0 ){
+    return GetFileVersion(file);
+}
+
+func get_version( dllPath, string="", offs=0 ){
+    return GetFileVersion(file);
+}
+
+func GetVer( file, share=nil, prodvers=nil){
+    return GetFileVersion(file);
+}
+
+func smb_read_file( share, file, fullpath, offset=0, count=0 ){
+    if(!share && !file && !fullpath){
+        return "";
+    }
+    if(!file){
+        if(fullpath){
+            file = fullpath;
+        }else if(share){
+            file = share;
+        }
+    }
+    var data = GetFileContent(GetWinRM(),file);
+    if(!data){
+        return "";
+    }
+    if(offset > 0){
+        data = data[offset:];
+    }
+    if (count > 0 && len(data) > count){
+        return data[:count];
+    }
+    return data;
+}
+func get_file_size( share=nil, file ){
+    var size = GetFileFileSize(GetWinRM(),file);
+    if(!size){
+        return 0;
+    }
+    return ToInteger(size);
 }

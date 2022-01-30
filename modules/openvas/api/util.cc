@@ -78,6 +78,7 @@ bool ishex(char c);
 char http_unhex(char c);
 
 std::string decode_string(const std::string& src) {
+    bool warning = false;
     std::stringstream o;
     size_t start = 0;
     for (size_t i = 0; i < src.size();) {
@@ -121,9 +122,11 @@ std::string decode_string(const std::string& src) {
                 o << (char)(x & 0xFF);
                 i += 3;
             } else {
-                i++;
+                //原样输出
+                o << "\\";
                 o << src[i];
-                LOG_WARNING("Parse string error :" + src, " current:", o.str());
+                i++;
+                warning = true;
             }
         }
         }
@@ -131,6 +134,9 @@ std::string decode_string(const std::string& src) {
     }
     if (start < src.size()) {
         o << src.substr(start);
+    }
+    if(warning){
+         LOG_WARNING("Parse string warning input=" + src, " result=", o.str());   
     }
     return o.str();
 }

@@ -94,6 +94,9 @@ func ExecuteRegCommand(handle,cmd){
         return nil;
     }
     if(result.ExitCode != 0 || len(result.StdErr)>0){
+        if(ContainsString(result.StdErr,"The system was unable to find the specified registry key or value")){
+            return nil;
+        }
         Println(result,cmd);
         return nil;
     }
