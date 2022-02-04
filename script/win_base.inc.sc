@@ -433,6 +433,9 @@ func GetFileContent(handle,path){
         return nil;
     }
     if (result.ExitCode != 0 || len(result.StdErr) > 0){
+        if(ContainsString(result.StdErr,"Could not find file")){
+            return nil;
+        }
         Println(result);
         return nil;
     }

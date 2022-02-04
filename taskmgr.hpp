@@ -63,6 +63,8 @@ public:
                 "nasl.sc",
                 "http_func.inc.sc",
                 "http_keepalive.inc.sc",
+                "win_base.inc.sc",
+                "win_warp.inc.sc"
         };
         bool bRet = false;
         mLock.lock();

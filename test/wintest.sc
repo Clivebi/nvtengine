@@ -48,6 +48,8 @@ func wmi_os_version( handle ){
 
 SetWinRMHandle(CreateWinRM("192.168.4.180",5985,"Lewis","Lewis123",false,true,"","","",60,true));
 
+Println(ereg_replace(pattern:"\\\\",replace:"\\\\",string:"C:\\Windows\\system32"));
+
 Println(wmi_os_version(GetWinRM()));
 AssertNotEmpty(GetWindowsDirectory());
 AssertNotEmpty(GetSystemDirectory());
