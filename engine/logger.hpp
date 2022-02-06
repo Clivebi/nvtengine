@@ -68,6 +68,6 @@ void Log(int level, std::string where, int line, T1 msg, T2 a, T3 b, T4 c) {
 
 //#define LOG(...) Log(__FUNCTION__, __LINE__, __VA_ARGS__)
 
-#define LOG_ERROR(...) Log(LEVEL_ERROR, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define LOG_WARNING(...) Log(LEVEL_WARNING, __FUNCTION__, __LINE__, __VA_ARGS__)
-#define LOG_DEBUG(...) Log(LEVEL_DEBUG, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define NVT_LOG_ERROR(...) Log(LEVEL_ERROR, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define NVT_LOG_WARNING(...) Log(LEVEL_WARNING, __FUNCTION__, __LINE__, __VA_ARGS__)
+#define NVT_LOG_DEBUG(...) Log(LEVEL_DEBUG, __FUNCTION__, __LINE__, __VA_ARGS__)

@@ -10,6 +10,7 @@
 #include "./api/util.cc"
 #include "./api/winrm.cc"
 #include "ovacontext.cc"
+#include "./api/snmp.cc"
 
 BuiltinMethod ovaMethod[] = {
         {"script_name", script_name},
@@ -95,6 +96,9 @@ BuiltinMethod ovaMethod[] = {
         {"WinRMCommand", WinRMCommand},
         {"PcapSend", PcapSend},
         {"CapturePacket", CapturePacket},
+        {"SNMPV1Get", SNMPV1Get},
+        {"SNMPV2Get", SNMPV2Get},
+        {"SNMPV3Get", SNMPV3Get},
 };
 
 void RegisgerOVABuiltinMethod(Executor* vm) {

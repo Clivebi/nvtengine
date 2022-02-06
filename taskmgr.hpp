@@ -40,7 +40,7 @@ public:
         if (error.find("syntax error") != std::string::npos) {
             mSyntaxError = true;
         }
-        LOG_ERROR(std::string(name) + " " + msg);
+        NVT_LOG_ERROR(std::string(name) + " " + msg);
     }
 };
 
@@ -76,7 +76,7 @@ public:
                     mNextInsKey = ALGINTO(Script->GetNextInstructionKey() + 1, 1000);
                     mNextConstKey = ALGINTO(Script->GetNextConstKey() + 1, 1000);
                     mCache[Script->Name] = Script;
-                    LOG_DEBUG("Add Script Cache:", Script->Name);
+                    NVT_LOG_DEBUG("Add Script Cache:", Script->Name);
                     bRet = true;
                 }
             }

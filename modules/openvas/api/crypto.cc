@@ -197,19 +197,19 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     int padding = GetInt(args, 1, 1);
     const EVP_CIPHER* cipher = EVP_get_cipherbyname(cipherName.c_str());
     if (cipher == NULL) {
-        LOG_DEBUG("invalid chiper name ", cipherName);
+        NVT_LOG_DEBUG("invalid chiper name ", cipherName);
         return Value();
     }
     if (padding < 0 || padding > 5) {
-        LOG_DEBUG("invalid chiper name ", cipherName);
+        NVT_LOG_DEBUG("invalid chiper name ", cipherName);
         return Value();
     }
     if (EVP_CIPHER_key_length(cipher) > (int)key.size()) {
-        LOG_DEBUG("invalid key size  ");
+        NVT_LOG_DEBUG("invalid key size  ");
         return Value();
     }
     if (EVP_CIPHER_iv_length(cipher) > (int)iv.size()) {
-        LOG_DEBUG("invalid iv size  ");
+        NVT_LOG_DEBUG("invalid iv size  ");
         return Value();
     }
     return Value((Resource*)new SSLCipher(cipher, padding, key, iv, (int)args[4].Integer));

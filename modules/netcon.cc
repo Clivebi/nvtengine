@@ -27,7 +27,7 @@ Value UDPConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string port = GetString(args, 1);
     Resource* res = net::Dial("udp", host, port, 0, 0, false);
     if (res == NULL) {
-        LOG_ERROR("Connect Error:", host, ":", port);
+        NVT_LOG_ERROR("Connect Error:", host, ":", port);
         return Value();
     }
     return Value(res);

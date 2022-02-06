@@ -50,7 +50,7 @@ Instruction* Parser::NULLObject() {
 
 Instruction* Parser::CreateList(const std::string& typeName, Instruction* element) {
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(element, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(element, ""));
     }
     Instruction* obj = mScript->NewGroup(element);
     obj->Name = typeName;
@@ -69,7 +69,7 @@ Instruction* Parser::VarDeclarationExpresion(const std::string& name, Instructio
         obj->Refs.push_back(value->key);
     }
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -82,7 +82,7 @@ Instruction* Parser::VarUpdateExpression(Instruction* ref, Instruction* value,
     }
     obj->OpCode = opcode | Instructions::kUpdate;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -91,7 +91,7 @@ Instruction* Parser::VarReadExpresion(const std::string& name) {
     obj->OpCode = Instructions::kReadVar;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -118,7 +118,7 @@ Instruction* Parser::CreateFunction(const std::string& name, Instruction* formal
     obj->OpCode = Instructions::kNewFunction;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -131,7 +131,7 @@ Instruction* Parser::CreateFunctionCall(const std::string& name, Instruction* ac
     obj->OpCode = Instructions::kCallFunction;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -140,7 +140,7 @@ Instruction* Parser::CreateMinus(Instruction* val) {
     Instruction* obj = mScript->NewInstruction(val);
     obj->OpCode = Instructions::kMinus;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -157,7 +157,7 @@ Instruction* Parser::CreateBinaryOperation(Instruction* first, Instruction* seco
     }
     obj->OpCode = opcode;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -165,7 +165,7 @@ Instruction* Parser::CreateConditionExpresion(Instruction* condition, Instructio
     Instruction* obj = mScript->NewInstruction(condition, action);
     obj->OpCode = Instructions::kContitionExpression;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -180,7 +180,7 @@ Instruction* Parser::CreateIFStatement(Instruction* one, Instruction* tow, Instr
     Instruction* obj = mScript->NewInstruction(one, tow, three);
     obj->OpCode = Instructions::kIFStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -192,7 +192,7 @@ Instruction* Parser::CreateReturnStatement(Instruction* value) {
     }
     obj->OpCode = Instructions::kRETURNStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -208,7 +208,7 @@ Instruction* Parser::CreateForStatement(Instruction* init, Instruction* conditio
     obj->Refs.push_back(body->key);
     obj->OpCode = Instructions::kFORStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -216,7 +216,7 @@ Instruction* Parser::CreateBreakStatement() {
     Instruction* obj = mScript->NewInstruction();
     obj->OpCode = Instructions::kBREAKStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -224,7 +224,7 @@ Instruction* Parser::CreateContinueStatement() {
     Instruction* obj = mScript->NewInstruction();
     obj->OpCode = Instructions::kCONTINUEStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -233,7 +233,7 @@ Instruction* Parser::CreateMapItem(Instruction* key, Instruction* value) {
     obj->OpCode = Instructions::kGroup;
     obj->Name = "map-item";
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -244,7 +244,7 @@ Instruction* Parser::CreateMap(Instruction* list) {
     Instruction* obj = mScript->NewInstruction(list);
     obj->OpCode = Instructions::kCreateMap;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -255,7 +255,7 @@ Instruction* Parser::CreateArray(Instruction* list) {
     Instruction* obj = mScript->NewInstruction(list);
     obj->OpCode = Instructions::kCreateArray;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -271,7 +271,7 @@ Instruction* Parser::VarSlice(const std::string& name, Instruction* from, Instru
     obj->OpCode = Instructions::kSlice;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -285,7 +285,7 @@ Instruction* Parser::CreateForInStatement(const std::string& key, const std::str
     obj->OpCode = Instructions::kForInStatement;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -297,7 +297,7 @@ Instruction* Parser::CreateSwitchCaseStatement(Instruction* value, Instruction* 
     Instruction* obj = mScript->NewInstruction(value, cases, defbranch);
     obj->OpCode = Instructions::kSwitchCaseStatement;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -310,7 +310,7 @@ Instruction* Parser::CreatePath(Instruction* element) {
     Instruction* obj = CreateList(KnownListName::kPath, element);
     obj->OpCode = Instructions::kPath;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -331,7 +331,7 @@ Instruction* Parser::CreateReference(const std::string& root, Instruction* path)
         obj->Refs.push_back(path->key);
     }
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -343,7 +343,7 @@ Instruction* Parser::VarReadReference(const std::string& root, Instruction* path
         obj->Refs.push_back(path->key);
     }
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -354,7 +354,7 @@ Instruction* Parser::ObjectDeclarationExpresion(const std::string& name, Instruc
     obj->OpCode = Instructions::kObjectDecl;
     obj->Name = name;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }
@@ -369,7 +369,7 @@ Instruction* Parser::CreateObjectMethodCall(const std::string& var, const std::s
     obj->OpCode = Instructions::kCallObjectMethod;
     obj->Name = method;
     if (mLogInstruction) {
-        LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
     }
     return obj;
 }

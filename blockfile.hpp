@@ -73,7 +73,7 @@ protected:
         FileIndex empty;
         EncodeIndex(out, &empty);
         out.close();
-        LOG_DEBUG("Total Size : ", mOffset / 1024, " kb File Count:", mFileTable.size());
+        NVT_LOG_DEBUG("Total Size : ", mOffset / 1024, " kb File Count:", mFileTable.size());
         return true;
     }
     bool LoadIndexFile() {

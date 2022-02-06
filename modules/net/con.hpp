@@ -52,7 +52,7 @@ public:
     virtual int Read(void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mReadTimeout, true)) {
             UpdateLastError();
-            LOG_DEBUG("BaseConn read timeout:", mReadTimeout);
+            NVT_LOG_DEBUG("BaseConn read timeout:", mReadTimeout);
             return -1;
         }
         #ifdef _WIN32
@@ -62,14 +62,14 @@ public:
         #endif
         if (nSize == -1) {
             UpdateLastError();
-            LOG_DEBUG("BaseConn recv error ", mLastError);
+            NVT_LOG_DEBUG("BaseConn recv error ", mLastError);
         }
         return nSize;
     }
 
     virtual int Write(const void* buffer, int size) {
         if (!Socket::WaitSocketAvaliable(mSocket, mWriteTimeout, false)) {
-            LOG_DEBUG("BaseConn write timeout:", mReadTimeout);
+            NVT_LOG_DEBUG("BaseConn write timeout:", mReadTimeout);
             UpdateLastError();
             return -1;
         }
@@ -80,7 +80,7 @@ public:
         #endif
         if (nSize == -1) {
             UpdateLastError();
-            LOG_DEBUG("BaseConn send error ", mLastError);
+            NVT_LOG_DEBUG("BaseConn send error ", mLastError);
         }
         return nSize;
     }

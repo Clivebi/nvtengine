@@ -6,7 +6,7 @@
 #define _CHECK_HPP_
 inline std::string check_error(size_t i, std::string type, Interpreter::VMContext* ctx) {
     std::stringstream s;
-    LOG_ERROR(ctx->DumpContext(true));
+    NVT_LOG_ERROR(ctx->DumpContext(true));
     s << " : the #" << i << " argument must be an " << type << std::endl;
     return s.str();
 }
@@ -30,7 +30,7 @@ inline int GetInt(std::vector<Interpreter::Value>& args, int pos, int defaultVal
 //#define ERROR_RETURN_NULL
 #ifdef ERROR_RETURN_NULL
 #define EXCEPTION(a) \
-    LOG_ERROR(a);          \
+    NVT_LOG_ERROR(a);          \
     return Value();
 #else
 #define EXCEPTION(a) throw RuntimeException(a)

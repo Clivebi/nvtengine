@@ -136,7 +136,7 @@ std::string decode_string(const std::string& src) {
         o << src.substr(start);
     }
     if(warning){
-         LOG_WARNING("Parse string warning input=" + src, " result=", o.str());   
+         NVT_LOG_WARNING("Parse string warning input=" + src, " result=", o.str());   
     }
     return o.str();
 }

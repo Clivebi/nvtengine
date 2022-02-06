@@ -27,6 +27,7 @@ pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
+pkg_check_modules (SNMP netsnmp>=5.8.0)
 #https://github.com/google/brotli
 pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.6)
 
@@ -42,15 +43,20 @@ if(NOT ZLIB_FOUND)
     message(FATAL_ERROR "zlib>=1.1.0 not found")
 endif(NOT ZLIB_FOUND)
 
+if (NOT SNMP_FOUND)
+    message(FATAL_ERROR "netsnmp>=5.8.0 not found")
+endif(NOT SNMP_FOUND)
+
 message("${OPENSSL_LDFLAGS}")
 message("${BROTLI_LDFLAGS}")
 message("${ZLIB_LDFLAGS}")
 message("${SQLITE_LDFLAGS}")
-
+message("${SNMP_LDFLAGS}")
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${ZLIB_INCLUDE_DIRS} 
                      ${BROTLI_INCLUDE_DIRS}
                      ${OPENSSL_INCLUDE_DIRS}
+                     ${SNMP_INCLUDE_DIRS}
                      ${SSH_INCLUDE_DIRS})
 
 
@@ -61,6 +67,18 @@ add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
 
 SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
+
+SET(MAC_STATIC "TRUE")
+
+if (MAC_STATIC)
+    SET(STATIC_LIBS_DIR "${CMAKE_BINARY_DIR}/static")
+    set(SSH_LDFLAGS "${STATIC_LIBS_DIR}/libssh.a")
+    set(SQLITE_LDFLAGS "${STATIC_LIBS_DIR}/libsqlite3.a")
+    set(ZLIB_LDFLAGS "${STATIC_LIBS_DIR}/libz.a")
+    set(SNMP_LDFLAGS "${STATIC_LIBS_DIR}/libnetsnmp.a")
+    set(OPENSSL_LDFLAGS "${STATIC_LIBS_DIR}/libssl.a;${STATIC_LIBS_DIR}/libcrypto.a")
+    set(BROTLI_LDFLAGS "${STATIC_LIBS_DIR}/libbrotlidec-static.a;${STATIC_LIBS_DIR}/libbrotlicommon-static.a")
+endif(MAC_STATIC)
 
 
 
@@ -120,7 +138,9 @@ target_link_libraries(  NVTEngine
                         ${BROTLI_LDFLAGS}
                         ${SQLITE_LDFLAGS} 
                         ${CMAKE_THREAD_LIBS_INIT}
-                        ${SSH_LDFLAGS})
+                        ${SSH_LDFLAGS}
+                        ${SNMP_LDFLAGS} 
+                        )
 
 target_link_libraries(  Interpreter  
                         engine  
@@ -135,4 +155,5 @@ target_link_libraries(  Interpreter
                         ${BROTLI_LDFLAGS}
                         ${SQLITE_LDFLAGS}
                         ${CMAKE_THREAD_LIBS_INIT}
-                        ${SSH_LDFLAGS} )
+                        ${SSH_LDFLAGS}
+                        ${SNMP_LDFLAGS}  )

@@ -16,7 +16,7 @@ public:
         mLocation += func;
         mBegin = clock();
     }
-    ~FunctionPref() { LOG_DEBUG((clock() - mBegin), " clocks", mLocation); }
+    ~FunctionPref() { NVT_LOG_DEBUG((clock() - mBegin), " clocks", mLocation); }
 };
 
 #define LOG_FUNC_PREF() FunctionPref(__FILE__,__FUNCTION__)

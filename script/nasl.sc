@@ -2374,6 +2374,23 @@ func delete_shared_object(key){
     return replace_kb_item(fullkey,nil);
 }
 
+#snmp support
+func snmpv1_get(port,protocol,community,oid){
+    var peer = protocol+":"+get_host_ip()+":"+port;
+    return SNMPV1Get(peer,community,oid);
+}
+
+func snmpv2c_get(port,protocol,community,oid){
+    var peer = protocol+":"+get_host_ip()+":"+port;
+    return SNMPV2Get(peer,community,oid);
+}
+
+func snmpv1_get(port,protocol,username,authpass,authproto,privpass,privproto,oid){
+    var peer = protocol+":"+get_host_ip()+":"+port;
+    #//peer,username,authpass,authproto,privpass,privproto,oid
+    return SNMPV3Get(peer,username,authpass,authproto,privpass,privproto,oid);
+}
+
 #do some init for old nasl script on windows platform
 #WinRM/Connect/Exist
 if(get_kb_item("WinRM/Connect/Exist")){

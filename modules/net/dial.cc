@@ -9,14 +9,14 @@ Conn* Dial(std::string proto, std::string host, std::string port, int timeout, b
     if (proto == "tcp") {
         int socket = Socket::DialTCP(host.c_str(), port.c_str(), timeout);
         if (socket <= 0) {
-            //LOG_ERROR("DialTCP error :" + host + ":" + port, "timeout =", timeout);
+            //NVT_LOG_ERROR("DialTCP error :" + host + ":" + port, "timeout =", timeout);
             return NULL;
         }
         TCPConn* con = new TCPConn(socket);
         if (tls) {
             if (!con->SSLHandshake()) {
                 delete con;
-                //LOG_ERROR("SSLHandshake error :" + host + ":" + port, " timeout =", timeout);
+                //NVT_LOG_ERROR("SSLHandshake error :" + host + ":" + port, " timeout =", timeout);
                 return NULL;
             }
         }

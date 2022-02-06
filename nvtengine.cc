@@ -180,7 +180,7 @@ void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::str
     //load from db
     if (option.GetOIDFilter().size()) {
         support::ScanConfig db(FilePath(helper.app_data_folder()) + "scanconfig.db");
-        LOG_DEBUG("load oid list  from database with filter:", option.GetOIDFilter());
+        NVT_LOG_DEBUG("load oid list  from database with filter:", option.GetOIDFilter());
         return db.Get(option.GetOIDFilter(), result);
     }
     //load from file
@@ -193,11 +193,11 @@ void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::str
             rule.assign(data, size);
             free(data);
             result = Interpreter::split(rule, ';');
-            LOG_DEBUG("load oid list from ./rule.txt");
+            NVT_LOG_DEBUG("load oid list from ./rule.txt");
             return;
         }
     }
-    LOG_DEBUG("load oid list from builtin list");
+    NVT_LOG_DEBUG("load oid list from builtin list");
     result = Interpreter::split(test_oids, ';');
 }
 
@@ -276,8 +276,8 @@ bool LoadJsonFromFile(std::string path, Interpreter::Value& pref) {
         text.assign((char*)data, length);
         pref = ParseJSON(text, true);
         free(data);
-        LOG_DEBUG("user config on the:", path);
-        LOG_DEBUG("Preferences:", pref.ToJSONString());
+        NVT_LOG_DEBUG("user config on the:", path);
+        NVT_LOG_DEBUG("Preferences:", pref.ToJSONString());
         return true;
     }
     return false;

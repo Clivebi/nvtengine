@@ -294,7 +294,7 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
         throw RuntimeException("script execute timeout...");
     }
     if (ctx->IsExecutedInterupt()) {
-        LOG_DEBUG("Instruction execute interupted :" + ins->ToString());
+        NVT_LOG_DEBUG("Instruction execute interupted :" + ins->ToString());
         return ctx->GetReturnValue();
     }
     if (ins->OpCode >= Instructions::kADD && ins->OpCode <= Instructions::kMAXBinaryOP) {
@@ -417,7 +417,7 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
         return ExecuteSlice(ins, ctx);
     default:
         assert(false);
-        LOG_ERROR("Unknown Instruction:" + ins->ToString());
+        NVT_LOG_ERROR("Unknown Instruction:" + ins->ToString());
         return Value();
     }
 }
@@ -531,7 +531,7 @@ Value Executor::UpdateVar(const std::string& name, Value val, Instructions::Type
         break;
     }
     default:
-        LOG_ERROR("Unknown Instruction:" + ToString((int64_t)opCode));
+        NVT_LOG_ERROR("Unknown Instruction:" + ToString((int64_t)opCode));
     }
     ctx->SetVarValue(name, oldVal);
     return oldVal;
@@ -644,7 +644,7 @@ Value Executor::ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx) {
         return Value((int64_t)i);
     }
     default:
-        LOG_ERROR("Unknow OpCode:" + ins->ToString());
+        NVT_LOG_ERROR("Unknow OpCode:" + ins->ToString());
         return Value();
     }
 }
@@ -723,7 +723,7 @@ scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
             newCtx->SetVarValue(formalList[i]->Name, values[i], true);
         } else {
             if (formalList[i]->Refs.size() == 0) {
-                LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
+                NVT_LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
             }
         }
     }
@@ -747,7 +747,7 @@ scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
     if (actual->Name == KnownListName::kNamedValue) {
         for (auto iter : actualList) {
             if (!IsNameInGroup(iter->Name, formalList)) {
-                LOG_WARNING(iter->Name, " is not a parametr for " + func->Name, " ",
+                NVT_LOG_WARNING(iter->Name, " is not a parametr for " + func->Name, " ",
                             ctx->ShortStack());
             }
             Value val = Execute(GetInstruction(iter->Refs[0]), ctx);
@@ -773,7 +773,7 @@ scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
             newCtx->SetVarValue(formalList[i]->Name, values[i], true);
         } else {
             if (formalList[i]->Refs.size() == 0) {
-                LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
+                NVT_LOG_WARNING("parameters count incorrect ", ctx->ShortStack() + func->Name);
             }
         }
     }
@@ -1130,7 +1130,7 @@ Value Executor::UpdateValueAt(Value& toObject, const Value& index, const Value& 
         break;
     }
     default:
-        LOG_ERROR("Unknown Instruction code :" + ToString((int64_t)opCode));
+        NVT_LOG_ERROR("Unknown Instruction code :" + ToString((int64_t)opCode));
     }
     toObject.SetValue(index, oldVal);
     return oldVal;
@@ -1150,7 +1150,7 @@ Value Executor::ConvertNil(Value index, VMContext* ctx) {
     }
     if (index.IsInteger()) {
         DUMP_CONTEXT();
-        LOG_WARNING(
+        NVT_LOG_WARNING(
                 "wanring please check auto convert nil to map use a integer key larger than "
                 "4096",
                 ctx->ShortStack());
@@ -1305,7 +1305,7 @@ Value Executor::ExecuteNewObject(VMContext::ObjectCreator* creator, const Instru
         } else {
             std::stringstream o;
             o << "actual:" << actual->ToString() << " Refs.size=" << actual->Refs.size();
-            LOG_DEBUG(o.str());
+            NVT_LOG_DEBUG(o.str());
             DUMP_CONTEXT();
             throw RuntimeException("initialize " + creator->Name +
                                    " object paramters not invalid " + ctx->ShortStack());

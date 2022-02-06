@@ -62,7 +62,7 @@ Value send(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (!net::Conn::IsConn(args[0].resource)) {
         throw RuntimeException("recv resource type mismatch");
     }
-    //LOG_DEBUG("send:", length, HexEncode(args[1].bytes.c_str(), length, "\\x"));
+    //NVT_LOG_DEBUG("send:", length, HexEncode(args[1].bytes.c_str(), length, "\\x"));
     net::Conn* con = (net::Conn*)args[0].resource.get();
     return con->Write(data.c_str(), length);
 }

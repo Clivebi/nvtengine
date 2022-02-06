@@ -44,12 +44,12 @@ public:
         int error = 0;
         vfs_dir_entry_p pEntry = vfs_lookup(mFile, name.c_str());
         if (pEntry == NULL) {
-            LOG_ERROR("file not found:", name);
+            NVT_LOG_ERROR("file not found:", name);
             return NULL;
         }
         void* pContext = vfs_get_file_all_content(mFile, pEntry, &error);
         if (error != 0) {
-            LOG_ERROR("vfs error ", error);
+            NVT_LOG_ERROR("vfs error ", error);
             return NULL;
         }
         contentSize = vfs_file_size(pEntry);

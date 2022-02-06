@@ -239,7 +239,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
     while (true) {
         int size = stream->Read(buffer.data(), (int)buffer.size());
         if (size <= 0) {
-            LOG_DEBUG("Read Error " + ToString(size));
+            NVT_LOG_DEBUG("Read Error " + ToString(size));
             return false;
         }
         if (!matched) {
@@ -253,7 +253,7 @@ bool DoReadHttpResponse(scoped_refptr<net::Conn> stream, HTTPResponse* resp) {
         }
         int parse_size = (int)http_parser_execute(&parser, &settings, buffer.data(), (size_t)size);
         if (parser.http_errno != 0) {
-            LOG_DEBUG("Http Parser Error");
+            NVT_LOG_DEBUG("Http Parser Error");
             return false;
         }
         if (resp->IsMessageCompleteCalled) {
@@ -284,12 +284,12 @@ bool DoHttpRequest(std::string& host, std::string& port, bool isSSL, std::string
                    HTTPResponse* resp) {
     scoped_refptr<net::Conn> tcp = net::Dial("tcp", host, port, 60, isSSL, false);
     if (tcp.get() == NULL) {
-        LOG_DEBUG("Dial error");
+        NVT_LOG_DEBUG("Dial error");
         return false;
     }
     int size = tcp->Write(req.c_str(), (int)req.size());
     if (size != req.size()) {
-        LOG_DEBUG("write Error");
+        NVT_LOG_DEBUG("write Error");
         return false;
     }
     return DoReadHttpResponse(tcp, resp);

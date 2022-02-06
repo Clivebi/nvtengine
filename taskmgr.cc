@@ -66,7 +66,7 @@ void HostsTask::Execute() {
                                              helper.default_network_interface().c_str(), arpItem,
                                              arpItemSize, helper.port_scan_send_packet_rate());
     if (task == NULL) {
-        LOG_ERROR("init_host_scan_task failed");
+        NVT_LOG_ERROR("init_host_scan_task failed");
         return;
     }
     start_host_scan_task(task);
@@ -75,7 +75,7 @@ void HostsTask::Execute() {
     }
     pixie_mssleep(1000 * 15);
     join_host_scan_task(task);
-    LOG_DEBUG("ports scan complete...");
+    NVT_LOG_DEBUG("ports scan complete...");
     HostScanResult* seek = task->result;
     unsigned int taskLimit = helper.number_of_concurrent_tasks();
     while (seek != NULL) {
@@ -190,9 +190,9 @@ void HostsTask::LoadCredential(TCB* tcb) {
 void HostsTask::ExecuteOneHost(TCB* tcb) {
     NVTPref helper(mPrefs);
     LoadCredential(tcb);
-    LOG_DEBUG("\n", tcb->Host, " start detect service");
+    NVT_LOG_DEBUG("\n", tcb->Host, " start detect service");
     TCPDetectService(tcb, tcb->TCPPorts, helper.service_detection_thread_count());
-    LOG_DEBUG(tcb->Host, " detect service complete...");
+    NVT_LOG_DEBUG(tcb->Host, " detect service complete...");
     if (tcb->Exit) {
         return;
     }
@@ -227,7 +227,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     Interpreter::Executor Engine(&callback, mLoader);
     Engine.SetScriptCacheProvider(&mScriptCache);
     RegisgerModulesBuiltinMethod(&Engine);
-    LOG_DEBUG("start execute script");
+    NVT_LOG_DEBUG("start execute script");
     for (int i = 0; i < 11; i++) {
         for (auto v : mGroupedScripts[i]) {
             OVAContext ctx(v[knowntext::kNVTI_filename].ToString(), mPrefs, tcb->Env, tcb->Storage);
@@ -237,7 +237,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             if (!CheckScript(&ctx, v)) {
                 continue;
             }
-            LOG_DEBUG("execute script " + ctx.ScriptFileName);
+            NVT_LOG_DEBUG("execute script " + ctx.ScriptFileName);
             Engine.SetUserContext(&ctx);
             Engine.Execute(ctx.ScriptFileName.c_str(), helper.script_default_timeout_second(),
                            helper.log_engine_warning());
@@ -248,9 +248,9 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
                 ctx.Fork.Snapshot = ctx.Storage->Clone();
                 ctx.IsForkedTask = true;
                 while (ctx.Fork.PrepareForNextScriptExecute() && !tcb->Exit) {
-                    // LOG_DEBUG("execute forked script " + ctx.ScriptFileName);
+                    // NVT_LOG_DEBUG("execute forked script " + ctx.ScriptFileName);
                     for (auto v : ctx.Fork.Names) {
-                        //     LOG_DEBUG("forked value named:", v);
+                        //     NVT_LOG_DEBUG("forked value named:", v);
                     }
                     Engine.Execute(ctx.ScriptFileName.c_str(),
                                    helper.script_default_timeout_second(),
@@ -263,7 +263,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             break;
         }
     }
-    LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
+    NVT_LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
               " Executed count: ", tcb->ExecutedScriptCount);
 }
 
@@ -315,7 +315,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     for (auto v : scripts) {
         Value nvti = nvtiDB.Get(v);
         if (nvti.IsNULL()) {
-            LOG_ERROR("load " + v + " failed");
+            NVT_LOG_ERROR("load " + v + " failed");
             //return false;
             continue;
         }
@@ -352,7 +352,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
         mGroupedScripts[nvti[knowntext::kNVTI_category].Integer].push_back(nvti);
         ThinNVTI(nvti, true);
     }
-    LOG_DEBUG("Total load NVTI count:", mScriptCount);
+    NVT_LOG_DEBUG("Total load NVTI count:", mScriptCount);
     return true;
 }
 
@@ -365,7 +365,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
         }
         Value nvti = nvtiDB.GetFromFileName(v);
         if (nvti.IsNULL()) {
-            LOG_ERROR("load " + v + " failed");
+            NVT_LOG_ERROR("load " + v + " failed");
             return false;
         }
         ThinNVTI(nvti, false);
@@ -399,14 +399,14 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 std::list<std::string> group = split(v.ToString(), '=');
                 Value val = ctx->Storage->GetItem(group.front(), -1);
                 if (val.IsNULL()) {
-                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                    NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                               " because mandatory key is missing :", v.ToString());
                     return false;
                 }
                 std::regex re = std::regex(group.back(), std::regex_constants::icase);
                 bool found = std::regex_search(val.text.begin(), val.text.end(), re);
                 if (!found) {
-                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                    NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                               " because mandatory key is missing :", v.ToString());
                     return false;
                 }
@@ -414,7 +414,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             } else {
                 Value val = ctx->Storage->GetItem(v.text, true);
                 if (val.IsNULL()) {
-                    LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                    NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                               " because mandatory key is missing :", v.ToString());
                     return false;
                 }
@@ -427,7 +427,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : require_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (val.IsNULL()) {
-                LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                           " because require key is missing :", v.ToString());
                 return false;
             }
@@ -448,7 +448,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         }
 
         if (!found) {
-            LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+            NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                       " because not one require tcp port exist ", require_ports.ToString());
             return false;
         }
@@ -461,7 +461,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             found = true;
         }
         if (!found) {
-            LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+            NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                       " because not one require udp port exist ", require_udp_ports.ToString());
             return false;
         }
@@ -472,7 +472,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         for (auto v : exclude_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (!val.IsNULL()) {
-                LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
+                NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
                           " because exclude_keys is exist :", v.ToString());
                 return false;
             }

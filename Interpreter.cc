@@ -26,7 +26,7 @@ public:
     void OnScriptEntryExecuted(Executor* vm, scoped_refptr<const Script> Script, VMContext* ctx) {}
     void OnScriptError(Interpreter::Executor* vm, const std::string& name, const std::string& msg) {
         std::string error = msg;
-        LOG_ERROR(std::string(name) + " " + msg);
+        NVT_LOG_ERROR(std::string(name) + " " + msg);
     }
 };
 

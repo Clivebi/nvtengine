@@ -700,7 +700,7 @@ Value& Value::operator+=(const Value& right) {
         return *this;
     }
     DUMP_CONTEXT();
-    LOG_ERROR(ToDescription(), right.ToDescription());
+    NVT_LOG_ERROR(ToDescription(), right.ToDescription());
     throw Interpreter::RuntimeException("+= can't apply on this value");
 }
 
@@ -952,7 +952,7 @@ const Value Value::operator[](const Value& key) const {
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             if (key.Integer > 4096) {
                 DUMP_SHORT_STACK();
-                LOG_WARNING("use big array large than 4096");
+                NVT_LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -976,11 +976,11 @@ Value& Value::operator[](const Value& key) {
             throw Interpreter::RuntimeException("the index key type must a Integer");
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
-            LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
+            NVT_LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
                       " ) auto extend");
             if (key.Integer > 4096) {
                 DUMP_SHORT_STACK();
-                LOG_WARNING("use big array large than 4096");
+                NVT_LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -1041,7 +1041,7 @@ void Value::SetValue(const Value& key, const Value& val) {
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             if (key.Integer > 4096) {
                 DUMP_SHORT_STACK();
-                LOG_WARNING("use big array large than 4096");
+                NVT_LOG_WARNING("use big array large than 4096");
             }
             Array()->_array.resize((size_t)key.Integer + 1);
         }
@@ -1242,7 +1242,7 @@ bool operator==(const Value& left, const Value& right) {
         }
         if (!IsDigestString(left.text)) {
             DUMP_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug <always false>",
+            NVT_LOG_WARNING("compare string with integer,may be have bug <always false>",
                         left.ToDescription(), "<-->", right.ToDescription());
         }
         return left.text == right.ToString();
@@ -1256,13 +1256,13 @@ bool operator==(const Value& left, const Value& right) {
         }
         if (!IsDigestString(right.text)) {
             DUMP_CONTEXT();
-            LOG_WARNING("compare string with integer,may be have bug <always false>",
+            NVT_LOG_WARNING("compare string with integer,may be have bug <always false>",
                         left.ToDescription(), "<-->", right.ToDescription());
         }
         return right.text == left.ToString();
     }
     if (!left.IsSameType(right)) {
-        LOG_WARNING("compare value not same type may be have bug <always false> ",
+        NVT_LOG_WARNING("compare value not same type may be have bug <always false> ",
                     left.ToDescription(), " ", right.ToDescription());
         return false;
     }

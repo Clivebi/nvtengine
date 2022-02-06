@@ -156,7 +156,7 @@ Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     int FD = con->GetBaseConn()->GetFD();
     ssh_options_set(session->mSession, SSH_OPTIONS_FD, &FD);
     if (ssh_connect(session->mSession)) {
-        LOG_DEBUG(ssh_get_error(session->mSession));
+        NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return Value();
     }
     return Value((Resource*)session);
@@ -289,7 +289,7 @@ int exec_ssh_cmd(ssh_session session, const std::string& cmd, std::string& out,
     ssh_channel channel;
     char buffer[4096];
     if ((channel = ssh_channel_new(session)) == NULL) {
-        LOG_DEBUG("ssh_channel_new failed ", ssh_get_error(session));
+        NVT_LOG_DEBUG("ssh_channel_new failed ", ssh_get_error(session));
         return SSH_ERROR;
     }
 
@@ -353,7 +353,7 @@ Value SSHGetIssueBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm) 
     }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
-        LOG_DEBUG("invalid methods ", session->GetAuthMethod(), session->SetUserName(username));
+        NVT_LOG_DEBUG("invalid methods ", session->GetAuthMethod(), session->SetUserName(username));
         return "";
     }
     char* banner = ssh_get_issue_banner(session->mSession);
@@ -375,7 +375,7 @@ Value SSHGetServerBanner(std::vector<Value>& args, VMContext* ctx, Executor* vm)
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     const char* banner = ssh_get_serverbanner(session->mSession);
     if (banner == NULL) {
-        LOG_DEBUG(ssh_get_error(session->mSession));
+        NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return Value();
     }
     Value ret(banner);
@@ -392,7 +392,7 @@ Value SSHGetPUBKey(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     ssh_string key = ssh_get_pubkey(session->mSession);
     if (key == NULL) {
-        LOG_DEBUG(ssh_get_error(session->mSession));
+        NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return Value();
     }
     std::string strKey(ssh_string_to_char(key), ssh_string_len(key));
@@ -411,7 +411,7 @@ Value SSHGetAuthMethod(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     }
     scoped_refptr<SSHSession> session = (SSHSession*)args[0].resource.get();
     if (!session->SetUserName(username) || !session->GetAuthMethod()) {
-        LOG_DEBUG(ssh_get_error(session->mSession));
+        NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return "";
     }
     int methods = session->GetAuthMethod();

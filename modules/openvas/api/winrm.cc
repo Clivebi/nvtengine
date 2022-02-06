@@ -60,16 +60,8 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     WinRMExecute_return result = WinRMExecute(Handle->mHandle, (char*)args[1].text.c_str(),
                                               (char*)args[2].text.c_str(), args[3].Integer);
     Value ret = Value::MakeMap();
-    /* Return type for WinRMExecute */
-struct WinRMExecute_return {
-	char* r0; /* StdOut */
-	int r1; /* StdOutSize */
-	char* r2; /* StdErr */
-	int r3; /* ExitCode */
-	char* r4; /* ErrorMsg */
-};
     if (result.r4 != NULL) {
-        LOG_WARNING("WinRMExecute have error :", result.r4);
+        NVT_LOG_WARNING("WinRMExecute have error :", result.r4);
         free(result.r4);
         return Value();
     } else {

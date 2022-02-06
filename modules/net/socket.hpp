@@ -21,13 +21,13 @@ class Socket {
 public:
     static void InitLibrary() {
         #ifdef _WIN32
-        static bool isInited = FALSE;
+        static bool isInit = FALSE;
         WSAData wsaData = {sizeof(WSAData)}; 
-        if (isInited) {
+        if (isInit) {
             return;
         }
         WSAStartup(MAKEWORD(1, 1), &wsaData);
-        isInited = TRUE;
+        isInit = TRUE;
         #endif
     }
     static void SetBlock(int socket, int on) {
@@ -93,12 +93,12 @@ public:
         }
         #ifdef _WIN32
         if (error == -1 && WSAGetLastError() != WSAEWOULDBLOCK) {
-            LOG_ERROR("connect error :", WSAGetLastError());
+            NVT_LOG_ERROR("connect error :", WSAGetLastError());
             return error;
         }
         #else
         if (error == -1 && errno != EINPROGRESS) {
-            LOG_ERROR("connect error :", errno);
+            NVT_LOG_ERROR("connect error :", errno);
             return error;
         }
         #endif

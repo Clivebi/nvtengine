@@ -41,7 +41,7 @@ public:
         size_t size = 0, read_size = 0;
         hFile = fopen(ResolvePath(name).c_str(), "rb");
         if (hFile == NULL) {
-            LOG_ERROR("fopen failed: ", errno, " ", ResolvePath(name));
+            NVT_LOG_ERROR("fopen failed: ", errno, " ", ResolvePath(name));
             return NULL;
         }
         fseek(hFile, 0, SEEK_END);

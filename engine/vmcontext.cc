@@ -24,7 +24,7 @@ void DumpContext() {
     if (VMContext::sTlsIndex != 0) {
         VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
         if (ptr) {
-            LOG_DEBUG(ptr->DumpContext(true));
+            NVT_LOG_DEBUG(ptr->DumpContext(true));
         }
     }
 }
@@ -33,7 +33,7 @@ void DumpShortStack(){
     if (VMContext::sTlsIndex != 0) {
         VMContext* ptr = (VMContext*)TLS::GetValue(VMContext::sTlsIndex);
         if (ptr) {
-            LOG_DEBUG(ptr->ShortStack());
+            NVT_LOG_DEBUG(ptr->ShortStack());
         }
     }
 }
@@ -166,7 +166,7 @@ void VMContext::AddVar(const std::string& name) {
         throw RuntimeException("variable name is builtin :" + name);
     }
     if (mIsEnableWarning && IsShadowName(name)) {
-        LOG_WARNING("variable name shadow :" + name);
+        NVT_LOG_WARNING("variable name shadow :" + name);
     }
     std::map<std::string, Value>::iterator iter = mVars.find(name);
     if (iter == mVars.end()) {
@@ -204,7 +204,7 @@ void VMContext::SetVarValue(const std::string& name, Value value, bool current) 
     }
     ctx = GetTopContext();
     ctx->mVars[name] = value;
-    //LOG_DEBUG("auto add var in the file context " + name, " File: ", ctx->mName);
+    //NVT_LOG_DEBUG("auto add var in the file context " + name, " File: ", ctx->mName);
 }
 
 bool VMContext::IsShadowName(const std::string& name) {
@@ -249,7 +249,7 @@ Value VMContext::GetVarValue(const std::string& name) {
         //DUMP_CONTEXT();
         std::string func;
         IsInFunctionContext(func);
-        LOG_DEBUG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
+        NVT_LOG_DEBUG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
     }
     return ret;
 }

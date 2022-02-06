@@ -273,7 +273,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
     if (!ExecuteCommand(Handle, args[1].text.c_str(), args[3].Integer, result) ||
         result.ErrorCode != 0) {
-        LOG_WARNING("WinRMExecute have error :",result.ErrorCode, W2A(result.Error));
+        NVT_LOG_WARNING("WinRMExecute have error :",result.ErrorCode, W2A(result.Error));
         return Value();
     }
     Value ret = Value::MakeMap();
