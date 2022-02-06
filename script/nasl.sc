@@ -656,7 +656,7 @@ func raw_string(x...){
 	var helper = MakeBytes(4096);
 	var i = 0;
 	for v in x {
-		if (typeof(v) == "string"){
+		if (typeof(v) == "string"||typeof(v) == "bytes"){
 			for j in v{
 				helper[i]= j;
 				i++;
@@ -726,6 +726,7 @@ func substr(str,start,end=-1){
 	if(!str){
 		return nil;
 	}
+    str = str+"";#force convert to string
 	if(end == -1 || end >= len(str)){
 		end = len(str)-1;
 	}
@@ -778,7 +779,7 @@ func strlen(str){
 	if(str==nil){
 		return 0;
 	}
-	return len(str);
+	return len(str+"");
 }
 
 func egrep(pattern, string,icase=false){
@@ -1732,6 +1733,13 @@ ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst="",ip_len=0){
     if(ip_id == 0){
         ip_id = rand();
     }
+    if(len(ip_src)==0){
+        ip_src = this_host();
+    }
+    if(len(ip_dst)==0){
+        ip_dst = get_host_ip();
+    }
+    Println("forge_ip_packet",ip_src,ip_dst);
     hdr = build_ipv4_header(ip_hl,ip_tos,ip_len,ip_id,(ip_off>>13),
                         ip_off,ip_ttl,ip_p,ipv4_string_to_address(ip_src),ipv4_string_to_address(ip_dst));
     if(ip_sum != 0){
@@ -1742,7 +1750,7 @@ ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst="",ip_len=0){
     return hdr;
 }
 
-func forge_ip_v6_packet(data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src,ip6_dst,ip_len=0){
+func forge_ip_v6_packet(data="",ip6_v=6,ip6_tc,ip6_fl,ip6_p,ip6_hlim,ip6_src="",ip6_dst="",ip_len=0){
     return build_ipv6_header(ip6_tc,ip6_fl,ip6_p,ip6_hlim,
                                 ipv6_string_to_address(ip6_src),
                                 ipv6_string_to_address(ip6_dst),len(data));
@@ -2150,7 +2158,7 @@ func dump_udp_v6_packet(packet){
     dump_udp_packet(packet);
 }
 
-func forge_icmp_packet(ip,data="",icmp_type,icmp_code,icmp_seq,icmp_id,icmp_cksum,update_ip_len=true){
+func forge_icmp_packet(ip,data="",icmp_type,icmp_code=0,icmp_seq=0,icmp_id,icmp_cksum,update_ip_len=true){
     var ipsz = get_ipv4_hl(ip)*4;
     if(ipsz>len(ip)){
         return nil;
@@ -2385,7 +2393,7 @@ func snmpv2c_get(port,protocol,community,oid){
     return SNMPV2Get(peer,community,oid);
 }
 
-func snmpv1_get(port,protocol,username,authpass,authproto,privpass,privproto,oid){
+func snmpv3_get(port,protocol,username,authpass,authproto,privpass,privproto,oid){
     var peer = protocol+":"+get_host_ip()+":"+port;
     #//peer,username,authpass,authproto,privpass,privproto,oid
     return SNMPV3Get(peer,username,authpass,authproto,privpass,privproto,oid);

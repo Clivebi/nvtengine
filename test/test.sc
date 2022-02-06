@@ -2,7 +2,15 @@
 #test help function
 
 Println(VMEnv());
-Println(GetAvaliableFunction());
+
+func list_builtin_function(){
+    var list = GetAvaliableFunction();
+    var list = list["builtin"];
+    for v in list{
+        Println(v);
+    }
+}
+list_builtin_function();
 var _is_test_passed = true;
 func assertEqual(a,b){
     if(a != b){

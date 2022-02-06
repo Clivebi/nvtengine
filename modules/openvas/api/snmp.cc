@@ -170,8 +170,8 @@ Value SNMPV1Get(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         result = result_ptr;
         free(result_ptr);
     }
-    ret[0] = error;
-    ret[1] = result;
+    ret._array().push_back(error);
+    ret._array().push_back(result);
     return ret;
 }
 
@@ -193,8 +193,8 @@ Value SNMPV2Get(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         result = result_ptr;
         free(result_ptr);
     }
-    ret[0] = error;
-    ret[1] = result;
+    ret._array().push_back(error);
+    ret._array().push_back(result);
     return ret;
 }
 //peer,username,authpass,authproto,privpass,privproto,oid
@@ -238,7 +238,7 @@ Value SNMPV3Get(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         result = result_ptr;
         free(result_ptr);
     }
-    ret[0] = error;
-    ret[1] = result;
+    ret._array().push_back(error);
+    ret._array().push_back(result);
     return ret;
 }
