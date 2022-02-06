@@ -2163,7 +2163,11 @@ func forge_icmp_packet(ip,data="",icmp_type,icmp_code=0,icmp_seq=0,icmp_id,icmp_
     if(ipsz>len(ip)){
         return nil;
     }
-    var icmp = MakeBytes(8+len(data));
+    var size = 8;
+    if(icmp_type == 13 || icmp_type == 14){
+        size += 12;
+    }
+    var icmp = MakeBytes(size+len(data));
     icmp[0] = icmp_type;
     icmp[1] = icmp_code;
     icmp = WriteUInt16(icmp,4,icmp_id);
