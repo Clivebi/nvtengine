@@ -7,13 +7,13 @@
 #include "utf8.hpp"
 
 namespace Interpreter {
-long Status::sResourceCount = 0;
-long Status::sArrayCount = 0;
-long Status::sMapCount = 0;
-long Status::sParserCount = 0;
-long Status::sScriptCount = 0;
-long Status::sVMContextCount = 0;
-long Status::sUDObjectCount = 0;
+AtomInt Status::sResourceCount;
+AtomInt Status::sArrayCount;
+AtomInt Status::sMapCount;
+AtomInt Status::sParserCount;
+AtomInt Status::sScriptCount;
+AtomInt Status::sVMContextCount;
+AtomInt Status::sUDObjectCount;
 
 std::list<std::string> split(const std::string& text, char split_char) {
     std::list<std::string> result;
@@ -959,7 +959,11 @@ const Value Value::operator[](const Value& key) const {
         return Array()->_array[(size_t)key.Integer];
     }
     if (IsMap()) {
-        return Map()->_map[key];
+        auto iter = Map()->_map.find(key);
+        if (iter == Map()->_map.end()) {
+            return Value();
+        }
+        return iter->second;
     }
     if (IsObject()) {
         return Object()->__get_attr(key);
@@ -977,7 +981,7 @@ Value& Value::operator[](const Value& key) {
         }
         if (key.Integer < 0 || (size_t)key.Integer >= Length()) {
             NVT_LOG_DEBUG("index of array out of range ( " + ToString() + "," + key.ToString() +
-                      " ) auto extend");
+                          " ) auto extend");
             if (key.Integer > 4096) {
                 DUMP_SHORT_STACK();
                 NVT_LOG_WARNING("use big array large than 4096");
@@ -1243,7 +1247,7 @@ bool operator==(const Value& left, const Value& right) {
         if (!IsDigestString(left.text)) {
             DUMP_CONTEXT();
             NVT_LOG_WARNING("compare string with integer,may be have bug <always false>",
-                        left.ToDescription(), "<-->", right.ToDescription());
+                            left.ToDescription(), "<-->", right.ToDescription());
         }
         return left.text == right.ToString();
     }
@@ -1257,13 +1261,13 @@ bool operator==(const Value& left, const Value& right) {
         if (!IsDigestString(right.text)) {
             DUMP_CONTEXT();
             NVT_LOG_WARNING("compare string with integer,may be have bug <always false>",
-                        left.ToDescription(), "<-->", right.ToDescription());
+                            left.ToDescription(), "<-->", right.ToDescription());
         }
         return right.text == left.ToString();
     }
     if (!left.IsSameType(right)) {
         NVT_LOG_WARNING("compare value not same type may be have bug <always false> ",
-                    left.ToDescription(), " ", right.ToDescription());
+                        left.ToDescription(), " ", right.ToDescription());
         return false;
     }
     switch (left.Type) {

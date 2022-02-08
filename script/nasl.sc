@@ -269,7 +269,7 @@ func log_message(port,protocol,data,uri,proto){
     msg += data;
     msg += uri;
     set_kb_item("script/logs",msg);
-    Println("log_message:",port,protocol,data,uri);
+    #Println("log_message:",port,protocol,data,uri);
 }
 
 func security_message(port,protocol,data,uri,proto){
@@ -284,7 +284,7 @@ func security_message(port,protocol,data,uri,proto){
     msg += data;
     msg += uri;
     set_kb_item("script/logs",msg);
-    Println("security_message:",port,protocol,data,uri);
+    #Println("security_message:",port,protocol,data,uri);
 }
 
 func error_message(port,protocol,data,uri,proto){
@@ -299,7 +299,7 @@ func error_message(port,protocol,data,uri,proto){
     msg += data;
     msg += uri;
     set_kb_item("script/logs",msg);
-    Println("error_message:",port,protocol,data,uri);
+   #Println("error_message:",port,protocol,data,uri);
 }
 
 func build_http_req(method,item,port,data){
@@ -1739,7 +1739,6 @@ ip_ttl=64,ip_p=0,ip_sum=0,ip_src="",ip_dst="",ip_len=0){
     if(len(ip_dst)==0){
         ip_dst = get_host_ip();
     }
-    Println("forge_ip_packet",ip_src,ip_dst);
     hdr = build_ipv4_header(ip_hl,ip_tos,ip_len,ip_id,(ip_off>>13),
                         ip_off,ip_ttl,ip_p,ipv4_string_to_address(ip_src),ipv4_string_to_address(ip_dst));
     if(ip_sum != 0){
@@ -2401,6 +2400,84 @@ func snmpv3_get(port,protocol,username,authpass,authproto,privpass,privproto,oid
     var peer = protocol+":"+get_host_ip()+":"+port;
     #//peer,username,authpass,authproto,privpass,privproto,oid
     return SNMPV3Get(peer,username,authpass,authproto,privpass,privproto,oid);
+}
+
+func ftp_log_in(socket,user,pass){
+    var line = recv_line(socket,1024);
+    if(!HasPrefixString(line,"220")){
+        return 1;
+    }
+    var count = 0;
+    for {
+        if(len(line)>4 && line[3]=='-' && count < 1024){
+            line = recv_line(socket,1024);
+            count++;
+        }else{
+            break;
+        }
+    }
+    if(count >=1024 || len(line)<=0){
+        return 1;
+    }
+    var req = "USER "+user+"\r\n";
+    var nSize = ConnWrite(socket,req);
+    if (nSize <= 0){
+        return 1;
+    }
+    line = recv_line(socket,1024);
+    if(len(line)<=0){
+        return 1;
+    }
+    if(HasPrefixString(line,"230")){
+        count = 0;
+        for {
+            if(len(line)>4 && line[3]=='-' && count < 1024){
+                line = recv_line(socket,1024);
+                count++;
+            }else{
+                break;
+            }
+        }
+    }
+    if(HasPrefixString(line,"331")){
+        return 1;
+    }
+    count = 0;
+    for {
+        if(len(line)>4 && line[3]=='-' && count < 1024){
+            line = recv_line(socket,1024);
+            count++;
+        }else{
+            break;
+        }
+    }
+    return 0;
+}
+
+#Entering Passive Mode (172,16,62,72,17,118)
+func ftp_get_pasv_port(socket){
+    ConnWrite(socket,"PASV\r\n");
+    var line = recv_line(socket,512);
+    if(len(line)<=0){
+        return 0;
+    }
+    if(!HasPrefixString(line,"227")){
+        return 0;
+    }
+    var pos = IndexString(line,"(");
+    if(pos == -1){
+        return 0;
+    }
+    line = line[pos+1:];
+    line = line[:len(line)-1];
+    var list = SplitString(line,",");
+    if(len(list)==6){
+        return ToInteger(list[4])<<16+ToInteger(list[5]);
+    }
+    if(len(list)==5){
+        return ToInteger(list[4]);
+    }
+    return 0;
 }
 
 #do some init for old nasl script on windows platform

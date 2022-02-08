@@ -119,4 +119,11 @@ public:
         }
         return 1;
     }
+    std::string result_output_format() {
+        auto iter = mPref._map().find("result_output_format");
+        if (iter != mPref._map().end()) {
+            return iter->second.ToString();
+        }
+        return "text";
+    }
 };

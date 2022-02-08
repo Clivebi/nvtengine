@@ -115,6 +115,9 @@ struct queue_stack* stack_create(macaddress_t source_mac, struct stack_src_t* sr
 }
 
 void stack_destory(struct queue_stack* stack) {
+    if(stack == NULL){
+        return;
+    }
     int err = 0;
     while (1) {
         struct PacketBuffer* p = NULL;
@@ -135,4 +138,9 @@ void stack_destory(struct queue_stack* stack) {
         free(p);
         p = NULL;
     }
+    free(stack->packet_buffers);
+    free(stack->transmit_queue);
+    stack->packet_buffers = NULL;
+    stack->transmit_queue = NULL;
+    free(stack);
 }

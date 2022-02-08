@@ -21,7 +21,7 @@ HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, ScriptLo
           mMainThread(0),
           mLoader(IO),
           mScriptCache(),
-          mTaskCount(0) {}
+          mTaskCount() {}
 
 bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     if (IsRuning()) {
@@ -30,7 +30,7 @@ bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
     if (!InitScripts(scripts)) {
         return false;
     }
-    mTaskCount = 0;
+    mTaskCount = AtomInt();
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
     mTaskID = TaskID;
     return true;
@@ -48,6 +48,7 @@ void HostsTask::Execute() {
     bool bIsNeedARP = false;
     struct ARPItem* arpItem = NULL;
     unsigned int arpItemSize = 0;
+    time_t scannerTime = time(NULL);
 
     for (unsigned int i = 0; i < target.ipv4.count; i++) {
         ipaddress address;
@@ -76,8 +77,15 @@ void HostsTask::Execute() {
     pixie_mssleep(1000 * 15);
     join_host_scan_task(task);
     NVT_LOG_DEBUG("ports scan complete...");
+    scannerTime = time(NULL) - scannerTime;
     HostScanResult* seek = task->result;
     unsigned int taskLimit = helper.number_of_concurrent_tasks();
+    unsigned int totalTaskCount = 0, scheduledTaskCount = 0;
+    while (seek != NULL) {
+        totalTaskCount++;
+        seek = seek->next;
+    }
+    seek = task->result;
     while (seek != NULL) {
         ipaddress_formatted_t host = ipaddress_fmt(seek->address);
         TCB* tcb = new TCB(host.string);
@@ -132,30 +140,31 @@ void HostsTask::Execute() {
             tcb->Env[knowntext::kENV_route_mac] = fmtV.string;
             tcb->Env[knowntext::kENV_opened_tcp] = tcps;
             tcb->Env[knowntext::kENV_opened_udp] = udps;
-            for (auto v : mPrefs._map()) {
-                tcb->Env[v.first] = v.second;
-            }
+            tcb->ScannerTime = scannerTime;
             //tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
             tcb->Storage->SetItem("default_credentials/disable_brute_force_checks", true);
         }
         tcb->TCPPorts = portsTCP;
         tcb->UDPPorts = portsUDP;
         tcb->Task = this;
+        scheduledTaskCount++;
+        std::cout << "begin task thread for the target: " << tcb->Host
+                  << " scheduled task: " << scheduledTaskCount
+                  << " total task count: " << totalTaskCount
+                  << " running task count: " << mTaskCount.Get() << std::endl;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
         mTCBGroup.push_back(tcb);
-        while (mTaskCount >= taskLimit) {
+        while (mTaskCount.Get() >= taskLimit) {
             pixie_mssleep(200);
         }
         seek = seek->next;
     }
-    //wait_all_thread_exit
     destory_host_scan_task(task);
     if (arpItem != NULL) {
         free(arpItem);
     }
     for (auto iter : mTCBGroup) {
         pixie_thread_join(iter->ThreadHandle);
-        //TODO copy result
         delete (iter);
     }
 }
@@ -200,13 +209,56 @@ void HostsTask::ExecuteOneHost(TCB* tcb) {
     OutputHostResult(tcb);
 }
 
-void HostsTask::OutputHostResult(TCB* tcb) {
+void HostsTask::OutputTextResult(TCB* tcb) {
+    std::stringstream o;
+    o << std::endl << "----begin output result----" << std::endl;
+    o << "target: " << tcb->Host << std::endl;
+    o << "count_of_script: " << tcb->ExecutedScriptCount << std::endl;
+    o << "script_start_time: " << (long)tcb->BirthTime << std::endl;
+    o << "script_time_second: " << (long)(time(NULL) - tcb->BirthTime) << std::endl;
+    o << "scanner_time_second: " << (long)tcb->ScannerTime << std::endl;
+    o << "script_env: " << tcb->Env.ToString() << std::endl;
+
+    Value logs = tcb->Storage->GetItemList("script/logs");
+    if (logs.IsArray()) {
+        for (auto item : logs._array()) {
+            if (item.IsArray()) {
+                for (auto v : item._array()) {
+                    o << v.ToString();
+                    o << " , ";
+                }
+                o << std::endl;
+            } else {
+                o << item.ToString() << std::endl;
+            }
+        }
+    }
+
+    Value result = tcb->Storage->GetItemKeys("HostDetails*");
+    if (result.IsArray()) {
+        for (auto v : result._array()) {
+            Value dataList = tcb->Storage->GetItemList(v.ToString());
+            o << v.ToString() << ": " << dataList.ToString() << std::endl;
+        }
+    }
+    o << std::endl << "----end output result----" << std::endl;
+    tcb->Report = o.str();
+    std::cout << tcb->Report << std::endl;
+}
+
+void HostsTask::OutputJsonResult(TCB* tcb) {
     std::stringstream o;
     Value total = Value::MakeMap();
     Value result = tcb->Storage->GetItemList("script/logs");
     total["logs"] = result;
+    total["target"] = tcb->Host;
+    total["count_of_script"] = tcb->ExecutedScriptCount;
+    total["script_start_time"] = (long)tcb->BirthTime;
+    total["script_time_second"] = (long)(time(NULL) - tcb->BirthTime);
+    total["scanner_time_second"] = (long)tcb->ScannerTime;
+    total["script_env"] = tcb->Env;
     Value detail = Value::MakeArray();
-    total["HostDetails"] = detail;
+    total["details"] = detail;
 
     result = tcb->Storage->GetItemKeys("HostDetails*");
     if (result.IsArray()) {
@@ -218,7 +270,22 @@ void HostsTask::OutputHostResult(TCB* tcb) {
             detail._array().push_back(item);
         }
     }
-    std::cout << total.ToJSONString();
+    tcb->Report = total.ToJSONString();
+    std::cout << tcb->Report << std::endl;
+}
+
+void HostsTask::OutputHostResult(TCB* tcb) {
+    NVTPref helper(mPrefs);
+    if (helper.result_output_format() == "json") {
+        OutputJsonResult(tcb);
+    } else {
+        OutputTextResult(tcb);
+    }
+    std::cout << Status::ToString();
+    //when have too much host,the storage used a large memory,
+    //so after generic report,free it
+    tcb->Storage = NULL;
+    std::cout << Status::ToString();
 }
 
 void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
@@ -264,7 +331,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
         }
     }
     NVT_LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
-              " Executed count: ", tcb->ExecutedScriptCount);
+                  " Executed count: ", tcb->ExecutedScriptCount);
 }
 
 void HostsTask::ThinNVTI(Value& nvti, bool lastPhase) {
@@ -391,8 +458,8 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
     return true;
 }
 
-bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
-    Value mandatory_keys = nvti[knowntext::kNVTI_mandatory_keys];
+bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
+    Value mandatory_keys =  nvti[knowntext::kNVTI_mandatory_keys];
     if (mandatory_keys.IsArray()) {
         for (auto v : mandatory_keys._array()) {
             if (v.ToString().find("=") != std::string::npos) {
@@ -400,14 +467,14 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 Value val = ctx->Storage->GetItem(group.front(), -1);
                 if (val.IsNULL()) {
                     NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                              " because mandatory key is missing :", v.ToString());
+                                  " because mandatory key is missing :", v.ToString());
                     return false;
                 }
                 std::regex re = std::regex(group.back(), std::regex_constants::icase);
                 bool found = std::regex_search(val.text.begin(), val.text.end(), re);
                 if (!found) {
                     NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                              " because mandatory key is missing :", v.ToString());
+                                  " because mandatory key is missing :", v.ToString());
                     return false;
                 }
 
@@ -415,7 +482,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
                 Value val = ctx->Storage->GetItem(v.text, true);
                 if (val.IsNULL()) {
                     NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                              " because mandatory key is missing :", v.ToString());
+                                  " because mandatory key is missing :", v.ToString());
                     return false;
                 }
             }
@@ -428,7 +495,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (val.IsNULL()) {
                 NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                          " because require key is missing :", v.ToString());
+                              " because require key is missing :", v.ToString());
                 return false;
             }
         }
@@ -449,7 +516,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
 
         if (!found) {
             NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                      " because not one require tcp port exist ", require_ports.ToString());
+                          " because not one require tcp port exist ", require_ports.ToString());
             return false;
         }
     }
@@ -462,7 +529,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
         }
         if (!found) {
             NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                      " because not one require udp port exist ", require_udp_ports.ToString());
+                          " because not one require udp port exist ", require_udp_ports.ToString());
             return false;
         }
     }
@@ -473,7 +540,7 @@ bool HostsTask::CheckScript(OVAContext* ctx, Value& nvti) {
             Value val = ctx->Storage->GetItem(v.text, true);
             if (!val.IsNULL()) {
                 NVT_LOG_DEBUG("skip script " + nvti[knowntext::kNVTI_filename].ToString(),
-                          " because exclude_keys is exist :", v.ToString());
+                              " because exclude_keys is exist :", v.ToString());
                 return false;
             }
         }
@@ -549,6 +616,7 @@ void HostsTask::TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t
     }
     for (size_t i = 0; i < thread_count; i++) {
         tcb->Storage->Combine(Paramters[i]->storage);
+        Paramters[i]->storage = NULL;
         delete (Paramters[i]);
     }
 }

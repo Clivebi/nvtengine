@@ -360,6 +360,7 @@ int main(int argc, char* argv[]) {
         options.PrintHelp();
         return -1;
     }
+    pref = Value();
     std::cout << Interpreter::Status::ToString() << std::endl;
     return 0;
 }

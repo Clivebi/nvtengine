@@ -249,7 +249,7 @@ Value VMContext::GetVarValue(const std::string& name) {
         //DUMP_CONTEXT();
         std::string func;
         IsInFunctionContext(func);
-        NVT_LOG_DEBUG("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
+        NVT_LOG_WARNING("variable not found :" + name + " File: " + GetTopContext()->mName + "->", func);
     }
     return ret;
 }

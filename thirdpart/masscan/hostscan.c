@@ -256,6 +256,7 @@ static int initialize_task_adapter(struct HostScanTask* task) {
                 stack_arp_resolve(task->nic.adapter, adapter_ip, task->nic.source_mac, router_ipv4,
                                   &task->nic.router_mac_ipv4, &task->shutdown);
             }
+            task->nic.router_ip = router_ipv4;
 
             fmt = macaddress_fmt(task->nic.router_mac_ipv4);
             LOG(1, "[+] router-mac-ipv4 = %s\n", fmt.string);
@@ -369,7 +370,7 @@ struct HostScanTask* init_host_scan_task(const char* targets, const char* port_l
     task->payloads.udp = payloads_udp_create();
     task->payloads.oproto = payloads_oproto_create();
 
-    template_packet_init(task->tmplset, task->nic.source_mac, task->nic.router_mac_ipv4,
+    template_packet_init(&task->tmplset, task->nic.source_mac, task->nic.router_mac_ipv4,
                          task->nic.router_mac_ipv6, task->payloads.udp, task->payloads.oproto,
                          stack_if_datalink(task->nic.adapter), task->seed);
 
@@ -405,19 +406,14 @@ struct HostScanTask* init_host_scan_task(const char* targets, const char* port_l
 
 void destory_host_scan_task(struct HostScanTask* task) {
     struct HostScanResult *seek, *temp;
-    if (task->thread_handle_recv == 0 || task->thread_handle_send == 0) {
-        return;
-    }
     join_host_scan_task(task);
-    stack_destory(task->stack);
-    rangelist_remove_all(&task->targets.ipv4);
-    rangelist_remove_all(&task->targets.ports);
-    range6list_remove_all(&task->targets.ipv6);
-    free(task->nic.adapter);
+    massip_destory(&task->targets);
+    rawsock_close_adapter(task->nic.adapter);
     seek = task->result;
     while (seek != NULL) {
         temp = seek;
         seek = seek->next;
+        free(temp->list);
         free(temp);
     }
     if (task->arp_table != NULL) {
@@ -425,7 +421,7 @@ void destory_host_scan_task(struct HostScanTask* task) {
     }
     payloads_udp_destroy(task->payloads.udp);
     payloads_udp_destroy(task->payloads.oproto);
-    destory_TemplateSet(&task->tmplset[0]);
+    destory_TemplateSet(&task->tmplset);
     free(task);
 }
 
@@ -447,7 +443,10 @@ void join_host_scan_task(struct HostScanTask* task) {
     }
     task->thread_handle_recv = 0;
     task->thread_handle_send = 0;
-    stack_destory(task->stack);
+    if(task->stack){
+        stack_destory(task->stack);
+        task->stack = NULL;
+    }
 }
 
 static unsigned is_ipv6_multicast(ipaddress ip_me) {
@@ -804,7 +803,7 @@ static void send_thread(struct HostScanTask* task) {
                     rawsock_send_probe_ipv6(task, task->nic.adapter, ip_them, port_them, ip_me,
                                             port_me, (unsigned)cookie,
                                             !batch_size, /* flush queue on last packet in batch */
-                                            task->tmplset);
+                                            &task->tmplset);
 
                     /* Our index selects an IPv6 target */
                 } else {
@@ -847,7 +846,7 @@ static void send_thread(struct HostScanTask* task) {
                     rawsock_send_probe_ipv4(task, task->nic.adapter, ip_them, port_them, ip_me,
                                             port_me, (unsigned)cookie,
                                             !batch_size, /* flush queue on last packet in batch */
-                                            task->tmplset);
+                                            &task->tmplset);
                 }
 
                 batch_size--;

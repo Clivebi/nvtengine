@@ -59,13 +59,9 @@ public:
               mNextInsKey(SHARED_SCRIPT_BASE),
               mNextConstKey(SHARED_SCRIPT_BASE) {}
     bool OnNewScript(scoped_refptr<Script> Script) {
-        static const char knownCache[][30] = {
-                "nasl.sc",
-                "http_func.inc.sc",
-                "http_keepalive.inc.sc",
-                "win_base.inc.sc",
-                "win_warp.inc.sc"
-        };
+        static const char knownCache[][30] = {"nasl.sc", "http_func.inc.sc",
+                                              "http_keepalive.inc.sc", "win_base.inc.sc",
+                                              "win_warp.inc.sc"};
         bool bRet = false;
         mLock.lock();
         auto item = mCache.find(Script->Name);
@@ -106,17 +102,23 @@ protected:
         HostsTask* Task;
         int ScriptProgress;
         Value Env;
+        std::string Report;
         int ExecutedScriptCount;
         std::vector<int> TCPPorts;
         std::vector<int> UDPPorts;
         scoped_refptr<support::ScriptStorage> Storage;
+        time_t BirthTime;
+        time_t ScannerTime;
         TCB(std::string host) {
             Storage = new support::ScriptStorage();
             Env = Value::MakeMap();
+            Report = "";
             Exit = false;
             ScriptProgress = 0;
             ExecutedScriptCount = 0;
             Host = host;
+            BirthTime = time(NULL);
+            ScannerTime = 0;
         }
     };
     ScriptLoader* mLoader;
@@ -126,11 +128,7 @@ protected:
     std::string mPorts;
     std::string mTaskID;
     thread_type mMainThread;
-    #ifdef _WIN32
-    DWORD mTaskCount;
-    #else
-    int mTaskCount;
-    #endif
+    AtomInt mTaskCount;
     ScriptCacheImplement mScriptCache;
 
     std::list<TCB*> mTCBGroup;
@@ -155,19 +153,13 @@ protected:
     void ExecuteOneHost(TCB* tcb);
     void ExecuteScriptOnHost(TCB* tcb);
     void OutputHostResult(TCB* tcb);
+    void OutputJsonResult(TCB* tcb);
+    void OutputTextResult(TCB* tcb);
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
-#ifdef _WIN32
-        InterlockedIncrement(&tcb->Task->mTaskCount);
-#else
-        __sync_fetch_and_add(&tcb->Task->mTaskCount, 1);
-#endif
+        tcb->Task->mTaskCount++;
         tcb->Task->ExecuteOneHost(tcb);
-#ifdef _WIN32
-        InterlockedDecrement(&tcb->Task->mTaskCount);
-#else
-        __sync_sub_and_fetch(&tcb->Task->mTaskCount, 1);
-#endif
+        tcb->Task->mTaskCount--;
     }
     static void ExecuteThreadProxy(void* p) {
         HostsTask* ptr = (HostsTask*)p;
@@ -191,7 +183,7 @@ protected:
                      std::list<std::string>& scripts, std::list<Value>& loadOrder,
                      std::map<std::string, int>& loaded);
     void ThinNVTI(Value& nvti, bool lastPhase);
-    bool CheckScript(OVAContext* ctx, Value& nvti);
+    bool CheckScript(OVAContext* ctx, const Value& nvti);
 
     void TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count);
 };

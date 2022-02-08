@@ -74,7 +74,7 @@ struct HostScanTask {
         struct PayloadsUDP* oproto;
     } payloads;
     struct queue_stack* stack;
-    struct TemplateSet tmplset[1];
+    struct TemplateSet tmplset;
     uint64_t seed;
     unsigned src_ipv4;
     unsigned src_ipv4_mask;

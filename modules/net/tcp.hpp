@@ -14,14 +14,15 @@ public:
         SSL_load_error_strings();
         SSL_library_init();
     }
+    ~TCPConn() { Close(); }
     void Close() {
+        BaseConn::Close();
         if (mSSL) {
             SSL_free(mSSL);
             SSL_CTX_free(mSSLContext);
             mSSLContext = NULL;
             mSSL = NULL;
         }
-        BaseConn::Close();
     }
     int Read(void* buffer, int size) {
         int n = 0;

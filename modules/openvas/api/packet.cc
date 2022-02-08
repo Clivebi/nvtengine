@@ -1,7 +1,11 @@
 extern "C" {
 #include "../../../thirdpart/masscan/hostscan.h"
 }
+#include <mutex>
+
 #include "../api.hpp"
+//libpcap have some bug when used in multi thread env,so, add one lock to order request
+std::mutex g_packet_lock;
 
 bool MatchIPResponse(ipaddress src, ipaddress dst, const unsigned char* buf, size_t size) {
     unsigned char src_addr[16] = {0};
@@ -76,17 +80,20 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         bpfFilter += addrText.string;
         bpfFilter += ")";
     }
+    std::lock_guard guard(g_packet_lock);
     HSocket hSocket = raw_open_socket(dst, NULL, bpfFilter.c_str());
 
     if (hSocket == NULL) {
         return Value();
     }
 
-    if (0 != raw_socket_send(hSocket, (const unsigned char*)pkt.c_str(),(unsigned int)pkt.size())) {
+    if (0 !=
+        raw_socket_send(hSocket, (const unsigned char*)pkt.c_str(), (unsigned int)pkt.size())) {
         raw_close_socket(hSocket);
         return Value();
     }
     if (!readAnswer) {
+        raw_close_socket(hSocket);
         return Value();
     }
     time_t start = time(NULL);
@@ -97,7 +104,7 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             raw_close_socket(hSocket);
             return Value();
         }
-        if (0 != raw_socket_recv(hSocket, &pkt, &pkt_size)) {
+        if (0 != raw_socket_recv(hSocket, &pkt, &pkt_size) || pkt == NULL) {
             continue;
         }
         std::string answer;
@@ -115,6 +122,7 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string ifname = GetString(args, 0);
     std::string bpfFilter = GetString(args, 1);
     int timeout = GetInt(args, 2, 5);
+    std::lock_guard guard(g_packet_lock);
     CaptureHandle Handle = OpenCapture(ifname.c_str(), bpfFilter.c_str());
     if (Handle == NULL) {
         return Value();
@@ -127,7 +135,7 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             CloseCapture(Handle);
             return Value();
         }
-        if (0 != CapturePacket(Handle, &pkt, &pkt_size)) {
+        if (0 != CapturePacket(Handle, &pkt, &pkt_size) || pkt == NULL) {
             continue;
         }
         std::string answer;

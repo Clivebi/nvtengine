@@ -1411,6 +1411,7 @@ template_packet_init(
     int data_link,
     uint64_t entropy)
 {
+    memset(templset,0,sizeof(struct TemplateSet));
     templset->count = 0;
     templset->entropy = entropy;
 
@@ -1542,7 +1543,6 @@ void destory_TemplateSet(struct TemplateSet*p){
     for(size_t i =0; i < Proto_Count;i++){
         free(p->pkts[i].ipv4.packet);
         free(p->pkts[i].ipv6.packet);
-        return;
     }
 }
 

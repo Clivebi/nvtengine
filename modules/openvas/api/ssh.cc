@@ -25,6 +25,9 @@ public:
             ssh_options_set(mSession, SSH_OPTIONS_LOG_VERBOSITY, &nValue);
         }
     }
+    ~SSHSession() {
+        Close();
+    }
     bool SetUserName(std::string name) {
         if (hasSetUserName) {
             return true;
@@ -57,7 +60,7 @@ public:
         }
         return this->methods;
     }
-    virtual void Close() {
+    void Close() {
         mCon = NULL;
         if (mSession) {
             ssh_disconnect(mSession);
@@ -65,8 +68,8 @@ public:
         }
         mSession = NULL;
     };
-    virtual bool IsAvaliable() { return mCon != NULL; }
-    virtual std::string TypeName() { return "SSH"; };
+    bool IsAvaliable() { return mCon != NULL; }
+    std::string TypeName() { return "SSH"; };
 };
 
 class SSHChannel : public Resource {
@@ -79,6 +82,7 @@ public:
     explicit SSHChannel(scoped_refptr<SSHSession> session) : mSession(session) {
         mChannel = ssh_channel_new(mSession->mSession);
     }
+    ~SSHChannel() { Close(); }
 
     bool Open() { return 0 == ssh_channel_open_session(mChannel); }
     bool Shell(int pty) {
@@ -116,15 +120,15 @@ public:
         return ssh_channel_write(mChannel, data.c_str(), (int)data.size());
     }
 
-    virtual void Close() {
+    void Close() {
         if (mChannel) {
             ssh_channel_free(mChannel);
             mChannel = NULL;
         }
         mSession = NULL;
     };
-    virtual bool IsAvaliable() { return mSession != NULL; }
-    virtual std::string TypeName() { return "SSH-Channel"; };
+    bool IsAvaliable() { return mSession != NULL; }
+    std::string TypeName() { return "SSH-Channel"; };
 };
 
 //socket,timeout,ip,keytype,cschiphers,sscriphers
@@ -395,7 +399,9 @@ Value SSHGetPUBKey(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return Value();
     }
-    std::string strKey(ssh_string_to_char(key), ssh_string_len(key));
+    char* ptr = ssh_string_to_char(key);
+    std::string strKey(ptr, ssh_string_len(key));
+    ssh_string_free_char(ptr);
     ssh_string_free(key);
     return strKey;
 }

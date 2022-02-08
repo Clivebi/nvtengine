@@ -15,24 +15,58 @@
 #include "logger.hpp"
 
 namespace Interpreter {
+
+class AtomInt {
+protected:
+#ifdef _WIN32
+    DWORD mValue;
+#else
+    int mValue;
+#endif
+
+public:
+    AtomInt() : mValue(0) {}
+    AtomInt operator++(int) {
+#ifdef _WIN32
+        InterlockedIncrement(&mValue);
+#else
+        __sync_fetch_and_add(&mValue, 1);
+#endif
+        return *this;
+    }
+    AtomInt operator--(int) {
+#ifdef _WIN32
+        InterlockedDecrement(&mValue);
+#else
+        __sync_sub_and_fetch(&mValue, 1);
+#endif
+        return *this;
+    }
+#ifdef _WIN32
+    DWORD Get() { return InterlockedAdd(&mValue, 0); }
+#else
+    int Get() { return __sync_sub_and_fetch(&mValue, 0); }
+#endif
+};
 class Status {
 public:
-    static long sResourceCount;
-    static long sArrayCount;
-    static long sMapCount;
-    static long sParserCount;
-    static long sScriptCount;
-    static long sVMContextCount;
-    static long sUDObjectCount;
+    static AtomInt sResourceCount;
+    static AtomInt sArrayCount;
+    static AtomInt sMapCount;
+    static AtomInt sParserCount;
+    static AtomInt sScriptCount;
+    static AtomInt sVMContextCount;
+    static AtomInt sUDObjectCount;
     static std::string ToString() {
         std::stringstream o;
-        o << "Res:\t\t" << sResourceCount << "\n";
-        o << "Array:\t\t" << sArrayCount << "\n";
-        o << "Map:\t\t" << sMapCount << "\n";
-        o << "Parser:\t\t" << sParserCount << "\n";
-        o << "Script:\t\t" << sScriptCount << "\n";
-        o << "Context:\t" << sVMContextCount << "\n";
-        o << "UDObj:\t\t" << sUDObjectCount << "\n";
+        o << "Res:\t\t" << sResourceCount.Get() << "\n";
+        o << "Array:\t\t" << sArrayCount.Get() << "\n";
+        o << "Map:\t\t" << sMapCount.Get() << "\n";
+        o << "Parser:\t\t" << sParserCount.Get() << "\n";
+        o << "Script:\t\t" << sScriptCount.Get() << "\n";
+        o << "Context:\t" << sVMContextCount.Get() << "\n";
+        o << "UDObj:\t\t" << sUDObjectCount.Get() << "\n";
+        o << std::endl;
         return o.str();
     }
 };

@@ -4,11 +4,13 @@
 #include "../engine/value.hpp" //
 class Reader {
 public:
+    virtual ~Reader() {}
     virtual int Read(void* buffer, int size) = 0;
 };
 
 class Writer {
 public:
+    virtual ~Writer() {}
     virtual int Write(const void* buffer, int size) = 0;
 };
 
@@ -21,6 +23,8 @@ protected:
     int mSize;
     unsigned char* mBuffer;
     Reader* mReader;
+
+    DISALLOW_COPY_AND_ASSIGN(BufferedReader);
 
 public:
     explicit BufferedReader(Reader* reader, const void* init = NULL, int initSize = 0,
@@ -65,9 +69,6 @@ public:
         mPos += size;
         return size;
     }
-
-private:
-    DISALLOW_COPY_AND_ASSIGN(BufferedReader);
 };
 
 inline int ReadAtleast(Reader* r, BYTE* buffer, int bufferSize, int minSize) {
