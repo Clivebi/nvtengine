@@ -104,7 +104,8 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             raw_close_socket(hSocket);
             return Value();
         }
-        if (0 != raw_socket_recv(hSocket, &pkt, &pkt_size) || pkt == NULL) {
+        if (0 != raw_socket_recv(hSocket, &pkt, &pkt_size) || pkt == NULL || pkt_size < 34 ||
+            pkt_size > 1514) {
             continue;
         }
         std::string answer;
@@ -135,7 +136,8 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             CloseCapture(Handle);
             return Value();
         }
-        if (0 != CapturePacket(Handle, &pkt, &pkt_size) || pkt == NULL) {
+        if (0 != CapturePacket(Handle, &pkt, &pkt_size) || pkt == NULL || pkt_size < 34 ||
+            pkt_size > 1514) {
             continue;
         }
         std::string answer;
