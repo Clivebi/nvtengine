@@ -249,7 +249,7 @@ static int isotime_human_p(const char* string) {
    isotime_p and isotime_human_p.  The function returns 0 on failure
    or the length of the scanned string on success.  */
 static int string2isotime(my_isotime_t atime, const char* string) {
-    my_isotime_t dummyatime;
+    my_isotime_t dummyatime= {0};
 
     if (!atime) atime = dummyatime;
 

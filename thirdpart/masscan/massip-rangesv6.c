@@ -387,7 +387,7 @@ range6list_remove_all(struct Range6List *targets)
         free(targets->list);
     if (targets->picker)
         free(targets->picker);
-    memset(targets, 0, sizeof(*targets));
+    memset(targets, 0, sizeof(struct Range6List));
 }
 
 /***************************************************************************

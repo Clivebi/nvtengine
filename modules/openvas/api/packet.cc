@@ -43,15 +43,15 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING_OR_BYTES(0);
     CHECK_PARAMETER_STRING_OR_BYTES(1);
     CHECK_PARAMETER_INTEGER(2);
-    std::string pkt = GetString(args, 0);
+    std::string outpkt = GetString(args, 0);
     std::string bpfFilter = GetString(args, 1);
     int timeout = GetInt(args, 2, 5);
     bool readAnswer = args[3].ToBoolean();
-    if (pkt.size() == 0) {
+    if (outpkt.size() == 0) {
         throw RuntimeException("PcapRequest invalid packet");
     }
-    int version = (pkt[0] >> 4) & 0xF;
-    if ((version == 4 && pkt.size() < 20) || (version == 6 && pkt.size() < 40)) {
+    int version = (outpkt[0] >> 4) & 0xF;
+    if ((version == 4 && outpkt.size() < 20) || (version == 6 && outpkt.size() < 40)) {
         throw RuntimeException("PcapRequest invalid packet");
     }
     ipaddress dst;
@@ -59,15 +59,15 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (version == 4) {
         dst.version = 4;
         src.version = 4;
-        memcpy(&dst.ipv4, pkt.c_str() + 16, 4);
+        memcpy(&dst.ipv4, outpkt.c_str() + 16, 4);
         dst.ipv4 = swapint32(dst.ipv4);
-        memcpy(&src.ipv4, pkt.c_str() + 12, 4);
+        memcpy(&src.ipv4, outpkt.c_str() + 12, 4);
         src.ipv4 = swapint32(src.ipv4);
     } else {
         dst.version = 6;
         src.version = 6;
-        memcpy(&dst.ipv6, pkt.c_str() + 24, 16);
-        memcpy(&src.ipv6, pkt.c_str() + 8, 16);
+        memcpy(&dst.ipv6, outpkt.c_str() + 24, 16);
+        memcpy(&src.ipv6, outpkt.c_str() + 8, 16);
     }
     if (bpfFilter.size() == 0) {
         //snprintf (filter, 256, "ip and (src host %s and dst host %s)", a_src,a_dst);
@@ -80,15 +80,15 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         bpfFilter += addrText.string;
         bpfFilter += ")";
     }
-    std::lock_guard guard(g_packet_lock);
+    //std::lock_guard guard(g_packet_lock);
     HSocket hSocket = raw_open_socket(dst, NULL, bpfFilter.c_str());
 
     if (hSocket == NULL) {
         return Value();
     }
 
-    if (0 !=
-        raw_socket_send(hSocket, (const unsigned char*)pkt.c_str(), (unsigned int)pkt.size())) {
+    if (0 != raw_socket_send(hSocket, (const unsigned char*)outpkt.c_str(),
+                             (unsigned int)outpkt.size())) {
         raw_close_socket(hSocket);
         return Value();
     }
@@ -97,19 +97,26 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         return Value();
     }
     time_t start = time(NULL);
+    const unsigned char* pk = NULL;
+    unsigned int pk_size = 0;
     while (true) {
-        const unsigned char* pkt = NULL;
-        unsigned int pkt_size = 0;
         if (time(NULL) - start > timeout) {
             raw_close_socket(hSocket);
             return Value();
         }
-        if (0 != raw_socket_recv(hSocket, &pkt, &pkt_size) || pkt == NULL || pkt_size < 34 ||
-            pkt_size > 1514) {
+        pk = NULL;
+        pk_size = 0;
+        if (raw_socket_recv(hSocket, &pk, &pk_size)) {
+            continue;
+        }
+        std::stringstream o;
+        o << AddressString(pk) << " :" << pk_size << std::endl;
+        std::cout << o.str();
+        if (pk == NULL || pk_size < 34 || pk_size > 1514) {
             continue;
         }
         std::string answer;
-        answer.assign((const char*)pkt + 14, pkt_size - 14);
+        answer.assign((const char*)pk + 14, pk_size - 14);
         raw_close_socket(hSocket);
         return answer;
     }
@@ -123,12 +130,14 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string ifname = GetString(args, 0);
     std::string bpfFilter = GetString(args, 1);
     int timeout = GetInt(args, 2, 5);
-    std::lock_guard guard(g_packet_lock);
+    //std::lock_guard guard(g_packet_lock);
     CaptureHandle Handle = OpenCapture(ifname.c_str(), bpfFilter.c_str());
     if (Handle == NULL) {
         return Value();
     }
     time_t start = time(NULL);
+    const unsigned char* pk = NULL;
+    unsigned int pk_size = 0;
     while (true) {
         const unsigned char* pkt = NULL;
         unsigned int pkt_size = 0;
@@ -136,12 +145,17 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             CloseCapture(Handle);
             return Value();
         }
-        if (0 != CapturePacket(Handle, &pkt, &pkt_size) || pkt == NULL || pkt_size < 34 ||
-            pkt_size > 1514) {
+        if (CapturePacket(Handle, &pkt, &pkt_size)) {
+            continue;
+        }
+        std::stringstream o;
+        o << AddressString(pk) << " :" << pk_size << std::endl;
+        std::cout << o.str();
+        if (pk == NULL || pk_size < 34 || pk_size > 1514) {
             continue;
         }
         std::string answer;
-        answer.assign((const char*)pkt + 14, pkt_size - 14);
+        answer.assign((const char*)pk + 14, pk_size - 14);
         CloseCapture(Handle);
         return answer;
     }

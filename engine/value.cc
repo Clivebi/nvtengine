@@ -211,6 +211,12 @@ std::string ToString(long long val) {
     return buffer;
 }
 
+std::string AddressString(const void* addr) {
+    char buffer[16] = {0};
+    snprintf(buffer, 16, "%llx", (long long)addr);
+    return buffer;
+}
+
 std::string HexEncode(const char* buf, size_t count, std::string prefix) {
     char buffer[6] = {0};
     std::string result = "";

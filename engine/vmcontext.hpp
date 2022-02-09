@@ -97,6 +97,7 @@ public:
         std::string Name;
         std::map<std::string, Value> Attributes;
         const Instruction* MethodsList;
+        ObjectCreator() : Initialzed(false), MethodsList(NULL), Name(""), Attributes() {}
     };
 
     void AddObjectCreator(const std::string name, ObjectCreator* creator) {

@@ -10,6 +10,7 @@
 #include "modules/openvas/support/nvtidb.hpp"
 #include "modules/openvas/support/prefsdb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
+#include <pcap.h>
 
 using namespace Interpreter;
 #define ALGINTO(a, b) ((((a) / b) + 1) * b)
@@ -109,14 +110,18 @@ protected:
         scoped_refptr<support::ScriptStorage> Storage;
         time_t BirthTime;
         time_t ScannerTime;
-        TCB(std::string host) {
+        TCB(std::string host)
+                : ThreadHandle(0),
+                  Host(host),
+                  Exit(false),
+                  Task(NULL),
+                  ScriptProgress(0),
+                  Env(Value::MakeMap()),
+                  Report(""),
+                  ExecutedScriptCount(0),
+                  TCPPorts(),
+                  UDPPorts() {
             Storage = new support::ScriptStorage();
-            Env = Value::MakeMap();
-            Report = "";
-            Exit = false;
-            ScriptProgress = 0;
-            ExecutedScriptCount = 0;
-            Host = host;
             BirthTime = time(NULL);
             ScannerTime = 0;
         }
@@ -171,6 +176,7 @@ protected:
         TCB* tcb;
         std::vector<int> ports;
         scoped_refptr<support::ScriptStorage> storage;
+        DetectServiceParamter() : tcb(NULL), ports(), storage(NULL) {}
     };
     static void DetectServiceProxy(void* p) {
         DetectServiceParamter* param = (DetectServiceParamter*)p;

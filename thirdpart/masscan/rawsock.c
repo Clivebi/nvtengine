@@ -27,7 +27,7 @@
 static int is_pcap_file = 0;
 
 #ifdef _WIN32
-#include<Windows.h>
+#include <Windows.h>
 #include <iphlpapi.h>
 #include <winsock.h>
 
@@ -315,7 +315,7 @@ int rawsock_recv_packet(struct Adapter* adapter, unsigned* length, unsigned* sec
                         unsigned* shutdown, const unsigned char** packet) {
     if (adapter->ring) {
         /* This is for doing libpfring instead of libpcap */
-        struct pfring_pkthdr hdr;
+        struct pfring_pkthdr hdr = {0};
         int err;
 
     again:
@@ -334,7 +334,7 @@ int rawsock_recv_packet(struct Adapter* adapter, unsigned* length, unsigned* sec
         *usecs = (unsigned)hdr.ts.tv_usec;
 
     } else if (adapter->pcap) {
-        struct pcap_pkthdr hdr;
+        struct pcap_pkthdr hdr = {0};
 
         *packet = PCAP.next(adapter->pcap, &hdr);
 
@@ -346,6 +346,7 @@ int rawsock_recv_packet(struct Adapter* adapter, unsigned* length, unsigned* sec
             }
             return 1;
         }
+        printf("%llx--%d %d\n", (long long)(*packet), hdr.caplen, hdr.len);
 
         *length = hdr.caplen;
         *secs = (unsigned)hdr.ts.tv_sec;
@@ -536,7 +537,7 @@ struct Adapter* rawsock_init_adapter(const char* adapter_name, unsigned is_pfrin
      * warning when unused */
     UNUSEDPARM(bpf_filter);
 
-    adapter = CALLOC(1, sizeof(*adapter));
+    adapter = CALLOC(1, sizeof(struct Adapter));
     adapter->is_packet_trace = is_packet_trace;
     adapter->pt_start = 1.0 * pixie_gettime() / 1000000.0;
 

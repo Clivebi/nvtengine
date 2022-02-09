@@ -13,6 +13,7 @@ using namespace Interpreter;
 struct HeaderValue {
     std::string Name;
     std::string Value;
+    HeaderValue():Name(""),Value(""){}
 };
 
 class HTTPResponse {

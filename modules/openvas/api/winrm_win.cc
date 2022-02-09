@@ -3,13 +3,12 @@
 #include <wsman.h>
 
 #include <string>
+
 #include "../api.hpp"
 
 ::std::string base64_encode(const ::std::string& bindata);
 
-
-
-std::wstring  A2W(std::string src, UINT codepage = CP_UTF8) {
+std::wstring A2W(std::string src, UINT codepage = CP_UTF8) {
     std::wstring return_value(L"");
     int len = MultiByteToWideChar(codepage, 0, src.c_str(), (int)src.size(), NULL, 0);
     if (len <= 0) {
@@ -37,7 +36,6 @@ std::string W2A(std::wstring src, UINT codepage = CP_ACP) {
     delete[] buffer;
     return return_value;
 }
-
 
 class WINRMHandle : public Resource {
 public:
@@ -103,6 +101,14 @@ typedef struct _ASYNC_CONTEXT {
     DWORD ExitCode;
     std::wstring Error;
     DWORD ErrorCode;
+    _ASYNC_CONTEXT()
+            : hEvent(NULL),
+              CallType(0),
+              strStdout(""),
+              strStderr(""),
+              ExitCode(-1),
+              Error(""),
+              ErrorCode(-1) {}
 } ASYNC_CONTEXT, *PCASYNC_CONTEXT;
 
 VOID CALLBACK AsyncCallbackImplement(PVOID operationContext, DWORD flags, WSMAN_ERROR* error,
@@ -152,6 +158,7 @@ struct _ExecuteCommandResult {
     std::wstring Error;
     int ErrorCode;
     int ExitCode;
+    _ExecuteCommandResult() : Stdout(""), StdError(""), Error(""), ErrorCode(-1), ExitCode(-1) {}
 };
 
 std::string BuildPowerShellCommand(std::string cmd) {
@@ -186,17 +193,20 @@ BOOL ExecuteCommand(WINRMHandle* winRM, std::string cmd, bool usePS,
     do {
         context.CallType = CALL_TYPE_CREATE_SHELL;
         WSManCreateShell(winRM->mSession, 0, WSMAN_CMDSHELL_URI, NULL, NULL, NULL, &async, &hShell);
-        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) || context.ErrorCode !=0) {
+        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) ||
+            context.ErrorCode != 0) {
             break;
         }
         context.CallType = CALL_TYPE_RUN_COMMAND;
         WSManRunShellCommand(hShell, 0, A2W(cmd).c_str(), NULL, NULL, &async, &hCommand);
-        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) || context.ErrorCode !=0) {
+        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) ||
+            context.ErrorCode != 0) {
             break;
         }
         context.CallType = CALL_TYPE_RECEIVE_OUTPUT;
         WSManReceiveShellOutput(hShell, hCommand, 0, NULL, &async, &hOperation);
-        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) || context.ErrorCode != 0) {
+        if (ERROR_SUCCESS != WaitForSingleObject(context.hEvent, INFINITE) ||
+            context.ErrorCode != 0) {
             break;
         }
         bResult = TRUE;
@@ -273,7 +283,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 
     if (!ExecuteCommand(Handle, args[1].text.c_str(), args[3].Integer, result) ||
         result.ErrorCode != 0) {
-        NVT_LOG_WARNING("WinRMExecute have error :",result.ErrorCode, W2A(result.Error));
+        NVT_LOG_WARNING("WinRMExecute have error :", result.ErrorCode, W2A(result.Error));
         return Value();
     }
     Value ret = Value::MakeMap();

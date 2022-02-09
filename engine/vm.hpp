@@ -15,7 +15,7 @@ namespace Interpreter {
 class Executor;
 
 typedef struct _BuiltinMethod {
-    std::string name;
+    const char* name;
     RUNTIME_FUNCTION func;
 } BuiltinMethod;
 

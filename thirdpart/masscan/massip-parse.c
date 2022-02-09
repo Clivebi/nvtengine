@@ -45,7 +45,7 @@ struct massip_parser
 static struct massip_parser *
 _parser_init(struct massip_parser *p)
 {
-    memset(p, 0, sizeof(*p));
+    memset(p, 0, sizeof(struct massip_parser));
     p->line_number = 1;
     p->ipv6.ellision_index = 8;
     return p;

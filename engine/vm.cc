@@ -10,33 +10,41 @@ using namespace Interpreter;
 
 #ifdef _DEBUG_MEMORY_BROKEN
 void* operator new(size_t sz) {
-    BYTE* ptr = (BYTE*)malloc(sz + 64);
+    BYTE* base = (BYTE*)malloc(sz + 64);
+    BYTE* ptr = base;
     for (size_t i = 0; i < 34; i++) {
         ptr[i] = 0xCC;
     }
-    for (size_t i = sz; i < 30; i++) {
+    ptr += 34;
+    ptr += sz;
+    for (size_t i = 0; i < 30; i++) {
         ptr[i] = 0xCC;
     }
-    *(uint32_t*)ptr = sz;
-    return ptr + 34;
+    *(uint32_t*)base = sz;
+    return base + 34;
 }
 
 void operator delete(void* p) noexcept {
-    BYTE* ptr = (BYTE*)p;
-    ptr -= 34;
+    if (p == NULL) {
+        return;
+    }
+    BYTE* base = (BYTE*)p;
+    base -= 34;
+    BYTE* ptr = base;
     uint32_t sz = *(uint32_t*)ptr;
     for (size_t i = 4; i < 34; i++) {
         if (ptr[i] != 0xCC) {
             abort();
         }
     }
-
-    for (size_t i = sz; i < 30; i++) {
+    ptr += 34;
+    ptr += sz;
+    for (size_t i = 0; i < 30; i++) {
         if (ptr[i] != 0xCC) {
             abort();
         }
     }
-    free(ptr);
+    free(base);
 }
 #endif
 
@@ -748,7 +756,7 @@ scoped_refptr<VMContext> Executor::FillActualParameters(const Instruction* func,
         for (auto iter : actualList) {
             if (!IsNameInGroup(iter->Name, formalList)) {
                 NVT_LOG_WARNING(iter->Name, " is not a parametr for " + func->Name, " ",
-                            ctx->ShortStack());
+                                ctx->ShortStack());
             }
             Value val = Execute(GetInstruction(iter->Refs[0]), ctx);
             newCtx->SetVarValue(iter->Name, val, true);

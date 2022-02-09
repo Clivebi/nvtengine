@@ -152,8 +152,7 @@ std::string SockAddressToString(struct sockaddr* addr) {
 
 std::string ResolveHostName(const std::string& host, int family) {
     std::string result = "";
-    struct addrinfo hints, *info, *p;
-    memset(&hints,0, sizeof(hints));
+    struct addrinfo hints={0}, *info, *p;
     hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;
@@ -174,8 +173,7 @@ std::string ResolveHostName(const std::string& host, int family) {
 
 std::vector<std::string> ResolveHostNameToList(const std::string& host, int family) {
     std::vector<std::string> result;
-    struct addrinfo hints, *info, *p;
-    memset(&hints,0, sizeof(hints));
+    struct addrinfo hints={0}, *info, *p;
     hints.ai_family = family;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = 0;

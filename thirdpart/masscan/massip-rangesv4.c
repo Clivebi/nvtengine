@@ -238,7 +238,7 @@ rangelist_remove_all(struct RangeList *targets)
 {
     free(targets->list);
     free(targets->picker);
-    memset(targets, 0, sizeof(*targets));
+    memset(targets, 0, sizeof(struct RangeList));
 }
 
 /***************************************************************************
@@ -976,7 +976,7 @@ rangelist_copy(struct RangeList *dst, const struct RangeList *src)
 {
     free(dst->list);
     free(dst->picker);
-    memset(dst, 0, sizeof(*dst));
+    memset(dst, 0, sizeof(struct RangeList));
     dst->list = CALLOC(src->count, sizeof(src->list[0]));
     memcpy(dst->list, src->list, src->count * sizeof(src->list[0]));
     dst->count = src->count;

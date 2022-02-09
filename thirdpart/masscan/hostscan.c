@@ -1019,13 +1019,9 @@ void raw_close_socket(HSocket handle) {
 }
 
 int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data_size) {
-    unsigned char* buffer = NULL;
+    unsigned char buffer[1600];
     int ret = 0;
     if (data_size > 1500) {
-        return -1;
-    }
-    buffer = (unsigned char*)MALLOC(1600);
-    if (buffer == NULL) {
         return -1;
     }
     if (!macaddress_is_zero(handle->them_mac)) {
@@ -1043,7 +1039,6 @@ int raw_socket_send(HSocket handle, const unsigned char* data, unsigned int data
     }
     memcpy(buffer + 14, data, data_size);
     ret = rawsock_send_packet(handle->adapter, buffer, data_size + 14, 1);
-    free(buffer);
     return ret;
 }
 

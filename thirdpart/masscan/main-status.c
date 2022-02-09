@@ -285,7 +285,7 @@ status_finish(struct Status *status)
 void
 status_start(struct Status *status)
 {
-    memset(status, 0, sizeof(*status));
+    memset(status, 0, sizeof(struct Status));
     status->last.clock = clock();
     status->last.time = time(0);
     status->last.count = 0;

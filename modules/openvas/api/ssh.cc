@@ -25,9 +25,6 @@ public:
             ssh_options_set(mSession, SSH_OPTIONS_LOG_VERBOSITY, &nValue);
         }
     }
-    ~SSHSession() {
-        Close();
-    }
     bool SetUserName(std::string name) {
         if (hasSetUserName) {
             return true;
@@ -63,7 +60,7 @@ public:
     void Close() {
         mCon = NULL;
         if (mSession) {
-            ssh_disconnect(mSession);
+            //ssh_disconnect(mSession);
             ssh_free(mSession);
         }
         mSession = NULL;

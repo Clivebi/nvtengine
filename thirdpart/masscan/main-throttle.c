@@ -30,7 +30,7 @@ throttler_start(struct Throttler *throttler, double max_rate)
 {
     unsigned i;
 
-    memset(throttler, 0, sizeof(*throttler));
+    memset(throttler, 0, sizeof(struct Throttler));
 
     throttler->max_rate = max_rate;
 

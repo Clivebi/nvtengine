@@ -28,16 +28,14 @@ protected:
 
 public:
     explicit BufferedReader(Reader* reader, const void* init = NULL, int initSize = 0,
-                            int size = 16 * 1024) {
-        if (initSize > size) {
-            size = initSize;
-        }
-        mBuffer = new unsigned char[size];
-        mCapSize = size;
+                            int cap = 16 * 1024) {
+        cap = std::max(cap, initSize);
+        mBuffer = new unsigned char[cap];
+        mCapSize = cap;
         mPos = 0;
         mSize = 0;
         mReader = reader;
-        if (init) {
+        if (init && initSize > 0) {
             memcpy(mBuffer, init, initSize);
             mSize = initSize;
         }
@@ -46,9 +44,7 @@ public:
 
     int Read(void* buffer, int size) {
         if (mPos < mSize) {
-            if (size > mSize - mPos) {
-                size = mSize - mPos;
-            }
+            size = std::min(size, (mSize - mPos));
             memcpy(buffer, mBuffer + mPos, size);
             mPos += size;
             return size;
@@ -62,9 +58,7 @@ public:
         }
         mSize = ReadSize;
         mPos = 0;
-        if (size > mSize - mPos) {
-            size = mSize - mPos;
-        }
+        size = std::min(size, (mSize - mPos));
         memcpy(buffer, mBuffer + mPos, size);
         mPos += size;
         return size;

@@ -459,7 +459,7 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
 }
 
 bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
-    Value mandatory_keys =  nvti[knowntext::kNVTI_mandatory_keys];
+    Value mandatory_keys =  nvti.GetValue(knowntext::kNVTI_mandatory_keys);
     if (mandatory_keys.IsArray()) {
         for (auto v : mandatory_keys._array()) {
             if (v.ToString().find("=") != std::string::npos) {
@@ -489,7 +489,7 @@ bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
         }
     }
 
-    Value require_keys = nvti[knowntext::kNVTI_require_keys];
+    Value require_keys = nvti.GetValue(knowntext::kNVTI_require_keys);
     if (require_keys.IsArray()) {
         for (auto v : require_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);
@@ -501,7 +501,7 @@ bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
         }
     }
 
-    Value require_ports = nvti[knowntext::kNVTI_require_ports];
+    Value require_ports = nvti.GetValue(knowntext::kNVTI_require_ports);
     if (require_ports.IsArray()) {
         bool found = false;
         for (auto v : require_ports._array()) {
@@ -521,7 +521,7 @@ bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
         }
     }
 
-    Value require_udp_ports = nvti[knowntext::kNVTI_require_udp_ports];
+    Value require_udp_ports = nvti.GetValue(knowntext::kNVTI_require_udp_ports);
     if (require_udp_ports.IsArray()) {
         bool found = false;
         for (auto v : require_udp_ports._array()) {
@@ -534,7 +534,7 @@ bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
         }
     }
 
-    Value exclude_keys = nvti[knowntext::kNVTI_exclude_keys];
+    Value exclude_keys = nvti.GetValue(knowntext::kNVTI_exclude_keys);
     if (exclude_keys.IsArray()) {
         for (auto v : exclude_keys._array()) {
             Value val = ctx->Storage->GetItem(v.text, true);

@@ -132,9 +132,8 @@ public:
     }
 
     static int DialTCP(const char* host, const char* port, int timeout_sec) {
-        struct addrinfo hints, *servinfo, *p;
+        struct addrinfo hints= {0}, *servinfo, *p;
         int rv, sockfd;
-        memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         InitLibrary();
@@ -162,9 +161,8 @@ public:
     }
 
     static int DialUDP(const char* host, const char* port) {
-        struct addrinfo hints, *servinfo, *p;
+        struct addrinfo hints={0}, *servinfo, *p;
         int rv, sockfd;
-        memset(&hints, 0, sizeof(hints));
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
         InitLibrary();

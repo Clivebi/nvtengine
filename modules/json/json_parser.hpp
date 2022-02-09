@@ -28,12 +28,14 @@ public:
     std::string Value;
     std::map<std::string, JSONValue*> Object;
     std::list<JSONValue*> Array;
+    JSONValue() : Array(), Object(), Value(""), Type(NIL) {}
 };
 
 class JSONMember {
 public:
     std::string Member;
     JSONValue* Value;
+    JSONMember() : Member(""), Value(NULL) {}
 };
 
 class JSONParser {
@@ -45,7 +47,13 @@ private:
     void* mUserContext;
 
 public:
-    JSONParser(void* Context) : root(NULL), mUserContext(Context) {}
+    JSONParser(void* Context)
+            : root(NULL),
+              mUserContext(Context),
+              mStringHolder(),
+              mScanningString(),
+              mValueHolder(),
+              mMemberHolder() {}
     ~JSONParser() {
         auto iter = mStringHolder.begin();
         while (iter != mStringHolder.end()) {

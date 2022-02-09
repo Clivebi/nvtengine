@@ -85,6 +85,8 @@ std::string ToString(long val);
 
 std::string ToString(unsigned int val);
 
+std::string AddressString(const void* addr);
+
 std::string HexEncode(const char* buf, size_t count, std::string prefix = "");
 
 std::string DecodeJSONString(const std::string& src);
@@ -267,14 +269,14 @@ class Bytes : public CRefCountedThreadSafe<Bytes> {
 protected:
     friend class BytesView;
     BYTE* mData;
-    size_t mLen;
+    const size_t mLen;
     DISALLOW_COPY_AND_ASSIGN(Bytes);
 
 public:
-    explicit Bytes(size_t size) {
-        mLen = size;
-        mData = new BYTE[mLen];
-        memset(mData, 0, mLen);
+    explicit Bytes(size_t size) : mLen(size), mData(NULL) {
+        if (size) {
+            mData = new BYTE[mLen];
+        }
     }
     ~Bytes() { delete[] mData; }
 };
@@ -286,7 +288,10 @@ protected:
     size_t mViewSize;
 
 protected:
-    const BYTE* GetDataPtr() const { return mBackend->mData + mViewStart; }
+    const BYTE* GetDataPtr() const {
+        assert(mViewStart + mViewSize <= mBackend->mLen);
+        return mBackend->mData + mViewStart;
+    }
 
 public:
     BytesView() : mBackend(NULL), mViewStart(0), mViewSize(0) {}
@@ -319,6 +324,7 @@ public:
         BytesView view(*this);
         view.mViewStart = mViewStart + left;
         view.mViewSize = right - left;
+        assert(view.mViewStart + view.mViewSize <= view.mBackend->mLen);
         return view;
     }
 
@@ -342,6 +348,7 @@ public:
         if (size > Length()) {
             size = Length();
         }
+        assert(mViewStart + mViewSize <= mBackend->mLen);
         memcpy(ptr, from, size);
     }
 
@@ -349,14 +356,14 @@ public:
 
     void SetAt(size_t index, int Val) {
         if (index >= Length()) {
-            throw RuntimeException("Bytes GetAt index out of range");
+            throw RuntimeException("Bytes SetAt index out of range");
         }
         mBackend->mData[mViewStart + index] = (BYTE)(Val & 0xFF);
     }
 
     std::string ToString() const {
         std::string ret = "";
-        ret.assign((char*)GetDataPtr(), Length());
+        ret.assign((const char*)GetDataPtr(), Length());
         return ret;
     }
     std::string ToDescription() const {
