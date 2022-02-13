@@ -154,6 +154,7 @@ void HostsTask::Execute() {
                   << " total task count: " << totalTaskCount
                   << " running task count: " << mTaskCount.Get() << std::endl;
         tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
+        mTaskCount++;
         mTCBGroup.push_back(tcb);
         while (mTaskCount.Get() >= taskLimit) {
             pixie_mssleep(200);

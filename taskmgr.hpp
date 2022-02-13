@@ -162,7 +162,6 @@ protected:
     void OutputTextResult(TCB* tcb);
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
-        tcb->Task->mTaskCount++;
         tcb->Task->ExecuteOneHost(tcb);
         tcb->Task->mTaskCount--;
     }

@@ -346,7 +346,7 @@ int rawsock_recv_packet(struct Adapter* adapter, unsigned* length, unsigned* sec
             }
             return 1;
         }
-        printf("%llx--%d %d\n", (long long)(*packet), hdr.caplen, hdr.len);
+        //printf("%llx--%d %d\n", (long long)(*packet), hdr.caplen, hdr.len);
 
         *length = hdr.caplen;
         *secs = (unsigned)hdr.ts.tv_sec;
