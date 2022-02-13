@@ -3,7 +3,6 @@
 #include "./winrm_win.cc"
 #else
 #include "../../../winrm/winrm.h"
-
 #include "../api.hpp"
 class WINRMHandle : public Resource {
 public:
@@ -11,14 +10,15 @@ public:
 
 public:
     explicit WINRMHandle(GoUintptr handle) : mHandle(handle) {}
-    virtual void Close() {
+    ~WINRMHandle() { Close(); }
+    void Close() {
         if (mHandle != 0) {
             WinRMClose(mHandle);
             mHandle = 0;
         }
     };
-    virtual bool IsAvaliable() { return mHandle != 0; }
-    virtual std::string TypeName() { return "WINRM"; };
+    bool IsAvaliable() { return mHandle != 0; }
+    std::string TypeName() { return "WINRM"; };
 };
 
 Value CreateWinRM(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -65,7 +65,7 @@ Value WinRMCommand(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         free(result.r4);
         return Value();
     } else {
-        out.assign(result.r0,result.r1);
+        out.assign(result.r0, result.r1);
         errOut = result.r2;
         free(result.r0);
         free(result.r2);

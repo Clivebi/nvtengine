@@ -147,6 +147,7 @@ void HostsTask::Execute() {
         tcb->TCPPorts = portsTCP;
         tcb->UDPPorts = portsUDP;
         tcb->Task = this;
+        LoadCredential(tcb);
         scheduledTaskCount++;
         std::cout << "begin task thread for the target: " << tcb->Host
                   << " scheduled task: " << scheduledTaskCount
@@ -198,7 +199,6 @@ void HostsTask::LoadCredential(TCB* tcb) {
 
 void HostsTask::ExecuteOneHost(TCB* tcb) {
     NVTPref helper(mPrefs);
-    LoadCredential(tcb);
     NVT_LOG_DEBUG("\n", tcb->Host, " start detect service");
     TCPDetectService(tcb, tcb->TCPPorts, helper.service_detection_thread_count());
     NVT_LOG_DEBUG(tcb->Host, " detect service complete...");
@@ -458,8 +458,8 @@ bool HostsTask::InitScripts(support::NVTIDataBase& nvtiDB, support::Prefs& prefs
     return true;
 }
 
-bool HostsTask::CheckScript(OVAContext* ctx,const Value& nvti) {
-    Value mandatory_keys =  nvti.GetValue(knowntext::kNVTI_mandatory_keys);
+bool HostsTask::CheckScript(OVAContext* ctx, const Value& nvti) {
+    Value mandatory_keys = nvti.GetValue(knowntext::kNVTI_mandatory_keys);
     if (mandatory_keys.IsArray()) {
         for (auto v : mandatory_keys._array()) {
             if (v.ToString().find("=") != std::string::npos) {

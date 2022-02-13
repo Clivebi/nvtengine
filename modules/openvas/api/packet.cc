@@ -1,11 +1,7 @@
 extern "C" {
 #include "../../../thirdpart/masscan/hostscan.h"
 }
-#include <mutex>
-
 #include "../api.hpp"
-//libpcap have some bug when used in multi thread env,so, add one lock to order request
-std::mutex g_packet_lock;
 
 bool MatchIPResponse(ipaddress src, ipaddress dst, const unsigned char* buf, size_t size) {
     unsigned char src_addr[16] = {0};

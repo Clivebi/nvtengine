@@ -4,7 +4,13 @@
 #include <fstream>
 extern "C" {
 #include "thirdpart/masscan/hostscan.h"
+#include <libssh/libssh.h>
+#include <libssh/sftp.h>
 }
+#include <openssl/crypto.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include "./modules/net/socket.hpp"
 #include "./modules/openvas/api.hpp"
 #include "engine/vm.hpp"
 #include "fileio.hpp"
@@ -131,9 +137,17 @@ void StreamTest() {
     second->ReadFromStream(o);
 }
 
-int main(int argc, char* argv[]) {
+void init() {
     masscan_init();
-    InitializeLibray();
+    Interpreter::InitializeLibray();
+    net::Socket::InitLibrary();
+    ssh_init();
+    SSL_load_error_strings();
+    SSL_library_init();
+}
+
+int main(int argc, char* argv[]) {
+    init();
     g_LogLevel = LEVEL_DEBUG;
     if (argc > 1) {
         ExecuteScript(argv[1]);

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "../../engine/logger.hpp"
 
 namespace net {
 class Socket {

@@ -12,19 +12,21 @@ protected:
     int hasSetUserName;
 
 public:
-    scoped_refptr<Resource> mCon;
     ssh_session mSession;
+    bool connected;
 
-    explicit SSHSession(scoped_refptr<Resource> con) : mCon(con) {
+    explicit SSHSession(std::string host, unsigned int port) : connected(false) {
         mSession = ssh_new();
-        ssh_init();
         methods = 0;
         hasSetUserName = 0;
         if (g_LogLevel >= LEVEL_DEBUG) {
             int nValue = 1;
             ssh_options_set(mSession, SSH_OPTIONS_LOG_VERBOSITY, &nValue);
         }
+        ssh_options_set(mSession, SSH_OPTIONS_HOST, host.c_str());
+        ssh_options_set(mSession, SSH_OPTIONS_PORT, &port);
     }
+    ~SSHSession() { Close(); }
     bool SetUserName(std::string name) {
         if (hasSetUserName) {
             return true;
@@ -58,14 +60,15 @@ public:
         return this->methods;
     }
     void Close() {
-        mCon = NULL;
         if (mSession) {
-            //ssh_disconnect(mSession);
+            if (connected) {
+                ssh_disconnect(mSession);
+            }
             ssh_free(mSession);
         }
         mSession = NULL;
     };
-    bool IsAvaliable() { return mCon != NULL; }
+    bool IsAvaliable() { return mSession != NULL; }
     std::string TypeName() { return "SSH"; };
 };
 
@@ -128,22 +131,18 @@ public:
     std::string TypeName() { return "SSH-Channel"; };
 };
 
-//socket,timeout,ip,keytype,cschiphers,sscriphers
+//host,port,timeout,keytype,cschiphers,sscriphers
 Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(3);
-    CHECK_PARAMETER_RESOURCE(0);
+    CHECK_PARAMETER_STRING(0);
     CHECK_PARAMETER_INTEGER(1);
-    CHECK_PARAMETER_STRING(2);
-    int timeout = GetInt(args, 1, 15);
-    std::string ip = GetString(args, 2);
+    std::string host = GetString(args, 0);
+    unsigned port = (unsigned int)GetInt(args, 1, 22);
+    int timeout = GetInt(args, 2, 25);
     std::string keyType = GetString(args, 3);
     std::string csciphers = GetString(args, 4);
     std::string sscriphers = GetString(args, 5);
-    scoped_refptr<SSHSession> session = new SSHSession(args[0].resource);
-    ssh_options_set(session->mSession, SSH_OPTIONS_SSH_DIR, "./");
-    ssh_options_set(session->mSession, SSH_OPTIONS_TIMEOUT, &timeout);
-    ssh_options_set(session->mSession, SSH_OPTIONS_HOST, ip.c_str());
-    ssh_options_set(session->mSession, SSH_OPTIONS_KNOWNHOSTS, "/dev/null");
+    scoped_refptr<SSHSession> session = new SSHSession(host, port);
     if (keyType.size()) {
         ssh_options_set(session->mSession, SSH_OPTIONS_HOSTKEYS, keyType.c_str());
     }
@@ -153,13 +152,11 @@ Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (sscriphers.size()) {
         ssh_options_set(session->mSession, SSH_OPTIONS_CIPHERS_S_C, sscriphers.c_str());
     }
-    net::Conn* con = (net::Conn*)args[0].resource.get();
-    int FD = con->GetBaseConn()->GetFD();
-    ssh_options_set(session->mSession, SSH_OPTIONS_FD, &FD);
     if (ssh_connect(session->mSession)) {
         NVT_LOG_DEBUG(ssh_get_error(session->mSession));
         return Value();
     }
+    session->connected = true;
     return Value((Resource*)session);
 }
 

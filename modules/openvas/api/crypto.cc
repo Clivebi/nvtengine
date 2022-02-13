@@ -148,6 +148,7 @@ public:
         EVP_CipherInit(mCtx, cipher, (BYTE*)key.c_str(), (BYTE*)iv.c_str(), ForEnc);
         EVP_CIPHER_CTX_set_padding(mCtx, pading);
     }
+    ~SSLCipher() { Close(); }
     std::string Update(const std::string& data) {
         BYTE* out = new BYTE[(int)data.size() + EVP_MAX_BLOCK_LENGTH];
         int outSize = (int)data.size() + EVP_MAX_BLOCK_LENGTH;
@@ -165,14 +166,14 @@ public:
         ret.assign((char*)out, outSize);
         return ret;
     }
-    virtual void Close() {
+    void Close() {
         if (mCtx) {
             EVP_CIPHER_CTX_free(mCtx);
             mCtx = NULL;
         }
     };
-    virtual bool IsAvaliable() { return mCtx != NULL; }
-    virtual std::string TypeName() { return "Cipher"; };
+    bool IsAvaliable() { return mCtx != NULL; }
+    std::string TypeName() { return "Cipher"; };
 };
 
 /*

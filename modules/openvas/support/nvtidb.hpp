@@ -4,7 +4,7 @@
 #include "sqlitedb.hpp"
 using namespace Interpreter;
 
-Value ParseJSON(std::string& str,bool unescape);
+Value ParseJSON(std::string& str, bool unescape);
 namespace support {
 
 class NVTIDataBase : DatabaseObject {
@@ -14,7 +14,7 @@ public:
                 "CREATE TABLE IF NOT EXISTS nvti(oid TEXT PRIMARY KEY,file TEXT UNIQUE ,value "
                 "BLOB)";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("NVTIDataBase db error");
+            throw std::runtime_error("init NVTIDataBase db error: " + GetLastError());
         }
     }
 
@@ -43,7 +43,7 @@ public:
             blob = val.ToJSONString(false);
 
             sqlite3_bind_text(stmt, 1, oid.c_str(), (int)oid.size(), NULL);
-            sqlite3_bind_text(stmt, 2, filename.c_str(),(int) filename.size(), NULL);
+            sqlite3_bind_text(stmt, 2, filename.c_str(), (int)filename.size(), NULL);
             sqlite3_bind_blob(stmt, 3, blob.c_str(), (int)blob.size(), NULL);
             if (SQLITE_DONE != sqlite3_step(stmt)) {
                 bSuccess = false;
@@ -63,13 +63,13 @@ public:
     Value GetAll() {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int) sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::GetAll sql error");
         }
         Value ret = Value::MakeArray();
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            ret._array().push_back(ParseJSON(text,false));
+            ret._array().push_back(ParseJSON(text, false));
         }
         sqlite3_finalize(stmt);
         return ret;
@@ -78,13 +78,13 @@ public:
     Value Get(std::string oid) {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti WHERE oid = ?";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int) sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::Get sql error");
         }
-        sqlite3_bind_text(stmt, 1, oid.c_str(),(int) oid.size(), NULL);
+        sqlite3_bind_text(stmt, 1, oid.c_str(), (int)oid.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text,false);
+            Value ret = ParseJSON(text, false);
             sqlite3_finalize(stmt);
             return ret;
         }
@@ -95,13 +95,13 @@ public:
     Value GetFromFileName(std::string filename) {
         sqlite3_stmt* stmt = NULL;
         std::string sql = "SELECT value FROM nvti WHERE file = ?";
-        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(),(int)sql.size(), &stmt, NULL)) {
+        if (SQLITE_OK != sqlite3_prepare_v2(mRaw, sql.c_str(), (int)sql.size(), &stmt, NULL)) {
             throw std::runtime_error("NVTIDataBase::GetFromFileName sql error");
         }
         sqlite3_bind_text(stmt, 1, filename.c_str(), (int)filename.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text,false);
+            Value ret = ParseJSON(text, false);
             sqlite3_finalize(stmt);
             return ret;
         }
@@ -122,9 +122,9 @@ public:
             throw std::runtime_error("NVTIDataBase::UpdateOne sql error");
         }
         blob = val.ToJSONString(false);
-        sqlite3_bind_text(stmt, 1, oid.c_str(),(int) oid.size(), NULL);
+        sqlite3_bind_text(stmt, 1, oid.c_str(), (int)oid.size(), NULL);
         sqlite3_bind_text(stmt, 2, filename.c_str(), (int)filename.size(), NULL);
-        sqlite3_bind_blob(stmt, 3, blob.c_str(),(int) blob.size(), NULL);
+        sqlite3_bind_blob(stmt, 3, blob.c_str(), (int)blob.size(), NULL);
         if (SQLITE_DONE != sqlite3_step(stmt)) {
             sqlite3_finalize(stmt);
             return false;

@@ -459,29 +459,17 @@ func nasl_close(socket){
 	close(socket);
 }
 
-#ssh_connect(socket: soc)
-#socket,timeout,ip,keytype,cschiphers,sscriphers
+#host,port,timeout,keytype,cschiphers,sscriphers
 #Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm)
 func ssh_connect(socket=nil,keytype="",ip=""){
-	var newSock;
 	if(ip == nil || len(ip) == 0){
 		ip = get_host_ip();
 	}
-	if(socket == nil){
-		newSock = TCPConnect(ip,_get_ssh_port(),get_default_connect_timeout(),false,false);
-		socket = newSock;
-	}
-	if(socket == nil){
-		return nil;
-	}
-	var session = SSHConnect(socket,get_default_connect_timeout(),ip,keytype,"","");
-	if(session == nil){
-		return nil;
-	}
-	if(!newSock){
-		_ssh_session_table[session] = socket;
+    var session = SSHConnect(ip,_get_ssh_port(),get_default_connect_timeout(),keytype,"","");
+    if(session&&socket){
+        _ssh_session_table[session] = socket;
 		_ssh_session_table[socket] = session;
-	}
+    }
 	return session;
 }
 
@@ -587,6 +575,9 @@ func ssh_shell_close(session){
 }
 
 func ssh_get_issue_banner(session,login=nil){
+    if(session==nil){
+        return "";
+    }
 	if (login == nil){
 		login =  get_kb_item("Secret/SSH/login");
 	}

@@ -4,7 +4,7 @@
 #include "../../../engine/value.hpp"
 #include "sqlitedb.hpp"
 using namespace Interpreter;
-Value ParseJSON(std::string& str,bool unescape);
+Value ParseJSON(std::string& str, bool unescape);
 namespace support {
 
 class Prefs : DatabaseObject {
@@ -13,7 +13,7 @@ public:
         std::string sql =
                 "CREATE TABLE IF NOT EXISTS script_prefs (oid TEXT PRIMARY KEY,value BLOB)";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("Prefs db error");
+            throw std::runtime_error("init Prefs db error: " + GetLastError());
         }
     }
 
@@ -48,7 +48,7 @@ public:
         sqlite3_bind_text(stmt, 1, oid.c_str(), (int)oid.size(), NULL);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             std::string text = Bytes(stmt, 0);
-            Value ret = ParseJSON(text,false);
+            Value ret = ParseJSON(text, false);
             sqlite3_finalize(stmt);
             return ret;
         }

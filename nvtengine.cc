@@ -7,8 +7,16 @@
 
 #include <fstream>
 extern "C" {
+#include <libssh/libssh.h>
+#include <libssh/sftp.h>
+
 #include "thirdpart/masscan/hostscan.h"
 }
+#include <openssl/crypto.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
+#include "./modules/net/socket.hpp"
 #include "./modules/openvas/api.hpp"
 #include "./modules/openvas/support/sconfdb.hpp"
 #include "codecache.hpp"
@@ -324,12 +332,20 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
 #endif
 }
 
+void init() {
+    masscan_init();
+    Interpreter::InitializeLibray();
+    net::Socket::InitLibrary();
+    ssh_init();
+    SSL_load_error_strings();
+    SSL_library_init();
+}
+
 int main(int argc, char* argv[]) {
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
 #endif
-    masscan_init();
-    InitializeLibray();
+    init();
     ParseArgs options(argc, argv);
     if (!options.IsHaveScanCommand() && !options.IsHaveUpdateNVTDatabaseCommand()) {
         options.PrintHelp();

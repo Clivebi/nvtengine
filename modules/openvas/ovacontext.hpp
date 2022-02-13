@@ -40,8 +40,8 @@ struct ForkedValue {
 
 struct OVAContext {
     Value Nvti;
-    const Value& Prefs;
-    const Value& Env;
+    const Value Prefs;
+    const Value Env;
     bool IsForkedTask;
     std::string Host;
     ForkedValue Fork;

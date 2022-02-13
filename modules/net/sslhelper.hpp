@@ -28,14 +28,14 @@ public:
     }
     operator T*() { return mRaw; }
 
-    virtual void Close() {
+    void Close() {
         if (mRaw != NULL) {
             mFree(mRaw);
             mRaw = NULL;
         }
     };
-    virtual bool IsAvaliable() { return mRaw != NULL; }
-    virtual std::string TypeName() { return "SSLObject"; }
+    bool IsAvaliable() { return mRaw != NULL; }
+    std::string TypeName() { return "SSLObject"; }
 };
 
 scoped_refptr<SSLObject<X509>> LoadX509FromBuffer(std::string& buffer, std::string& password,

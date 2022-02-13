@@ -50,11 +50,13 @@ public:
         pData = malloc(contentSize);
         if (pData == NULL) {
             fclose(hFile);
+            NVT_LOG_ERROR("Allocate Memory error...");
             return NULL;
         }
         if (contentSize != fread(pData, 1, contentSize, hFile)) {
             fclose(hFile);
             free(pData);
+            NVT_LOG_ERROR("fread error...", errno);
             return NULL;
         }
         fclose(hFile);

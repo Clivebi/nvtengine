@@ -48,6 +48,7 @@ public:
             throw RuntimeException("WSManInitialize failed");
         }
     }
+    ~WINRMHandle() { Close(); }
 
     DWORD CreateSession(std::string connection, std::string username, std::string password,
                         int timeout = 60) {
@@ -73,7 +74,7 @@ public:
         }
         return dwError;
     }
-    virtual void Close() {
+    void Close() {
         if (mSession != NULL) {
             WSManCloseSession(mSession, 0);
             mSession = NULL;
@@ -83,8 +84,8 @@ public:
             mHandle = NULL;
         }
     };
-    virtual bool IsAvaliable() { return mHandle != 0; }
-    virtual std::string TypeName() { return "WINRM"; };
+    bool IsAvaliable() { return mHandle != 0; }
+    std::string TypeName() { return "WINRM"; };
 };
 
 #define CALL_TYPE_CREATE_SHELL 1

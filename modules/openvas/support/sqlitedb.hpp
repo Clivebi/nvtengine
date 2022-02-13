@@ -13,7 +13,7 @@ protected:
 public:
     DatabaseObject(const std::string& path) {
         if (SQLITE_OK != sqlite3_open(path.c_str(), &mRaw)) {
-            throw std::runtime_error("open " + path + "failed");
+            throw std::runtime_error("open " + path + " failed");
         }
     }
     ~DatabaseObject() {
@@ -22,6 +22,7 @@ public:
         }
         mRaw = NULL;
     }
+    std::string GetLastError() { return sqlite3_errmsg(mRaw); }
     bool BeginTransaction() { return ExecuteSQL("begin transaction"); }
 
     bool CommitTransaction() { return ExecuteSQL("commit transaction"); }

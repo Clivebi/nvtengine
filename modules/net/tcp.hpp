@@ -11,8 +11,6 @@ public:
     explicit TCPConn(int Socket) : BaseConn(Socket, 20, 20, "tcp") {
         mSSLContext = NULL;
         mSSL = NULL;
-        SSL_load_error_strings();
-        SSL_library_init();
     }
     ~TCPConn() { Close(); }
     void Close() {
