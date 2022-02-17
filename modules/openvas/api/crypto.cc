@@ -202,7 +202,7 @@ Value CipherOpen(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         return Value();
     }
     if (padding < 0 || padding > 5) {
-        NVT_LOG_DEBUG("invalid chiper name ", cipherName);
+        NVT_LOG_DEBUG("invalid padding type ", padding);
         return Value();
     }
     if (EVP_CIPHER_key_length(cipher) > (int)key.size()) {

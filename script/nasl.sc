@@ -1188,7 +1188,7 @@ func display(msg...){
 }
 
 func cert_open(cert){
-	return X509Open(cert);
+	return X509Open(cert,"ASN1");
 }
 
 func cert_close(cert){
@@ -2476,7 +2476,7 @@ func ftp_get_pasv_port(socket){
 if(get_kb_item("WinRM/Connect/Exist")){
     require("win_warp.inc.sc");
     replace_kb_item( name: "SMB/registry_access", value: TRUE );
-	replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
+    replace_kb_item( name: "SMB_or_WMI/access_successful", value: TRUE );
     replace_kb_item( name: "WMI/access_successful", value: TRUE );
     replace_kb_item( name: "SMB/login",value:get_kb_item("Secret/WinRM/login"));
     replace_kb_item( name: "SMB/password",value:get_kb_item("Secret/WinRM/password"));

@@ -135,8 +135,8 @@ std::string decode_string(const std::string& src) {
     if (start < src.size()) {
         o << src.substr(start);
     }
-    if(warning){
-         NVT_LOG_WARNING("Parse string warning input=" + src, " result=", o.str());   
+    if (warning) {
+        NVT_LOG_WARNING("Parse string warning input=" + src, " result=", o.str());
     }
     return o.str();
 }
@@ -154,14 +154,24 @@ Value NASLString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value X509Open(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    CHECK_PARAMETER_COUNT(1);
+    CHECK_PARAMETER_COUNT(2);
     std::string pass = "";
     std::string cert = GetString(args, 0);
+    std::string type = GetString(args, 1);
     if (cert.size() == 0) {
         return Value();
     }
+    transform(type.begin(), type.end(), type.begin(), toupper);
+    int nType = SSL_FILETYPE_ASN1;
+    if (type == "ASN1") {
+        nType = SSL_FILETYPE_ASN1;
+    } else if (type == "PEM") {
+        nType = SSL_FILETYPE_PEM;
+    } else {
+        throw RuntimeException("X509Open invalid cert type:" + type);
+    }
     scoped_refptr<OpenSSLHelper::SSLObject<X509>> x509 =
-            OpenSSLHelper::LoadX509FromBuffer(cert, pass, SSL_FILETYPE_ASN1);
+            OpenSSLHelper::LoadX509FromBuffer(cert, pass, nType);
     if (x509 == NULL) {
         return Value();
     }
