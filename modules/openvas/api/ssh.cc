@@ -15,7 +15,7 @@ public:
     ssh_session mSession;
     bool connected;
 
-    explicit SSHSession(std::string host, unsigned int port) : connected(false) {
+    explicit SSHSession(std::string host, unsigned int port, int timeout) : connected(false) {
         mSession = ssh_new();
         methods = 0;
         hasSetUserName = 0;
@@ -25,6 +25,9 @@ public:
         }
         ssh_options_set(mSession, SSH_OPTIONS_HOST, host.c_str());
         ssh_options_set(mSession, SSH_OPTIONS_PORT, &port);
+        ssh_options_set(mSession, SSH_OPTIONS_TIMEOUT, &timeout);
+        ssh_options_set(mSession, SSH_OPTIONS_SSH_DIR, "./");
+        ssh_options_set(mSession, SSH_OPTIONS_KNOWNHOSTS, "/dev/null");
     }
     ~SSHSession() { Close(); }
     bool SetUserName(std::string name) {
@@ -139,10 +142,13 @@ Value SSHConnect(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     std::string host = GetString(args, 0);
     unsigned port = (unsigned int)GetInt(args, 1, 22);
     int timeout = GetInt(args, 2, 25);
+    if (timeout > 60) {
+        timeout = 60;
+    }
     std::string keyType = GetString(args, 3);
     std::string csciphers = GetString(args, 4);
     std::string sscriphers = GetString(args, 5);
-    scoped_refptr<SSHSession> session = new SSHSession(host, port);
+    scoped_refptr<SSHSession> session = new SSHSession(host, port, timeout);
     if (keyType.size()) {
         ssh_options_set(session->mSession, SSH_OPTIONS_HOSTKEYS, keyType.c_str());
     }
