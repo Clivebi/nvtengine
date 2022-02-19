@@ -29,6 +29,7 @@ extern "C" {
 #include "taskmgr.hpp"
 #include "testoids.hpp"
 #include "vfsfileio.hpp"
+#include "jsonrpc.hpp"
 
 #define PRODUCT_NAME "NVTStudio"
 
@@ -346,6 +347,7 @@ int main(int argc, char* argv[]) {
     signal(SIGPIPE, SIG_IGN);
 #endif
     init();
+    rpc::BaseJsonRpcHandler* handler = new rpc::SayServer();
     ParseArgs options(argc, argv);
     if (!options.IsHaveScanCommand() && !options.IsHaveUpdateNVTDatabaseCommand()) {
         options.PrintHelp();

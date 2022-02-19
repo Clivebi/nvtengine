@@ -15,25 +15,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "../../engine/logger.hpp"
 
 namespace net {
 class Socket {
 public:
     static void InitLibrary() {
-        #ifdef _WIN32
+#ifdef _WIN32
         static bool isInit = FALSE;
-        WSAData wsaData = {sizeof(WSAData)}; 
+        WSAData wsaData = {sizeof(WSAData)};
         if (isInit) {
             return;
         }
         WSAStartup(MAKEWORD(1, 1), &wsaData);
         isInit = TRUE;
-        #endif
+#endif
     }
     static void SetBlock(int socket, int on) {
-     
-        #ifdef _WIN32  
+#ifdef _WIN32
         unsigned long flags;
         if (on) {
             flags = 0;
@@ -41,7 +41,7 @@ public:
             flags = 1;
         }
         ioctlsocket(socket, FIONBIO, &flags);
-        #else
+#else
         int flags = on;
         flags = fcntl(socket, F_GETFL, 0);
         if (on == 0) {
@@ -50,7 +50,7 @@ public:
             flags &= ~O_NONBLOCK;
             fcntl(socket, F_SETFL, flags);
         }
-        #endif
+#endif
     }
     static void Close(int fd) {
         if (fd == -1) {
@@ -85,24 +85,24 @@ public:
                                   int timeout) {
         int error = -1;
         int set = 1;
-        #ifdef __APPLE__
+#ifdef __APPLE__
         setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
-        #endif
+#endif
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);
         if (error == 0) {
             return 0;
         }
-        #ifdef _WIN32
+#ifdef _WIN32
         if (error == -1 && WSAGetLastError() != WSAEWOULDBLOCK) {
             NVT_LOG_ERROR("connect error :", WSAGetLastError());
             return error;
         }
-        #else
+#else
         if (error == -1 && errno != EINPROGRESS) {
             NVT_LOG_ERROR("connect error :", errno);
             return error;
         }
-        #endif
+#endif
         fd_set fdwrite;
         struct timeval tvSelect;
         FD_ZERO(&fdwrite);
@@ -116,15 +116,15 @@ public:
         } else if (retval == 0) { //timeout
             return -3;
         } else {
-            #ifdef _WIN32
+#ifdef _WIN32
             int error = 0;
             int errlen = sizeof(error);
-            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*) & error, &errlen);
-            #else
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, (char*)&error, &errlen);
+#else
             int error = 0;
             int errlen = sizeof(error);
             getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, (socklen_t*)&errlen);
-            #endif
+#endif
             if (error != 0) {
                 return -4; //connect fail
             }
@@ -132,8 +132,39 @@ public:
         }
     }
 
+    static int Accept(int fd, sockaddr* addr, unsigned int* addrSize) {
+        return accept(fd, addr, addrSize);
+    }
+
+    static int Listen(const char* host, const char* port) {
+        struct addrinfo hints = {0}, *servinfo, *p;
+        int rv, sockfd;
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        InitLibrary();
+        if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
+            return rv;
+        }
+        for (p = servinfo; p != NULL; p = p->ai_next) {
+            if ((sockfd = (int)socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+                continue;
+            }
+            SetBlock(sockfd, 1);
+            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                Close(sockfd);
+                continue;
+            }
+            break;
+        }
+        freeaddrinfo(servinfo);
+        if (p == NULL) {
+            return -1;
+        }
+        return sockfd;
+    }
+
     static int DialTCP(const char* host, const char* port, int timeout_sec) {
-        struct addrinfo hints= {0}, *servinfo, *p;
+        struct addrinfo hints = {0}, *servinfo, *p;
         int rv, sockfd;
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
@@ -162,7 +193,7 @@ public:
     }
 
     static int DialUDP(const char* host, const char* port) {
-        struct addrinfo hints={0}, *servinfo, *p;
+        struct addrinfo hints = {0}, *servinfo, *p;
         int rv, sockfd;
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_DGRAM;
@@ -176,7 +207,7 @@ public:
                 continue;
             }
             SetBlock(sockfd, 0);
-            if (connect(sockfd, (sockaddr*)p->ai_addr,(int) p->ai_addrlen)) {
+            if (connect(sockfd, (sockaddr*)p->ai_addr, (int)p->ai_addrlen)) {
                 Close(sockfd);
                 continue;
             }
