@@ -13,7 +13,7 @@ public:
         std::string sql =
                 "CREATE TABLE IF NOT EXISTS script_prefs (oid TEXT PRIMARY KEY,value BLOB)";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("init Prefs db error: " + GetLastError());
+            throw std::runtime_error("init script_prefs db error: " + GetLastError());
         }
     }
 

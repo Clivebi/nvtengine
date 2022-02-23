@@ -12,7 +12,7 @@ public:
     CredDB(const std::string& path) : DatabaseObject(path) {
         std::string sql = "CREATE TABLE IF NOT EXISTS cred (host TEXT PRIMARY KEY,value BLOB)";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("init CredDB db error: " + GetLastError());
+            throw std::runtime_error("init cred db error: " + GetLastError());
         }
     }
 

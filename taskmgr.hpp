@@ -1,5 +1,7 @@
 #pragma once
 
+#include <pcap.h>
+
 #include <mutex>
 #include <string>
 
@@ -7,10 +9,15 @@
 #include "engine/vm.hpp"
 #include "fileio.hpp"
 #include "filepath.hpp"
+#include "modules/openvas/api.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "modules/openvas/support/prefsdb.hpp"
 #include "modules/openvas/support/scriptstorage.hpp"
-#include <pcap.h>
+extern "C" {
+#include "thirdpart/masscan/hostscan.h"
+#include "thirdpart/masscan/pixie-threads.h"
+#include "thirdpart/masscan/pixie-timer.h"
+}
 
 using namespace Interpreter;
 #define ALGINTO(a, b) ((((a) / b) + 1) * b)
@@ -52,13 +59,15 @@ protected:
     Interpreter::Instruction::keyType mNextInsKey;
     Interpreter::Instruction::keyType mNextConstKey;
     DISALLOW_COPY_AND_ASSIGN(ScriptCacheImplement);
-
-public:
     ScriptCacheImplement()
             : mLock(),
               mCache(),
               mNextInsKey(SHARED_SCRIPT_BASE),
               mNextConstKey(SHARED_SCRIPT_BASE) {}
+    static ScriptCacheImplement sInstance;
+
+public:
+    static ScriptCache* Shared() { return &sInstance; }
     bool OnNewScript(scoped_refptr<Script> Script) {
         static const char knownCache[][30] = {"nasl.sc", "http_func.inc.sc",
                                               "http_keepalive.inc.sc", "win_base.inc.sc",
@@ -94,6 +103,9 @@ public:
 };
 
 class HostsTask {
+    static int s_TaskLimit;
+    static AtomInt s_RunningTask;
+
 protected:
     friend class DetectServiceCallback;
     struct TCB {
@@ -125,27 +137,62 @@ protected:
             BirthTime = time(NULL);
             ScannerTime = 0;
         }
+        Value ToValue() {
+            Value ret = Value::MakeMap();
+            ret["host"] = Host;
+            ret["ScriptProgress"] = ScriptProgress;
+            ret["ExecutedScriptCount"] = ExecutedScriptCount;
+            ret["Report"] = Report;
+            ret["Env"] = Env;
+            ret["StartTime"] = (long long)BirthTime;
+            ret["ScannerTime"] = (long long)ScannerTime;
+            return ret;
+        }
     };
+
     ScriptLoader* mLoader;
     Value mPrefs;
-    size_t mScriptCount;
     std::string mHosts;
     std::string mPorts;
-    std::string mTaskID;
     thread_type mMainThread;
-    AtomInt mTaskCount;
-    ScriptCacheImplement mScriptCache;
+
+    //
+    AtomInt mScriptCount;
+    AtomInt mFinishedScriptCount;
+    AtomInt mHostCount;
+    AtomInt mFinishedHostCount;
+    AtomInt mScheduledHostCount;
+    //
+    std::mutex mLock;
+    std::vector<std::string> mFinishedHost;
+    std::vector<std::string> mHostArray;
 
     std::list<TCB*> mTCBGroup;
     std::list<Value> mGroupedScripts[11];
+    bool mStopAll;
     DISALLOW_COPY_AND_ASSIGN(HostsTask);
 
 public:
     HostsTask(std::string host, std::string ports, Value& prefs, ScriptLoader* IO);
+    ~HostsTask();
 
 public:
-    bool BeginTask(std::list<std::string>& scripts, std::string TaskID);
-    std::string GetTaskID() { return mTaskID; }
+    Value GetDiscoverdHost();
+    Value GetFinishedHost();
+    Value GetHostTaskInformation(Value& host);
+    Value StopHostTask(Value& host);
+    Value GetStatus() {
+        Value ret = Value::MakeMap();
+        ret["ScriptCount"] = (int)mScriptCount;
+        ret["FinishedScriptCount"] = (int)mFinishedScriptCount;
+        ret["HostCount"] = (int)mHostCount;
+        ret["FinishedHostCount"] = (int)mFinishedHostCount;
+        ret["ScheduledHostCount"] = (int)mScheduledHostCount;
+        ret["RunningHostCount"] = (int)s_RunningTask;
+        return ret;
+    }
+
+    bool Start(std::list<std::string>& scripts);
 
     void Stop();
 
@@ -163,7 +210,11 @@ protected:
     static void ExecuteOneHostThreadProxy(void* p) {
         TCB* tcb = (TCB*)p;
         tcb->Task->ExecuteOneHost(tcb);
-        tcb->Task->mTaskCount--;
+        tcb->Task->mFinishedHostCount++;
+        tcb->Task->mLock.lock();
+        tcb->Task->mFinishedHost.push_back(tcb->Host);
+        tcb->Task->mLock.unlock();
+        s_RunningTask--;
     }
     static void ExecuteThreadProxy(void* p) {
         HostsTask* ptr = (HostsTask*)p;

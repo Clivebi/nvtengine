@@ -6,13 +6,13 @@
 class CodeCacheWriter : public Interpreter::ScriptCache {
 private:
     BlockFile* mStorage;
-    ScriptCacheImplement mCache;
 
 public:
-    explicit CodeCacheWriter(FilePath path) { mStorage = BlockFile::NewWriter(path); }
-    ~CodeCacheWriter() {
-        delete mStorage;
+    explicit CodeCacheWriter(FilePath path) {
+        mStorage = BlockFile::NewWriter(path);
+        ScriptCacheImplement::Shared();
     }
+    ~CodeCacheWriter() { delete mStorage; }
     bool OnNewScript(scoped_refptr<Script> Script) {
         if (!mStorage->IsFileExist(Script->Name)) {
             std::stringstream o;
@@ -20,9 +20,9 @@ public:
             std::string res = o.str();
             mStorage->Write(Script->Name, res.c_str(), res.size());
         }
-        return mCache.OnNewScript(Script);
+        return ScriptCacheImplement::Shared()->OnNewScript(Script);
     }
     scoped_refptr<const Script> GetCachedScript(const std::string& name) {
-        return mCache.GetCachedScript(name);
+        return ScriptCacheImplement::Shared()->GetCachedScript(name);
     }
 };

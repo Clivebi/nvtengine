@@ -66,7 +66,7 @@ protected:
     }
     bool WriteIndexFile() {
         FilePath path = std::string(mPath) + ".index";
-        std::ofstream out(std::string(mPath) + ".index",std::ios::binary);
+        std::ofstream out(std::string(mPath) + ".index", std::ios::binary);
         for (auto iter : mFileTable) {
             EncodeIndex(out, iter.second);
         }

@@ -128,8 +128,25 @@ protected:
     if (method == #handle) {                                                                       \
         foundMethod = true;                                                                        \
         if (params.IsArray() && params.Length() == 4) {                                            \
-            return BuildResponse(0, NULL, id, handle(params[0], params[1], params[2], params[2])); \
+            return BuildResponse(0, NULL, id, handle(params[0], params[1], params[2], params[3])); \
         }                                                                                          \
+    }
+#define ADD_HANDLE5(handle)                                                                      \
+    if (method == #handle) {                                                                     \
+        foundMethod = true;                                                                      \
+        if (params.IsArray() && params.Length() == 4) {                                          \
+            return BuildResponse(0, NULL, id,                                                    \
+                                 handle(params[0], params[1], params[2], params[3], params[4])); \
+        }                                                                                        \
+    }
+#define ADD_HANDLE6(handle)                                                                    \
+    if (method == #handle) {                                                                   \
+        foundMethod = true;                                                                    \
+        if (params.IsArray() && params.Length() == 4) {                                        \
+            return BuildResponse(                                                              \
+                    0, NULL, id,                                                               \
+                    handle(params[0], params[1], params[2], params[3], params[4], params[5])); \
+        }                                                                                      \
     }
 };
 

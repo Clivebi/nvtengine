@@ -14,7 +14,7 @@ public:
                 "CREATE TABLE IF NOT EXISTS nvti(oid TEXT PRIMARY KEY,file TEXT UNIQUE ,value "
                 "BLOB)";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("init NVTIDataBase db error: " + GetLastError());
+            throw std::runtime_error("init nvti db error: " + GetLastError());
         }
     }
 

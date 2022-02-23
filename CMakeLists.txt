@@ -100,6 +100,7 @@ add_executable(NVTEngine
     taskmgr.cc
     modules/module.cc
     vfs/vfsreader.c
+    manger.cc
 )
 
 add_executable(Interpreter

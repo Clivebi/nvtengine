@@ -10,4 +10,7 @@ public:
     virtual size_t Write(const std::string& name, const void* content, size_t contentSize) = 0;
 };
 
-class FileIO : public FileReader, public FileWriter {};
+class FileIO : public FileReader, public FileWriter {
+public:
+    virtual ~FileIO() {}
+};

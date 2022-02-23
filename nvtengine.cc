@@ -21,6 +21,8 @@ extern "C" {
 #include "./modules/openvas/support/sconfdb.hpp"
 #include "codecache.hpp"
 #include "engine/vm.hpp"
+#include "jsonrpc.hpp"
+#include "manger.hpp"
 #include "modules/modules.h"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "ntvpref.hpp"
@@ -29,7 +31,6 @@ extern "C" {
 #include "taskmgr.hpp"
 #include "testoids.hpp"
 #include "vfsfileio.hpp"
-#include "jsonrpc.hpp"
 
 #define PRODUCT_NAME "NVTStudio"
 
@@ -68,10 +69,8 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
     loader.AddBuiltinScriptFiles(files);
     CollectAllScript(helper.script_folder(), "", result);
     Value ret = Value::MakeArray();
-    ScriptCache* cachePtr = NULL;
-    ScriptCacheImplement cache;
+    ScriptCache* cachePtr = ScriptCacheImplement::Shared();
     CodeCacheWriter cache2(FilePath(helper.app_data_folder()) + FilePath("code_cache.bin"));
-    cachePtr = &cache;
     if (helper.enable_code_cache()) {
         cachePtr = &cache2;
     }
@@ -135,10 +134,8 @@ void UpdateNVTIFromVFS(NVTPref& helper) {
     loader.AddBuiltinScriptFiles(files);
     scriptIO.EnumFile(result);
     Value ret = Value::MakeArray();
-    ScriptCache* cachePtr = NULL;
-    ScriptCacheImplement cache;
+    ScriptCache* cachePtr = ScriptCacheImplement::Shared();
     CodeCacheWriter cache2(FilePath(helper.app_data_folder()) + FilePath("code_cache.bin"));
-    cachePtr = &cache;
     if (helper.enable_code_cache()) {
         cachePtr = &cache2;
     }
@@ -187,10 +184,10 @@ void UpdateNVTI(Interpreter::Value& pref) {
 void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::string>& result) {
     NVTPref helper(pref);
     //load from db
-    if (option.GetOIDFilter().size()) {
+    if (option.GetOption("filter").size()) {
         support::ScanConfig db(FilePath(helper.app_data_folder()) + "scanconfig.db");
-        NVT_LOG_DEBUG("load oid list  from database with filter:", option.GetOIDFilter());
-        return db.Get(option.GetOIDFilter(), result);
+        NVT_LOG_DEBUG("load oid list  from database with filter:", option.GetOption("filter"));
+        return db.Get(option.GetOption("filter"), result);
     }
     //load from file
     {
@@ -210,6 +207,59 @@ void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::str
     result = Interpreter::split(test_oids, ';');
 }
 
+FileIO* CreateBuiltinFileIO(NVTPref& helper) {
+    return new StdFileIO(helper.builtin_script_path());
+}
+
+std::list<std::string> GetBuiltinFileList(NVTPref& helper) {
+    std::list<std::string> files;
+    CollectAllScript(helper.builtin_script_path(), "", files);
+    return files;
+}
+
+FileIO* CreateFileIO(NVTPref& helper, bool& Encoded) {
+    BlockFile* block = NULL;
+    if (helper.enable_code_cache()) {
+        block = BlockFile::NewReader((FilePath)helper.app_data_folder() + "code_cache.bin");
+    }
+    if (block != NULL) {
+        Encoded = true;
+        return block;
+    }
+    if (helper.script_package().size()) {
+        return new VFSFileIO(helper.script_package());
+    }
+    if (helper.script_folder().size()) {
+        return new StdFileIO(helper.script_folder());
+    }
+    return NULL;
+}
+
+void ServeDaemon(ParseArgs& options, Interpreter::Value& pref) {
+    NVTPref helper(pref);
+    bool Encode = false;
+    FileIO* pBuiltinFileIO = CreateBuiltinFileIO(helper);
+    FileIO* pFileIO = CreateFileIO(helper, Encode);
+    if (pBuiltinFileIO == NULL || pFileIO == NULL) {
+        NVT_LOG_ERROR("Init FileIO Failed");
+        return;
+    }
+    DefaultScriptLoader scriptLoader(pFileIO, Encode);
+    DefaultScriptLoader builtinLoader(pBuiltinFileIO, false);
+    ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
+    std::list<std::string> list = GetBuiltinFileList(helper);
+    loader.AddBuiltinScriptFiles(list);
+    std::string address = options.GetOption("address");
+    std::string port = options.GetOption("port");
+    RPCServer srv(pref, &loader);
+    if (address.size() == 0) {
+        address = "localhost";
+    }
+    ServeTCP(&srv, port, address);
+    delete pFileIO;
+    delete pBuiltinFileIO;
+}
+
 void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
     NVTPref helper(pref);
     if (helper.script_folder().size() == 0 && helper.script_package().size() == 0) {
@@ -217,7 +267,10 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
                   << std::endl;
         return;
     }
-    if (option.GetHostList().size() == 0 || option.GetPortList().size() == 0) {
+    std::string hostList = option.GetOption("hosts");
+    std::string portList = option.GetOption("ports");
+
+    if (hostList.size() == 0 || hostList.size() == 0) {
         std::cout << "You must provider target hosts and ports" << std::endl;
         return;
     }
@@ -235,8 +288,8 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
             CollectAllScript(helper.builtin_script_path(), "", files);
             loader.AddBuiltinScriptFiles(files);
 
-            HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
-            task.BeginTask(oidList, "10000");
+            HostsTask task(hostList, portList, pref, &loader);
+            task.Start(oidList);
             task.Join();
             delete block;
             return;
@@ -255,8 +308,8 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
         ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
         loader.AddBuiltinScriptFiles(files);
 
-        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
-        task.BeginTask(oidList, "10000");
+        HostsTask task(hostList, portList, pref, &loader);
+        task.Start(oidList);
         task.Join();
     } else {
         std::list<std::string> oidList;
@@ -270,8 +323,8 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
         ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
         loader.AddBuiltinScriptFiles(files);
 
-        HostsTask task(option.GetHostList(), option.GetPortList(), pref, &loader);
-        task.BeginTask(oidList, "10000");
+        HostsTask task(hostList, portList, pref, &loader);
+        task.Start(oidList);
         task.Join();
     }
 }
@@ -342,22 +395,46 @@ void init() {
     SSL_library_init();
 }
 
+//NVTEngine daemon -a localhost -p 100 -c
+//NVTEngine scan -h -p -c -f
+//NVTEngine update -c
+
 int main(int argc, char* argv[]) {
+    Command daemonCmd("daemon", "run jsonrpc server", std::list<Option>());
+    daemonCmd.options.push_back(Option("c", "config", "config file path", false));
+    daemonCmd.options.push_back(
+            Option("a", "address", "listen address,default localhost", false));
+    daemonCmd.options.push_back(Option("p", "port", "listen port", true));
+
+    Command scanCmd("scan", "start cli to scan target", std::list<Option>());
+    scanCmd.options.push_back(Option("c", "config", "config file path", false));
+    scanCmd.options.push_back(Option("h", "hosts", "target hosts list", true));
+    scanCmd.options.push_back(Option("p", "ports", "port range", true));
+    scanCmd.options.push_back(Option("f", "filter", "filter to select scripts", false));
+
+    Command updateCmd("update", "update NVTI database", std::list<Option>());
+    updateCmd.options.push_back(Option("c", "config", "config file path", false));
+
+    std::list<Command> allCommands;
+    allCommands.push_back(daemonCmd);
+    allCommands.push_back(scanCmd);
+    allCommands.push_back(updateCmd);
+
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
 #endif
     init();
-    rpc::BaseJsonRpcHandler* handler = new rpc::SayServer();
-    ParseArgs options(argc, argv);
-    if (!options.IsHaveScanCommand() && !options.IsHaveUpdateNVTDatabaseCommand()) {
-        options.PrintHelp();
+
+    ParseArgs options(argc, argv, allCommands);
+    if (!options.IsValid()) {
+        options.PrintHelp("NVTEngine");
         return -1;
     }
-    std::string configFile = options.GetConfigFile();
+    std::string configFile = options.GetOption("config");
     Interpreter::Value pref;
     if (configFile.size() == 0) {
         if (!LoadDefaultConfig(pref)) {
-            options.PrintHelp();
+            options.PrintHelp("NVTEngine");
             std::cout << " can't load default config file" << std::endl;
             return -1;
         }
@@ -368,17 +445,20 @@ int main(int argc, char* argv[]) {
         }
     }
     g_LogLevel = NVTPref(pref).log_level();
-    if (options.IsHaveScanCommand()) {
-        std::cout << "do scan target command" << std::endl;
-        DoNVTTest(pref, options);
-    } else if (options.IsHaveUpdateNVTDatabaseCommand()) {
-        std::cout << "do update nvti database command" << std::endl;
-        UpdateNVTI(pref);
-    } else {
-        options.PrintHelp();
-        return -1;
+    if (options.GetCommand() == daemonCmd.strCmd) {
+        ServeDaemon(options, pref);
+        return 0;
     }
-    pref = Value();
-    std::cout << Interpreter::Status::ToString() << std::endl;
-    return 0;
+    if (options.GetCommand() == scanCmd.strCmd) {
+        DoNVTTest(pref, options);
+        pref = Value();
+        std::cout << Interpreter::Status::ToString() << std::endl;
+        return 0;
+    }
+    if (options.GetCommand() == updateCmd.strCmd) {
+        UpdateNVTI(pref);
+        return 0;
+    }
+    options.PrintHelp("NVTEngine");
+    return -1;
 }

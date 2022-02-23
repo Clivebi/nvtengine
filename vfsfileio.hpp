@@ -22,6 +22,12 @@ public:
         }
         mWriteDir = FilePath(path).dir();
     }
+    ~VFSFileIO() {
+        if (mFile) {
+            vfs_close(mFile);
+            mFile = NULL;
+        }
+    }
 
     void EnumFile(std::list<std::string>& files) {
         int count = 0;

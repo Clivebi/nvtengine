@@ -35,6 +35,7 @@ class ScriptLoader {
 public:
     // load script from file by name
     virtual scoped_refptr<Script> LoadScript(const std::string& name, std::string& error) = 0;
+    virtual ~ScriptLoader() {}
 };
 
 //default script loader implement

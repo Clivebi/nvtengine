@@ -6,6 +6,14 @@
 extern "C" {
 #include "thirdpart/masscan/pixie-threads.h"
 }
+#include <dirent.h>
+#include <stdio.h>
+
+#include <array>
+
+#include "./modules/openvas/support/sconfdb.hpp"
+
+#define PRODUCT_NAME "NVTStudio"
 
 using namespace Interpreter;
 
@@ -149,7 +157,7 @@ bool HttpWriteResponse(scoped_refptr<net::Conn> con, const std::string& body,
 }
 } // namespace manger_helper
 
-void MangerServer::OnNewConnection(scoped_refptr<net::Conn> con) {
+void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
     std::map<std::string, std::string> Header;
     Header["Connection"] = "Keep-Alive";
     Header["Content-type"] = "application/json";
@@ -179,12 +187,101 @@ void MangerServer::OnNewConnection(scoped_refptr<net::Conn> con) {
     }
 }
 
-void MangerServer::AsyncNewConnection(scoped_refptr<net::Conn> con) {
+void RPCServer::AsyncNewConnection(scoped_refptr<net::Conn> con) {
     tcp_worker_thread_paramters* p = new tcp_worker_thread_paramters(this, con);
-    pixie_begin_thread(MangerServer::tcp_worker_thread, 0, p);
+    pixie_begin_thread(RPCServer::tcp_worker_thread, 0, p);
 }
 
-void TCPForever(MangerServer* srv, std::string port, std::string host) {
+Value RPCServer::BeginTask(Value& host, Value& port, Value& filter, Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr != NULL) {
+        return "task id conflict";
+    }
+    std::list<std::string> result;
+    LoadOidList(filter.ToString(), result);
+    ptr = new HostsTask(host.ToString(), port.ToString(), mPref, mLoader);
+    if (ptr->Start(result)) {
+        AddTask(taskID.ToString(), ptr);
+        return "success";
+    }
+    delete ptr;
+    return "start task failed";
+}
+Value RPCServer::StopTask(Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    ptr->Stop();
+    return "success";
+}
+Value RPCServer::CleanTask(Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    ptr->Stop();
+    ptr->Join();
+    mLock.lock();
+    mTasks.erase(taskID.ToString());
+    mLock.unlock();
+    delete ptr;
+    return "success";
+}
+Value RPCServer::GetTaskStatus(Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    return ptr->GetStatus();
+}
+Value RPCServer::EnumTask() {
+    Value ret = Value::MakeArray();
+    mLock.lock();
+    for (auto iter : mTasks) {
+        ret._array().push_back(iter.first);
+    }
+    mLock.unlock();
+    return ret;
+}
+
+Value RPCServer::GetDiscoverdHost(Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    return ptr->GetDiscoverdHost();
+}
+Value RPCServer::GetFinishedHost(Value& taskID) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    return ptr->GetFinishedHost();
+}
+Value RPCServer::GetHostTaskInformation(Value& taskID, Value& host) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    return ptr->GetHostTaskInformation(host);
+}
+Value RPCServer::StopHostTask(Value& taskID, Value& host) {
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr == NULL) {
+        return "task not found";
+    }
+    return ptr->StopHostTask(host);
+}
+
+void RPCServer::LoadOidList(std::string filter, std::list<std::string>& result) {
+    NVTPref helper(mPref);
+    support::ScanConfig db(FilePath(helper.app_data_folder()) + "scanconfig.db");
+    NVT_LOG_DEBUG("load oid list  from database with filter:", filter);
+    return db.Get(filter, result);
+}
+
+void ServeTCP(RPCServer* srv, std::string port, std::string host) {
     int fd = net::Socket::Listen(host.c_str(), port.c_str());
     sockaddr addr = {0};
     unsigned int addrLen = sizeof(sockaddr);

@@ -12,7 +12,7 @@ public:
     ScanConfig(const std::string& path) : DatabaseObject(path) {
         std::string sql = "CREATE TABLE IF NOT EXISTS scanconfig (name TEXT,oid TEXT )";
         if (!ExecuteSQL(sql)) {
-            throw std::runtime_error("Prefs db error");
+            throw std::runtime_error("init scanconfig db failed:" + GetLastError());
         }
     }
 

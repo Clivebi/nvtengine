@@ -26,6 +26,7 @@ protected:
 
 public:
     AtomInt() : mValue(0) {}
+    AtomInt(int val) : mValue(val) {}
     AtomInt operator++(int) {
 #ifdef _WIN32
         InterlockedIncrement(&mValue);
@@ -46,6 +47,10 @@ public:
     DWORD Get() { return InterlockedAdd(&mValue, 0); }
 #else
     int Get() { return __sync_sub_and_fetch(&mValue, 0); }
+#endif
+    operator int() { return (int)Get(); }
+#ifdef _WIN32
+    operator DWORD() { return (DWORD)Get(); }
 #endif
 };
 class Status {

@@ -1,8 +1,5 @@
-extern "C" {
-#include "thirdpart/masscan/hostscan.h"
-#include "thirdpart/masscan/pixie-threads.h"
-#include "thirdpart/masscan/pixie-timer.h"
-}
+#include "taskmgr.hpp"
+
 #include <regex>
 
 #include "engine/vm.hpp"
@@ -11,33 +8,120 @@ extern "C" {
 #include "modules/openvas/support/creddb.hpp"
 #include "modules/openvas/support/nvtidb.hpp"
 #include "ntvpref.hpp"
-#include "taskmgr.hpp"
+
+int HostsTask::s_TaskLimit = 0;
+AtomInt HostsTask::s_RunningTask(0);
+
+ScriptCacheImplement ScriptCacheImplement::sInstance;
 
 HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, ScriptLoader* IO)
-        : mScriptCount(0),
+        : mLoader(IO),
+          mPrefs(prefs),
           mHosts(host),
           mPorts(ports),
-          mPrefs(prefs),
           mMainThread(0),
-          mLoader(IO),
-          mScriptCache(),
-          mTaskCount() {}
+          mScriptCount(0),
+          mFinishedScriptCount(0),
+          mHostCount(0),
+          mFinishedHostCount(0),
+          mScheduledHostCount(0),
+          mLock(),
+          mHostArray(),
+          mFinishedHost(),
+          mTCBGroup(),
+          mGroupedScripts(),
+          mStopAll(false) {}
+HostsTask::~HostsTask() {
+    mLock.lock();
+    for (auto iter : mTCBGroup) {
+        delete iter;
+    }
+    mLock.unlock();
+}
 
-bool HostsTask::BeginTask(std::list<std::string>& scripts, std::string TaskID) {
+bool HostsTask::Start(std::list<std::string>& scripts) {
     if (IsRuning()) {
         return true;
     }
     if (!InitScripts(scripts)) {
         return false;
     }
-    mTaskCount = AtomInt();
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
-    mTaskID = TaskID;
     return true;
+}
+
+void HostsTask::Stop() {
+    std::list<TCB*> tasks;
+    mLock.lock();
+    tasks = mTCBGroup;
+    mLock.unlock();
+    for (auto iter : tasks) {
+        iter->Exit = true;
+    }
 }
 
 void HostsTask::Join() {
     pixie_thread_join(mMainThread);
+}
+
+Value HostsTask::GetDiscoverdHost() {
+    std::vector<std::string> all;
+    mLock.lock();
+    all = mHostArray;
+    mLock.unlock();
+    Value ret = Value::MakeArray();
+    for (auto iter : all) {
+        ret._array().push_back(iter);
+    }
+    return ret;
+}
+
+Value HostsTask::GetFinishedHost() {
+    std::vector<std::string> all;
+    mStopAll = true;
+    mLock.lock();
+    all = mFinishedHost;
+    mLock.unlock();
+    Value ret = Value::MakeArray();
+    for (auto iter : all) {
+        ret._array().push_back(iter);
+    }
+    return ret;
+}
+
+Value HostsTask::GetHostTaskInformation(Value& oHost) {
+    TCB* ptr = NULL;
+    std::string host = oHost.ToString();
+    mLock.lock();
+    for (auto iter : mTCBGroup) {
+        if (iter->Host == host) {
+            ptr = iter;
+            break;
+        }
+    }
+    mLock.unlock();
+    if (ptr == NULL) {
+        return Value();
+    }
+    return ptr->ToValue();
+}
+
+Value HostsTask::StopHostTask(Value& oHost) {
+    TCB* ptr = NULL;
+    std::string host = oHost.ToString();
+    mLock.lock();
+    for (auto iter : mTCBGroup) {
+        if (iter->Host == host) {
+            ptr = iter;
+            break;
+        }
+    }
+    mLock.unlock();
+    if (ptr == NULL) {
+        return false;
+    }
+    ptr->Exit = true;
+    return true;
 }
 
 void HostsTask::Execute() {
@@ -79,14 +163,17 @@ void HostsTask::Execute() {
     NVT_LOG_DEBUG("ports scan complete...");
     scannerTime = time(NULL) - scannerTime;
     HostScanResult* seek = task->result;
-    unsigned int taskLimit = helper.number_of_concurrent_tasks();
-    unsigned int totalTaskCount = 0, scheduledTaskCount = 0;
+    /*unsigned int taskLimit = helper.number_of_concurrent_tasks();*/
     while (seek != NULL) {
-        totalTaskCount++;
+        ipaddress_formatted_t host = ipaddress_fmt(seek->address);
+        mLock.lock();
+        mHostArray.push_back(host.string);
+        mLock.unlock();
+        mHostCount++;
         seek = seek->next;
     }
     seek = task->result;
-    while (seek != NULL) {
+    while (seek != NULL && !mStopAll) {
         ipaddress_formatted_t host = ipaddress_fmt(seek->address);
         TCB* tcb = new TCB(host.string);
         tcb->Exit = false;
@@ -148,17 +235,21 @@ void HostsTask::Execute() {
         tcb->UDPPorts = portsUDP;
         tcb->Task = this;
         LoadCredential(tcb);
-        scheduledTaskCount++;
-        std::cout << "begin task thread for the target: " << tcb->Host
-                  << " scheduled task: " << scheduledTaskCount
-                  << " total task count: " << totalTaskCount
-                  << " running task count: " << mTaskCount.Get() << std::endl;
-        tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
-        mTaskCount++;
-        mTCBGroup.push_back(tcb);
-        while (mTaskCount.Get() >= taskLimit) {
+        if (s_RunningTask.Get() > s_TaskLimit) {
             pixie_mssleep(200);
         }
+        if (mStopAll) {
+            break;
+        }
+        std::cout << "begin task thread for the target: " << tcb->Host
+                  << " scheduled task: " << mScheduledHostCount.Get()
+                  << " total task count: " << mHostCount.Get() << std::endl;
+        tcb->ThreadHandle = pixie_begin_thread(HostsTask::ExecuteOneHostThreadProxy, 0, tcb);
+        s_RunningTask++;
+        mScheduledHostCount++;
+        mLock.lock();
+        mTCBGroup.push_back(tcb);
+        mLock.unlock();
         seek = seek->next;
     }
     destory_host_scan_task(task);
@@ -167,7 +258,7 @@ void HostsTask::Execute() {
     }
     for (auto iter : mTCBGroup) {
         pixie_thread_join(iter->ThreadHandle);
-        delete (iter);
+        //delete (iter);
     }
 }
 
@@ -293,7 +384,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
     NVTPref helper(mPrefs);
     DefaultExecutorCallback callback;
     Interpreter::Executor Engine(&callback, mLoader);
-    Engine.SetScriptCacheProvider(&mScriptCache);
+    Engine.SetScriptCacheProvider(ScriptCacheImplement::Shared());
     RegisgerModulesBuiltinMethod(&Engine);
     NVT_LOG_DEBUG("start execute script");
     for (int i = 0; i < 11; i++) {
@@ -302,6 +393,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             ctx.Nvti = v;
             ctx.Host = tcb->Host;
             tcb->ScriptProgress++;
+            tcb->Task->mFinishedScriptCount++;
             if (!CheckScript(&ctx, v)) {
                 continue;
             }
@@ -577,7 +669,7 @@ void HostsTask::DetectService(DetectServiceParamter* param) {
     NVTPref helper(mPrefs);
     DetectServiceCallback callback(param->tcb, param->ports);
     Interpreter::Executor Engine(&callback, mLoader);
-    Engine.SetScriptCacheProvider(&mScriptCache);
+    Engine.SetScriptCacheProvider(ScriptCacheImplement::Shared());
     RegisgerModulesBuiltinMethod(&Engine);
     OVAContext ctx("servicedetect.sc", mPrefs, param->tcb->Env, param->storage);
     ctx.Host = param->tcb->Host;
