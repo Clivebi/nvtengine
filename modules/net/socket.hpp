@@ -154,6 +154,10 @@ public:
                 Close(sockfd);
                 continue;
             }
+            if (listen(sockfd, 64) == -1) {
+                Close(sockfd);
+                continue;
+            }
             break;
         }
         freeaddrinfo(servinfo);

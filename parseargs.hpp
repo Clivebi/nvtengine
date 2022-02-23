@@ -15,9 +15,9 @@ struct Option {
             : strShort(Short), strLong(Long), strHelp(Help), strValue(""), isRequired(required) {}
     std::string Show() {
         if (!isRequired) {
-            return "\t-" + strShort + " --" + strLong + " <optional> \t: " + strHelp;
+            return "\t" + strShort + " " + strLong + " <optional> \t: " + strHelp;
         }
-        return "\t-" + strShort + " --" + strLong + "\t: " + strHelp;
+        return "\t" + strShort + " " + strLong + "\t: " + strHelp;
     }
 };
 
@@ -71,6 +71,7 @@ public:
         for (auto iter : allCmds) {
             if (iter.strCmd == argv[1]) {
                 mCmd = iter;
+                break;
             }
         }
         if (mCmd.strCmd.size() == 0) {
@@ -100,9 +101,9 @@ public:
 
     std::string GetCommand() { return mCmd.strCmd; }
 
-    std::string GetOption(std::string key) {
+    std::string GetOption(std::string opt) {
         for (auto iter : mCmd.options) {
-            if (iter.strShort == key || iter.strLong == key) {
+            if (iter.strShort == opt || iter.strLong == opt) {
                 return iter.strValue;
             }
         }

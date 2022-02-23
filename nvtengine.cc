@@ -184,10 +184,10 @@ void UpdateNVTI(Interpreter::Value& pref) {
 void LoadOidList(ParseArgs& option, Interpreter::Value& pref, std::list<std::string>& result) {
     NVTPref helper(pref);
     //load from db
-    if (option.GetOption("filter").size()) {
+    if (option.GetOption("--filter").size()) {
         support::ScanConfig db(FilePath(helper.app_data_folder()) + "scanconfig.db");
-        NVT_LOG_DEBUG("load oid list  from database with filter:", option.GetOption("filter"));
-        return db.Get(option.GetOption("filter"), result);
+        NVT_LOG_DEBUG("load oid list  from database with filter:", option.GetOption("--filter"));
+        return db.Get(option.GetOption("--filter"), result);
     }
     //load from file
     {
@@ -249,8 +249,8 @@ void ServeDaemon(ParseArgs& options, Interpreter::Value& pref) {
     ScriptLoaderImplement loader(&scriptLoader, &builtinLoader);
     std::list<std::string> list = GetBuiltinFileList(helper);
     loader.AddBuiltinScriptFiles(list);
-    std::string address = options.GetOption("address");
-    std::string port = options.GetOption("port");
+    std::string address = options.GetOption("--address");
+    std::string port = options.GetOption("--port");
     RPCServer srv(pref, &loader);
     if (address.size() == 0) {
         address = "localhost";
@@ -267,8 +267,8 @@ void DoNVTTest(Interpreter::Value& pref, ParseArgs& option) {
                   << std::endl;
         return;
     }
-    std::string hostList = option.GetOption("hosts");
-    std::string portList = option.GetOption("ports");
+    std::string hostList = option.GetOption("--hosts");
+    std::string portList = option.GetOption("--ports");
 
     if (hostList.size() == 0 || hostList.size() == 0) {
         std::cout << "You must provider target hosts and ports" << std::endl;
@@ -401,19 +401,19 @@ void init() {
 
 int main(int argc, char* argv[]) {
     Command daemonCmd("daemon", "run jsonrpc server", std::list<Option>());
-    daemonCmd.options.push_back(Option("c", "config", "config file path", false));
+    daemonCmd.options.push_back(Option("-c", "--config", "config file path", false));
     daemonCmd.options.push_back(
-            Option("a", "address", "listen address,default localhost", false));
-    daemonCmd.options.push_back(Option("p", "port", "listen port", true));
+            Option("-a", "--address", "listen address,default localhost", false));
+    daemonCmd.options.push_back(Option("-p", "--port", "listen port", true));
 
     Command scanCmd("scan", "start cli to scan target", std::list<Option>());
-    scanCmd.options.push_back(Option("c", "config", "config file path", false));
-    scanCmd.options.push_back(Option("h", "hosts", "target hosts list", true));
-    scanCmd.options.push_back(Option("p", "ports", "port range", true));
-    scanCmd.options.push_back(Option("f", "filter", "filter to select scripts", false));
+    scanCmd.options.push_back(Option("-c", "--config", "config file path", false));
+    scanCmd.options.push_back(Option("-h", "--hosts", "target hosts list", true));
+    scanCmd.options.push_back(Option("-p", "--ports", "port range", true));
+    scanCmd.options.push_back(Option("-f", "--filter", "filter to select scripts", false));
 
     Command updateCmd("update", "update NVTI database", std::list<Option>());
-    updateCmd.options.push_back(Option("c", "config", "config file path", false));
+    updateCmd.options.push_back(Option("-c", "--config", "config file path", false));
 
     std::list<Command> allCommands;
     allCommands.push_back(daemonCmd);
@@ -430,7 +430,7 @@ int main(int argc, char* argv[]) {
         options.PrintHelp("NVTEngine");
         return -1;
     }
-    std::string configFile = options.GetOption("config");
+    std::string configFile = options.GetOption("--config");
     Interpreter::Value pref;
     if (configFile.size() == 0) {
         if (!LoadDefaultConfig(pref)) {

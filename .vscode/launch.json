@@ -13,7 +13,7 @@
             //"args": [ "scan","-h", "192.168.1.1/24","-p", "22,80,443,3389,23,25,161,21,110,139"],
             //"args": ["${workspaceFolder}/test/ssh.sc"],
             //"args": ["update"],
-            "args": [],
+            "args": ["daemon","-a","127.0.0.1","-p","6755"],
             //"args": ["/Volumes/work/convert/ftpd_any_cmd.sc"],
             //"args": ["/Volumes/work/convert/ftpd_any_cmd.sc"],
             "stopAtEntry": false,

@@ -170,10 +170,11 @@ void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
         if (!manger_helper::ReadHttpRequest(con, &req)) {
             break;
         }
-        if (req.Body.size()) {
+        if (req.Body.size() == 0) {
             manger_helper::HttpWriteResponse(con, s_Parse_error, Header);
             break;
         }
+        NVT_LOG_DEBUG("process request:",req.Body);
         Value request = ParseJSON(req.Body, true);
         if (!request.IsMap()) {
             manger_helper::HttpWriteResponse(con, s_Parse_error, Header);
@@ -184,6 +185,7 @@ void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
         if (!manger_helper::HttpWriteResponse(con, respText, Header)) {
             break;
         }
+        NVT_LOG_DEBUG("send response:",respText);
     }
 }
 
@@ -293,11 +295,15 @@ void ServeTCP(RPCServer* srv, std::string port, std::string host) {
         addrLen = sizeof(sockaddr);
         int con = net::Socket::Accept(fd, &addr, &addrLen);
         if (con <= 0) {
-            NVT_LOG_ERROR("Accept on ", host + ":" + port, " failed");
+            if (errno == EINTR) {
+                continue;
+            }
+            NVT_LOG_ERROR("Accept on ", host + ":" + port, " failed: ", errno);
             break;
         }
         net::BaseConn* base = new net::BaseConn(con, 5, 5, "tcp");
         scoped_refptr<net::Conn> conObj = new net::Conn(base, false);
         srv->AsyncNewConnection(conObj);
     }
+    net::Socket::Close(fd);
 }
