@@ -112,7 +112,7 @@ bool ReadHttpRequest(scoped_refptr<net::Conn> stream, HttpRequest* req) {
     while (true) {
         int size = stream->Read(buffer.data(), (int)buffer.size());
         if (size <= 0) {
-            NVT_LOG_DEBUG("Read Error " + ToString(size));
+            NVT_LOG_DEBUG("Read Stream Failed ", errno);
             return false;
         }
         if (!matched) {
@@ -174,7 +174,7 @@ void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
             manger_helper::HttpWriteResponse(con, s_Parse_error, Header);
             break;
         }
-        NVT_LOG_DEBUG("process request:",req.Body);
+        NVT_LOG_DEBUG("process request:", req.Body);
         Value request = ParseJSON(req.Body, true);
         if (!request.IsMap()) {
             manger_helper::HttpWriteResponse(con, s_Parse_error, Header);
@@ -185,7 +185,7 @@ void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
         if (!manger_helper::HttpWriteResponse(con, respText, Header)) {
             break;
         }
-        NVT_LOG_DEBUG("send response:",respText);
+        NVT_LOG_DEBUG("send response:", respText);
     }
 }
 
@@ -195,12 +195,15 @@ void RPCServer::AsyncNewConnection(scoped_refptr<net::Conn> con) {
 }
 
 Value RPCServer::BeginTask(Value& host, Value& port, Value& filter, Value& taskID) {
-    HostsTask* ptr = LookupTask(taskID.ToString());
-    if (ptr != NULL) {
-        return "task id conflict";
-    }
     std::list<std::string> result;
     LoadOidList(filter.ToString(), result);
+    if (result.size() == 0) {
+        return "invalid script filter: " + filter.ToString();
+    }
+    HostsTask* ptr = LookupTask(taskID.ToString());
+    if (ptr != NULL) {
+        return "task id already exist";
+    }
     ptr = new HostsTask(host.ToString(), port.ToString(), mPref, mLoader);
     if (ptr->Start(result)) {
         AddTask(taskID.ToString(), ptr);

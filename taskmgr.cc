@@ -31,7 +31,8 @@ HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, ScriptLo
           mTCBGroup(),
           mGroupedScripts(),
           mStopAll(false),
-          mState(None) {}
+          mState(None),
+          mScriptList() {}
 
 HostsTask::~HostsTask() {
     mLock.lock();
@@ -45,9 +46,7 @@ bool HostsTask::Start(std::list<std::string>& scripts) {
     if (IsRuning()) {
         return true;
     }
-    if (!InitScripts(scripts)) {
-        return false;
-    }
+    mScriptList = scripts;
     mState = Scheduled;
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
     return true;
@@ -129,6 +128,10 @@ Value HostsTask::StopHostTask(Value& oHost) {
 }
 
 void HostsTask::Execute() {
+    if (!InitScripts(mScriptList)) {
+        mState = Stoped;
+        return;
+    }
     NVTPref helper(mPrefs);
     MassIP target = {0};
     mState = PortScan;

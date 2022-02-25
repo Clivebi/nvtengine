@@ -173,6 +173,7 @@ protected:
     std::list<Value> mGroupedScripts[11];
     bool mStopAll;
     TaskState mState;
+    std::list<std::string> mScriptList;
     DISALLOW_COPY_AND_ASSIGN(HostsTask);
 
 public:
