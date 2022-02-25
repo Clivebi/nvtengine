@@ -130,6 +130,7 @@ Value HostsTask::StopHostTask(Value& oHost) {
 void HostsTask::Execute() {
     if (!InitScripts(mScriptList)) {
         mState = Stoped;
+        mGroupedScripts->clear();
         return;
     }
     NVTPref helper(mPrefs);
@@ -270,6 +271,7 @@ void HostsTask::Execute() {
         //delete (iter);
     }
     mState = Stoped;
+    mGroupedScripts->clear();
 }
 
 void HostsTask::LoadCredential(TCB* tcb) {

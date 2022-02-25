@@ -59,7 +59,7 @@ zlib openssl sqlite3 libssh  libbrotlidec
 - [x] vfs集成
 - [ ] openvas所有API实现支持
 - [ ] 安全性提升，数据加密，签名
-- [ ] 管理接口完善
+- [x] 管理接口完善
 - [x] 脚本序列化加速执行
 
 0.1.3  版本  
