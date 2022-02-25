@@ -139,7 +139,7 @@ protected:
         }
         Value ToValue() {
             Value ret = Value::MakeMap();
-            ret["host"] = Host;
+            ret["Host"] = Host;
             ret["ScriptProgress"] = ScriptProgress;
             ret["ExecutedScriptCount"] = ExecutedScriptCount;
             ret["Report"] = Report;
@@ -149,6 +149,8 @@ protected:
             return ret;
         }
     };
+
+    enum TaskState { None, Scheduled, PortScan, Running, ScheduledStop, Stoped };
 
     ScriptLoader* mLoader;
     Value mPrefs;
@@ -170,6 +172,7 @@ protected:
     std::list<TCB*> mTCBGroup;
     std::list<Value> mGroupedScripts[11];
     bool mStopAll;
+    TaskState mState;
     DISALLOW_COPY_AND_ASSIGN(HostsTask);
 
 public:
@@ -189,6 +192,7 @@ public:
         ret["FinishedHostCount"] = (int)mFinishedHostCount;
         ret["ScheduledHostCount"] = (int)mScheduledHostCount;
         ret["RunningHostCount"] = (int)s_RunningTask;
+        ret["State"] = TaskStateString(mState);
         return ret;
     }
 
@@ -242,4 +246,21 @@ protected:
     bool CheckScript(OVAContext* ctx, const Value& nvti);
 
     void TCPDetectService(TCB* tcb, const std::vector<int>& ports, size_t thread_count);
+
+    std::string TaskStateString(TaskState state) {
+        switch (state) {
+        case None:
+            return "None";
+        case Scheduled:
+            return "Scheduled";
+        case PortScan:
+            return "PortScan";
+        case Running:
+            return "Running";
+        case ScheduledStop:
+            return "ScheduleStop";
+        case Stoped:
+            return "Stoped";
+        }
+    }
 };

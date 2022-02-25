@@ -386,6 +386,26 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
 #endif
 }
 
+void ImportTextOidListToDatabase(std::string file, std::string dbFile, std::string name) {
+    StdFileIO IO("");
+    size_t size = 0;
+    std::string rule;
+    char* data = (char*)IO.Read(file, size);
+    if (!data) {
+        NVT_LOG_ERROR("read oid file failed");
+        return;
+    }
+    rule.assign(data, size);
+    free(data);
+    std::list<std::string> result = Interpreter::split(rule, ';');
+    support::ScanConfig db(dbFile);
+    db.BeginTransaction();
+    for (auto iter : result) {
+        db.Add(name, iter);
+    }
+    db.CommitTransaction();
+}
+
 void init() {
     masscan_init();
     Interpreter::InitializeLibray();
@@ -415,10 +435,16 @@ int main(int argc, char* argv[]) {
     Command updateCmd("update", "update NVTI database", std::list<Option>());
     updateCmd.options.push_back(Option("-c", "--config", "config file path", false));
 
+    Command importCmd("import", "import text oid list to  database", std::list<Option>());
+    importCmd.options.push_back(Option("-c", "--config", "config file path", false));
+    importCmd.options.push_back(Option("-n", "--name", "filter name", true));
+    importCmd.options.push_back(Option("-t", "--textfile", "oid list file,split with';", true));
+
     std::list<Command> allCommands;
     allCommands.push_back(daemonCmd);
     allCommands.push_back(scanCmd);
     allCommands.push_back(updateCmd);
+    allCommands.push_back(importCmd);
 
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
@@ -457,6 +483,12 @@ int main(int argc, char* argv[]) {
     }
     if (options.GetCommand() == updateCmd.strCmd) {
         UpdateNVTI(pref);
+        return 0;
+    }
+    if (options.GetCommand() == importCmd.strCmd) {
+        FilePath dbFile = FilePath(NVTPref(pref).app_data_folder()) + "scanconfig.db";
+        ImportTextOidListToDatabase(options.GetOption("--textfile"), dbFile,
+                                    options.GetOption("--name"));
         return 0;
     }
     options.PrintHelp("NVTEngine");

@@ -7,7 +7,7 @@ using namespace Interpreter;
 Value ParseJSON(std::string& str, bool unescape);
 namespace support {
 
-class ScanConfig : DatabaseObject {
+class ScanConfig :public DatabaseObject {
 public:
     ScanConfig(const std::string& path) : DatabaseObject(path) {
         std::string sql = "CREATE TABLE IF NOT EXISTS scanconfig (name TEXT,oid TEXT )";

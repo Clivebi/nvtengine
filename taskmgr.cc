@@ -30,7 +30,9 @@ HostsTask::HostsTask(std::string host, std::string ports, Value& prefs, ScriptLo
           mFinishedHost(),
           mTCBGroup(),
           mGroupedScripts(),
-          mStopAll(false) {}
+          mStopAll(false),
+          mState(None) {}
+
 HostsTask::~HostsTask() {
     mLock.lock();
     for (auto iter : mTCBGroup) {
@@ -46,11 +48,14 @@ bool HostsTask::Start(std::list<std::string>& scripts) {
     if (!InitScripts(scripts)) {
         return false;
     }
+    mState = Scheduled;
     mMainThread = pixie_begin_thread(HostsTask::ExecuteThreadProxy, 0, this);
     return true;
 }
 
 void HostsTask::Stop() {
+    mStopAll = true;
+    mState = ScheduledStop;
     std::list<TCB*> tasks;
     mLock.lock();
     tasks = mTCBGroup;
@@ -78,7 +83,6 @@ Value HostsTask::GetDiscoverdHost() {
 
 Value HostsTask::GetFinishedHost() {
     std::vector<std::string> all;
-    mStopAll = true;
     mLock.lock();
     all = mFinishedHost;
     mLock.unlock();
@@ -127,6 +131,7 @@ Value HostsTask::StopHostTask(Value& oHost) {
 void HostsTask::Execute() {
     NVTPref helper(mPrefs);
     MassIP target = {0};
+    mState = PortScan;
     massip_add_target_string(&target, mHosts.c_str());
     massip_add_port_string(&target, mPorts.c_str(), 0);
     bool bIsNeedARP = false;
@@ -161,6 +166,7 @@ void HostsTask::Execute() {
     pixie_mssleep(1000 * 15);
     join_host_scan_task(task);
     NVT_LOG_DEBUG("ports scan complete...");
+    mState = Running;
     scannerTime = time(NULL) - scannerTime;
     HostScanResult* seek = task->result;
     /*unsigned int taskLimit = helper.number_of_concurrent_tasks();*/
@@ -260,6 +266,7 @@ void HostsTask::Execute() {
         pixie_thread_join(iter->ThreadHandle);
         //delete (iter);
     }
+    mState = Stoped;
 }
 
 void HostsTask::LoadCredential(TCB* tcb) {

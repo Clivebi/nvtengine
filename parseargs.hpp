@@ -15,9 +15,9 @@ struct Option {
             : strShort(Short), strLong(Long), strHelp(Help), strValue(""), isRequired(required) {}
     std::string Show() {
         if (!isRequired) {
-            return "\t" + strShort + " " + strLong + " <optional> \t: " + strHelp;
+            return "\t" + strShort + " " + strLong + "\toptional " + strHelp;
         }
-        return "\t" + strShort + " " + strLong + "\t: " + strHelp;
+        return "\t" + strShort + " " + strLong + "\trequired " + strHelp;
     }
 };
 
@@ -32,6 +32,7 @@ struct Command {
         std::string result;
         for (auto iter : options) {
             result += iter.strShort;
+            result += " ";
         }
         return result;
     }
@@ -54,7 +55,7 @@ protected:
 public:
     void PrintHelp(std::string AppName) {
         for (auto iter : mAvaliableCmds) {
-            std::cout << AppName << " " << iter.strCmd << " -[" << iter.JoinOptions() << "]"
+            std::cout << AppName << " " << iter.strCmd << " [" << iter.JoinOptions() << "]"
                       << std::endl;
             std::cout << "options:" << std::endl;
             for (auto opt : iter.options) {
@@ -90,7 +91,7 @@ public:
                         i++;
                         break;
                     }
-                    iter->strValue = str.substr(9);
+                    iter->strValue = GetValue(str);
                     break;
                 }
             }
@@ -108,5 +109,11 @@ public:
             }
         }
         return "";
+    }
+
+private:
+    std::string GetValue(std::string& src) {
+        size_t pos = src.find("=");
+        return src.substr(pos + 1);
     }
 };

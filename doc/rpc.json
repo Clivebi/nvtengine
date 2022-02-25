@@ -1,0 +1,68 @@
+[
+    {
+        "jsonrpc": "2.0",
+        "method": "BeginTask",
+        "params": [
+            "192.168.3.24",
+            "0-65535",
+            "all",
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "StopTask",
+        "params": [
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "CleanTask",
+        "params": [
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "GetTaskStatus",
+        "params": [
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "EnumTask",
+        "params": null
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "GetDiscoverdHost",
+        "params": [
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "GetFinishedHost",
+        "params": [
+            "task-id-100"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "GetHostTaskInformation",
+        "params": [
+            "task-id-100",
+            "192.168.3.24"
+        ]
+    },
+    {
+        "jsonrpc": "2.0",
+        "method": "StopHostTask",
+        "params": [
+            "task-id-100",
+            "192.168.3.24"
+        ]
+    }
+]
