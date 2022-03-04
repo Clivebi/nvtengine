@@ -330,8 +330,8 @@ std::string VMContext::DumpContext(bool var) {
         case Type::Function:
             o << "Function";
             break;
-        case Type::For:
-            o << "For";
+        case Type::Loop:
+            o << "Loop(for while do-while)";
             break;
         case Type::Switch:
             o << "Switch";

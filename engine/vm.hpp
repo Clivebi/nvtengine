@@ -43,13 +43,14 @@ class DefaultScriptLoader : public ScriptLoader {
 protected:
     FileReader* mReader;
     bool mEncoded;
+    bool mEnableLog;
     DISALLOW_COPY_AND_ASSIGN(DefaultScriptLoader);
 
     scoped_refptr<Script> LoadScriptFromEncodedFile(const std::string& name, std::string& error);
 
 public:
-    explicit DefaultScriptLoader(FileReader* reader, bool encodedFile)
-            : mReader(reader), mEncoded(encodedFile) {}
+    explicit DefaultScriptLoader(FileReader* reader, bool encodedFile,bool enableLog=false)
+            : mReader(reader), mEncoded(encodedFile),mEnableLog(enableLog) {}
     virtual scoped_refptr<Script> LoadScript(const std::string& name, std::string& error);
 };
 
@@ -106,6 +107,8 @@ protected:
     Value ExecuteForStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteForInStatement(const Instruction* ins, VMContext* ctx);
     Value ExecuteBinaryOperation(const Instruction* ins, VMContext* ctx);
+    Value ExecuteWhileStatement(const Instruction* ins, VMContext* ctx);
+    Value ExecuteDoWhileStatement(const Instruction* ins, VMContext* ctx);
     bool ConvertNilWhenUpdate(Value& oldVal, Value val, Instructions::Type opCode, VMContext* ctx);
     Value UpdateVar(const std::string& name, Value val, Instructions::Type opCode, VMContext* ctx);
     Value ExecuteUpdateObjectVar(const Instruction* ins, VMContext* ctx);

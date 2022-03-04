@@ -39,6 +39,8 @@ const Type kReadReference = CODE_BASE + 22;
 const Type kObjectDecl = CODE_BASE + 23;
 const Type kCallObjectMethod = CODE_BASE + 24;
 const Type kPath = CODE_BASE + 25;
+const Type kWhile = CODE_BASE + 26;
+const Type kDoWhile = CODE_BASE + 27;
 
 const Type kBinaryOP = 40;
 const Type kADD = kBinaryOP + 1;
@@ -167,7 +169,6 @@ inline void BinaryWrite(std::ostream& stream, const std::string& val) {
     BinaryWrite(stream, Size);
     stream.write(val.c_str(), Size);
 }
-
 
 template <typename T>
 inline void BinaryRead(std::istream& stream, T& val) {
@@ -306,6 +307,10 @@ public:
             return "read object value:" + Name;
         case Instructions::kPathReference:
             return "object path reference:" + Name;
+        case Instructions::kWhile:
+            return "while statement";
+        case Instructions::kDoWhile:
+            return "do while statement";
 
         default:
             return "Unknown Op";

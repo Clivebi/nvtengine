@@ -21,7 +21,7 @@ public:
     enum Type {
         File,
         Function,
-        For,
+        Loop,
         Switch,
     };
 #ifdef _DEBUG_SCRIPT
@@ -52,7 +52,7 @@ public:
 
     void SetEnableWarning(bool val) { mIsEnableWarning = val; }
 
-    bool IsLocalContext() { return mType == For || mType == Switch; }
+    bool IsLocalContext() { return mType == Loop || mType == Switch; }
     bool IsTop() { return mParent == NULL; }
     bool IsExecutedInterupt() { return (mFlags & 0xFF); }
     void CleanContinueFlag() { mFlags &= 0xFE; }
@@ -63,8 +63,8 @@ public:
     Value GetReturnValue() { return mReturnValue; }
 
     bool IsReturnAvaliable() { return IsInFunctionContext(); }
-    bool IsBreakAvaliable() { return mType == For || mType == Switch; }
-    bool IsContinueAvaliable() { return mType == For; }
+    bool IsBreakAvaliable() { return mType == Loop || mType == Switch; }
+    bool IsContinueAvaliable() { return mType == Loop; }
     bool IsInFunctionContext();
     bool IsInFunctionContext(std::string& name);
 
@@ -117,8 +117,8 @@ public:
         switch (mType) {
         case File:
             return "File:" + mName;
-        case For:
-            return "For";
+        case Loop:
+            return "Loop(for while do-while)";
         case Function:
             return "Function:" + mName;
         case Switch:

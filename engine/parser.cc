@@ -124,7 +124,7 @@ Instruction* Parser::CreateFunction(const std::string& name, Instruction* formal
 }
 
 Instruction* Parser::CreateFunctionCall(const std::string& name, Instruction* actualParameters) {
-    if(actualParameters == NULL){
+    if (actualParameters == NULL) {
         actualParameters = NULLObject();
     }
     Instruction* obj = mScript->NewInstruction(actualParameters);
@@ -289,6 +289,23 @@ Instruction* Parser::CreateForInStatement(const std::string& key, const std::str
     }
     return obj;
 }
+
+Instruction* Parser::CreateWhileStatement(Instruction* condition, Instruction* block) {
+    Instruction* obj = mScript->NewInstruction(condition, block);
+    obj->OpCode = Instructions::kWhile;
+    if (mLogInstruction) {
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+    }
+    return obj;
+}
+Instruction* Parser::CreateDoWhileStatement(Instruction* block, Instruction* condition) {
+    Instruction* obj = mScript->NewInstruction(block, condition);
+    obj->OpCode = Instructions::kDoWhile;
+    if (mLogInstruction) {
+        NVT_LOG_DEBUG(mScript->DumpInstruction(obj, ""));
+    }
+    return obj;
+}
 Instruction* Parser::CreateSwitchCaseStatement(Instruction* value, Instruction* cases,
                                                Instruction* defbranch) {
     if (defbranch == NULL) {
@@ -362,7 +379,7 @@ Instruction* Parser::ObjectDeclarationExpresion(const std::string& name, Instruc
 Instruction* Parser::CreateObjectMethodCall(const std::string& var, const std::string& method,
                                             Instruction* actualParameters) {
     Instruction* where = VarReadExpresion(var);
-    if(actualParameters== NULL){
+    if (actualParameters == NULL) {
         actualParameters = NULLObject();
     }
     Instruction* obj = mScript->NewInstruction(where, actualParameters);

@@ -116,6 +116,9 @@ public:
     //for statement and break statement
     Instruction* CreateForStatement(Instruction* init, Instruction* condition, Instruction* op,
                                     Instruction* body);
+    //while statement 
+    Instruction* CreateWhileStatement(Instruction* condition,Instruction* block);
+    Instruction* CreateDoWhileStatement(Instruction* block,Instruction* condition);
     Instruction* CreateBreakStatement();
     Instruction* CreateContinueStatement();
 

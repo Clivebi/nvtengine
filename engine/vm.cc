@@ -54,7 +54,7 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 void yyerror(Interpreter::Parser* parser, const char* s) {
     char message[1024] = {0};
-    sprintf(message, "%s on line:%d column:%d ", s, yyget_lineno(parser->GetContext()),
+    sprintf(message, "%s on line:%i column:%i ", s, yyget_lineno(parser->GetContext()),
             yyget_column(parser->GetContext()));
     parser->mLastError = message;
 }
@@ -103,10 +103,12 @@ scoped_refptr<Script> DefaultScriptLoader::LoadScript(const std::string& name, s
     YY_BUFFER_STATE bp = {0};
     yyscan_t scanner = 0;
     yylex_init(&scanner);
-    scoped_refptr<Parser> parser = new Parser(scanner);
+    scoped_refptr<Parser> parser = new Parser((void*)scanner);
+    parser->SetLogInstruction(mEnableLog);
     bp = yy_scan_bytes((const char*)data, (int)size, scanner);
     yy_switch_to_buffer(bp, scanner);
     parser->Start(name);
+    yyset_lineno(0,scanner);
     int err = yyparse(parser.get());
     yy_flush_buffer(bp, scanner);
     yy_delete_buffer(bp, scanner);
@@ -387,16 +389,30 @@ Value Executor::Execute(const Instruction* ins, VMContext* ctx) {
     }
 
     case Instructions::kFORStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Loop, ctx, 0, "");
         mCurrentVMContxt = newCtx;
         ExecuteForStatement(ins, newCtx);
         mCurrentVMContxt = ctx;
         return Value();
     }
     case Instructions::kForInStatement: {
-        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::For, ctx, 0, "");
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Loop, ctx, 0, "");
         mCurrentVMContxt = newCtx;
         ExecuteForInStatement(ins, newCtx);
+        mCurrentVMContxt = ctx;
+        return Value();
+    }
+    case Instructions::kWhile: {
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Loop, ctx, 0, "");
+        mCurrentVMContxt = newCtx;
+        ExecuteWhileStatement(ins, newCtx);
+        mCurrentVMContxt = ctx;
+        return Value();
+    }
+    case Instructions::kDoWhile: {
+        scoped_refptr<VMContext> newCtx = new VMContext(VMContext::Loop, ctx, 0, "");
+        mCurrentVMContxt = newCtx;
+        ExecuteDoWhileStatement(ins, newCtx);
         mCurrentVMContxt = ctx;
         return Value();
     }
@@ -1342,6 +1358,33 @@ Value Executor::ExecuteObjectDeclaration(const Instruction* ins, VMContext* ctx)
     creator->Name = ins->Name;
     creator->Initialzed = false;
     ctx->AddObjectCreator(ins->Name, creator);
+    return Value();
+}
+
+Value Executor::ExecuteWhileStatement(const Instruction* ins, VMContext* ctx) {
+    const Instruction* body = GetInstruction(ins->Refs[1]);
+    const Instruction* condition = GetInstruction(ins->Refs[0]);
+    Value val = Execute(condition, ctx);
+    while (val.ToBoolean()) {
+        Execute(body, ctx);
+        ctx->CleanContinueFlag();
+        if (ctx->IsExecutedInterupt()) {
+            break;
+        }
+        val = Execute(condition, ctx);
+    }
+    return Value();
+}
+Value Executor::ExecuteDoWhileStatement(const Instruction* ins, VMContext* ctx) {
+    const Instruction* body = GetInstruction(ins->Refs[0]);
+    const Instruction* condition = GetInstruction(ins->Refs[1]);
+    do {
+        Execute(body, ctx);
+        ctx->CleanContinueFlag();
+        if (ctx->IsExecutedInterupt()) {
+            break;
+        }
+    } while (Execute(condition, ctx).ToBoolean());
     return Value();
 }
 

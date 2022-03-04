@@ -30,7 +30,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
         MULASSIGN DIVASSIGN INC DEC NOT LB RB INTOKEN SWITCH CASE DEFAULT
         BOR BAND BXOR BNG LSHIFT RSHIFT  BORASSIGN BANDASSIGN BXORASSIGN 
         LSHIFTASSIGN RSHIFTASSIGN OR AND POINTTOKEN MOREVAL URSHIFT URSHIFTASSIGN MODASSIGN
-        OBJECTTOKEN
+        OBJECTTOKEN WHILETOKEN DOTOKEN
 
 %token <value_integer> INT_LITERAL
 %token <value_double>  DOUBLE_LITERAL
@@ -81,7 +81,7 @@ void yyerror(Interpreter::Parser * parser,const char *s);
 %type <object> break_expression continue_expression 
 %type <object> for_in_statement
 %type <object> case_item case_item_list switch_case_statement const_value_list
-%type <object> obj_method obj_method_list obj_declaration obj_method_call
+%type <object> obj_method obj_method_list obj_declaration obj_method_call while_statement do_while_statement
 %%
 
 %start  startstatement;
@@ -692,6 +692,17 @@ switch_case_statement: SWITCH LPTOKEN rvalue RPTOKEN LC case_item_list DEFAULT C
                 $$=parser->CreateSwitchCaseStatement($3,$6,NULL);
         }
         ;
+while_statement: WHILETOKEN LPTOKEN rvalue RPTOKEN block
+        {
+                $$=parser->CreateWhileStatement($3,$5);
+        }
+        ;
+
+do_while_statement: DOTOKEN block WHILETOKEN LPTOKEN rvalue RPTOKEN
+        {
+                $$=parser->CreateDoWhileStatement($2,$5);
+        }
+        ;
 
 
 statement_in_block:var_declaration SEMICOLON
@@ -701,6 +712,8 @@ statement_in_block:var_declaration SEMICOLON
         |return_expression SEMICOLON
         |func_call_expression SEMICOLON
         |for_statement
+        |while_statement
+        |do_while_statement SEMICOLON
         |break_expression SEMICOLON
         |continue_expression SEMICOLON
         |for_in_statement

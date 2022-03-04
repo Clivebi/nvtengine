@@ -285,7 +285,7 @@ scoped_refptr<T> make_scoped_refptr(T* t) {
     return scoped_refptr<T>(t);
 }
 
-#define _DEBUG_MEMORY_BROKEN
+//#define _DEBUG_MEMORY_BROKEN
 
 #ifdef _DEBUG_MEMORY_BROKEN
 
