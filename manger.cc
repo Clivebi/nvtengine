@@ -47,6 +47,43 @@ public:
             iter++;
         }
     }
+    std::string GetHeaderValue(std::string name) {
+        auto iter = Header.begin();
+        while (iter != Header.end()) {
+            if ((*iter)->Name == name) {
+                return (*iter)->Value;
+            }
+            iter++;
+        }
+        return "";
+    }
+    void Finish() {
+        size_t i = RawHeader.find("\r\n");
+        ParseMethod(RawHeader.substr(0, i));
+    }
+
+    bool ParseMethod(std::string line) {
+        //OPTIONS /rpc HTTP/1.1\r\n
+        size_t i = line.find(" ");
+        if (i == std::string::npos) {
+            return false;
+        }
+        Method = line.substr(0, i);
+        if (i + 1 >= line.size()) {
+            return false;
+        }
+        line = line.substr(i + 1);
+        i = line.find(" ");
+        if (i == std::string::npos) {
+            return false;
+        }
+        Path = line.substr(0, i);
+        if (i + 1 >= line.size()) {
+            return false;
+        }
+        Version = line.substr(i + 1);
+        return true;
+    }
 };
 
 int header_url_cb(http_parser* p, const char* buf, size_t len) {
@@ -129,6 +166,7 @@ bool ReadHttpRequest(scoped_refptr<net::Conn> stream, HttpRequest* req) {
             return false;
         }
         if (req->IsMessageCompleteCalled) {
+            req->Finish();
             break;
         }
     }
@@ -160,7 +198,13 @@ bool HttpWriteResponse(scoped_refptr<net::Conn> con, const std::string& body,
 void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
     std::map<std::string, std::string> Header;
     Header["Connection"] = "Keep-Alive";
-    Header["Content-type"] = "application/json";
+    Header["Content-type"] = "application/json;charset=UTF-8";
+    Header["Server"] = "NVTEngine";
+    Header["Access-Control-Allow-Method"] = "POST,GET";
+    Header["Access-Control-Allow-Origin"] = "*";
+    Header["allow"] = "POST,GET";
+    Header["Server"] = "NVTEngine";
+    Header["Access-Control-Allow-Headers"] = "Accept,Content-Type";
     static std::string s_Parse_error =
             "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32700, \"message\": \"Parse error\"}, "
             "\"id\": null}";
@@ -169,6 +213,12 @@ void RPCServer::OnNewConnection(scoped_refptr<net::Conn> con) {
         manger_helper::HttpRequest req;
         if (!manger_helper::ReadHttpRequest(con, &req)) {
             break;
+        }
+        if (req.Method == "OPTIONS") {
+            if (!manger_helper::HttpWriteResponse(con, "", Header)) {
+                break;
+            }
+            continue;
         }
         if (req.Body.size() == 0) {
             manger_helper::HttpWriteResponse(con, s_Parse_error, Header);
