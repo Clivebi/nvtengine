@@ -244,6 +244,10 @@ void RPCServer::AsyncNewConnection(scoped_refptr<net::Conn> con) {
     pixie_begin_thread(RPCServer::tcp_worker_thread, 0, p);
 }
 
+Value RPCServer::GetEngineVersion() {
+    return VERSION_STR;
+}
+
 Value RPCServer::BeginTask(Value& host, Value& port, Value& filter, Value& taskID) {
     std::list<std::string> result;
     LoadOidList(filter.ToString(), result);

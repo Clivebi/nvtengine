@@ -45,7 +45,9 @@ protected:
     Value GetFinishedHost(Value& taskID);
     Value GetHostTaskInformation(Value& taskID, Value& host);
     Value StopHostTask(Value& taskID, Value& host);
+    Value GetEngineVersion();
     BEGIN_REQUEST_MAP()
+    ADD_HANDLE(GetEngineVersion)
     ADD_HANDLE(EnumTask)
     ADD_HANDLE4(BeginTask)
     ADD_HANDLE1(StopTask)

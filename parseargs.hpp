@@ -55,8 +55,8 @@ protected:
 public:
     void PrintHelp(std::string AppName) {
         for (auto iter : mAvaliableCmds) {
-            std::cout << AppName << " " << iter.strCmd << " [" << iter.JoinOptions() << "]"
-                      << std::endl;
+            std::cout << AppName << " " << iter.strCmd << " [" << iter.JoinOptions() << "] "
+                      << iter.strHelp << std::endl;
             std::cout << "options:" << std::endl;
             for (auto opt : iter.options) {
                 std::cout << opt.Show() << std::endl;
