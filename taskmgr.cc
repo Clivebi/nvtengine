@@ -487,7 +487,7 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
     for (auto v : scripts) {
         Value nvti = nvtiDB.Get(v);
         if (nvti.IsNULL()) {
-            NVT_LOG_ERROR("load " + v + " failed");
+            NVT_LOG_WARNING("load " + v + " failed");
             //return false;
             continue;
         }

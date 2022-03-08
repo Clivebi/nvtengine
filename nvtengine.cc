@@ -32,7 +32,7 @@ extern "C" {
 #include "testoids.hpp"
 #include "vfsfileio.hpp"
 
-#define PRODUCT_NAME "NVTStudio"
+#define PRODUCT_NAME "nvtstudio"
 
 void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::string>& result) {
     struct dirent* entry = NULL;
@@ -338,8 +338,7 @@ bool LoadJsonFromFile(std::string path, Interpreter::Value& pref) {
         text.assign((char*)data, length);
         pref = ParseJSON(text, true);
         free(data);
-        NVT_LOG_DEBUG("user config on the:", path);
-        NVT_LOG_DEBUG("Preferences:", pref.ToJSONString());
+        std::cout << "current config file location:" << path << std::endl;
         return true;
     }
     return false;
@@ -364,7 +363,7 @@ bool LoadDefaultConfig(Interpreter::Value& pref) {
     }
     return false;
 #else
-    char _default_path[][120] = {"/etc/", "/usr/local"};
+    char _default_path[][120] = {"/usr/local/etc/", "/etc/"};
     for (int i = 0; i < sizeof(_default_path) / sizeof(_default_path[0]); i++) {
         FilePath path = _default_path[i];
         path += PRODUCT_NAME;
@@ -415,9 +414,9 @@ void init() {
     SSL_library_init();
 }
 
-//NVTEngine daemon -a localhost -p 100 -c
-//NVTEngine scan -h -p -c -f
-//NVTEngine update -c
+//nvtengine daemon -a localhost -p 100 -c
+//nvtengine scan -h -p -c -f
+//nvtengine update -c
 
 int main(int argc, char* argv[]) {
     Command daemonCmd("daemon", "run jsonrpc server", std::list<Option>());
@@ -456,7 +455,7 @@ int main(int argc, char* argv[]) {
 
     ParseArgs options(argc, argv, allCommands);
     if (!options.IsValid()) {
-        options.PrintHelp("NVTEngine");
+        options.PrintHelp("nvtengine");
         return -1;
     }
     if (options.GetCommand() == version.strCmd) {
@@ -467,17 +466,18 @@ int main(int argc, char* argv[]) {
     Interpreter::Value pref;
     if (configFile.size() == 0) {
         if (!LoadDefaultConfig(pref)) {
-            options.PrintHelp("NVTEngine");
-            std::cout << " can't load default config file" << std::endl;
+            options.PrintHelp("nvtengine");
+            NVT_LOG_ERROR("can't load default config file");
             return -1;
         }
     } else {
         if (!LoadJsonFromFile(configFile, pref)) {
-            std::cout << " can't load config file" << std::endl;
+            NVT_LOG_ERROR("can't load config file");
             return -1;
         }
     }
     g_LogLevel = NVTPref(pref).log_level();
+    NVT_LOG_DEBUG("Preferences ", pref.ToString());
     if (options.GetCommand() == daemonCmd.strCmd) {
         ServeDaemon(options, pref);
         return 0;
@@ -498,6 +498,6 @@ int main(int argc, char* argv[]) {
                                     options.GetOption("--name"));
         return 0;
     }
-    options.PrintHelp("NVTEngine");
+    options.PrintHelp("nvtengine");
     return -1;
 }

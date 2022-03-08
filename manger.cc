@@ -13,7 +13,6 @@ extern "C" {
 
 #include "./modules/openvas/support/sconfdb.hpp"
 
-#define PRODUCT_NAME "NVTStudio"
 
 using namespace Interpreter;
 

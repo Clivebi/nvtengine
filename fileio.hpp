@@ -42,7 +42,6 @@ public:
         size_t size = 0, read_size = 0;
         hFile = fopen(ResolvePath(name).c_str(), "rb");
         if (hFile == NULL) {
-            NVT_LOG_ERROR("fopen failed: ", errno, " ", ResolvePath(name));
             return NULL;
         }
         fseek(hFile, 0, SEEK_END);
@@ -51,13 +50,11 @@ public:
         pData = malloc(contentSize);
         if (pData == NULL) {
             fclose(hFile);
-            NVT_LOG_ERROR("Allocate Memory error...");
             return NULL;
         }
         if (contentSize != fread(pData, 1, contentSize, hFile)) {
             fclose(hFile);
             free(pData);
-            NVT_LOG_ERROR("fread error...", errno);
             return NULL;
         }
         fclose(hFile);

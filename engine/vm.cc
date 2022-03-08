@@ -48,7 +48,7 @@ void operator delete(void* p) noexcept {
 }
 #endif
 
-int g_LogLevel = 3;
+int g_LogLevel = LEVEL_ERROR;
 
 void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 

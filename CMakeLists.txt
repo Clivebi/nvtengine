@@ -92,7 +92,7 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
 set(EXTENAL_LDFLAGS "-framework CoreFoundation -framework Security")
 ENDIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 
-add_executable(NVTEngine
+add_executable(nvtengine
     nvtengine.cc 
     taskmgr.cc
     modules/module.cc
@@ -100,14 +100,14 @@ add_executable(NVTEngine
     manger.cc
 )
 
-add_executable(Interpreter
+add_executable(interpreter
     Interpreter.cc 
     modules/module.cc
 )
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
-add_custom_command(TARGET NVTEngine
+add_custom_command(TARGET nvtengine
     PRE_LINK
     COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
     COMMAND echo "build winrm complete" 
@@ -116,14 +116,14 @@ add_custom_command(TARGET NVTEngine
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
 
 
-add_custom_command(TARGET Interpreter
+add_custom_command(TARGET interpreter
     PRE_LINK
     COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
     COMMAND echo "build winrm complete" 
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
 
-target_link_libraries(  NVTEngine  
+target_link_libraries(  nvtengine  
                         engine  
                         masscan 
                         -ldl 
@@ -140,7 +140,7 @@ target_link_libraries(  NVTEngine
                         ${SNMP_LDFLAGS} 
                         )
 
-target_link_libraries(  Interpreter  
+target_link_libraries(  interpreter  
                         engine  
                         masscan 
                         -ldl
