@@ -1,0 +1,179 @@
+[
+  {
+    "name": "NVTEngine",
+    "folders": [],
+    "requests": [
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "BeginTask",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true,
+          "addTo": "Headers",
+          "key": "",
+          "value": ""
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"BeginTask\",\n  \"params\": [\n    \"<<targets>>\",\n    \"<<ports>>\",\n    \"all\",\n    \"task-id-100\"\n  ]\n}"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "GetTaskStatus",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"GetTaskStatus\",\n        \"params\": [\n            \"task-id-100\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "EnumTask",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": false,
+          "addTo": "Headers",
+          "key": "",
+          "value": ""
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"EnumTask\",\n  \"params\": null\n}"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "StopTask",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "    {\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"StopTask\",\n        \"params\": [\n            \"task-id-100\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "CleanTask",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "    {\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"CleanTask\",\n        \"params\": [\n            \"task-id-100\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "GetDiscoverdHost",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "{\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"GetDiscoverdHost\",\n        \"params\": [\n            \"task-id-100\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "GetFinishedHost",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "    {\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"GetFinishedHost\",\n        \"params\": [\n            \"task-id-100\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "GetHostTaskInformation",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true,
+          "addTo": "Headers",
+          "key": "",
+          "value": ""
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "    {\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"GetHostTaskInformation\",\n        \"params\": [\n            \"task-id-100\",\n            \"<<target>>\"\n        ]\n    }"
+        }
+      },
+      {
+        "v": "1",
+        "endpoint": "<<url>>/rpc",
+        "name": "StopHostTask",
+        "params": [],
+        "headers": [],
+        "method": "POST",
+        "auth": {
+          "authType": "none",
+          "authActive": true
+        },
+        "preRequestScript": "",
+        "testScript": "",
+        "body": {
+          "contentType": "application/json",
+          "body": "    {\n        \"jsonrpc\": \"2.0\",\n        \"method\": \"StopHostTask\",\n        \"params\": [\n            \"task-id-100\",\n            \"<<target>>\"\n        ]\n    }"
+        }
+      }
+    ]
+  }
+]

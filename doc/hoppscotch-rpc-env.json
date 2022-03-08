@@ -1,0 +1,23 @@
+[
+  {
+    "name": "NVTEngine",
+    "variables": [
+      {
+        "key": "targets",
+        "value": "192.168.3.24"
+      },
+      {
+        "key": "ports",
+        "value": "0-65535"
+      },
+      {
+        "key": "target",
+        "value": "192.168.3.24"
+      },
+      {
+        "key": "url",
+        "value": "http://localhost:6755"
+      }
+    ]
+  }
+]
