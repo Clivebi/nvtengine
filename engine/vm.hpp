@@ -9,7 +9,7 @@
 #include "script.hpp"
 #include "value.hpp"
 #include "vmcontext.hpp"
-#define VERSION ("0.1")
+#include "version.hpp"
 namespace Interpreter {
 
 class Executor;

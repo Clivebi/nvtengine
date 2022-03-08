@@ -262,6 +262,8 @@ protected:
             return "ScheduleStop";
         case Stoped:
             return "Stoped";
+        default:
+            return "";
         }
     }
 };

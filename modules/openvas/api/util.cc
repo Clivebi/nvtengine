@@ -63,7 +63,7 @@ Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value vendor_version(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    return Value("NVTEngine 0.1");
+    return Value("NVTEngine "+std::string(VERSION_STR));
 }
 
 Value GetHostName(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

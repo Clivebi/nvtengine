@@ -272,8 +272,8 @@ Value VMEnv(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     } else {
         ret._map()[Value("ByteOrder")] = "LittleEndian";
     }
-    ret._map()["Size Of integer"] = Value(sizeof(Value::INTVAR));
-    ret._map()["Engine Version"] = Value(VERSION);
+    ret._map()["SizeOfInteger"] = Value(sizeof(Value::INTVAR));
+    ret._map()["Version"] = Value(VERSION_STR);
 #ifdef __APPLE__
     ret._map()["OS"] = "Darwin";
 #endif

@@ -440,11 +440,14 @@ int main(int argc, char* argv[]) {
     importCmd.options.push_back(Option("-n", "--name", "filter name", true));
     importCmd.options.push_back(Option("-t", "--textfile", "oid list file,split with';", true));
 
+    Command version("version", "get version of nvtengine", std::list<Option>());
+
     std::list<Command> allCommands;
     allCommands.push_back(daemonCmd);
     allCommands.push_back(scanCmd);
     allCommands.push_back(updateCmd);
     allCommands.push_back(importCmd);
+    allCommands.push_back(version);
 
 #ifdef __APPLE__
     signal(SIGPIPE, SIG_IGN);
@@ -454,6 +457,10 @@ int main(int argc, char* argv[]) {
     ParseArgs options(argc, argv, allCommands);
     if (!options.IsValid()) {
         options.PrintHelp("NVTEngine");
+        return -1;
+    }
+    if (options.GetCommand() == version.strCmd) {
+        std::cout << VERSION_STR << std::endl;
         return -1;
     }
     std::string configFile = options.GetOption("--config");

@@ -27,7 +27,12 @@ pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
-pkg_check_modules (SNMP netsnmp>=5.8.0)
+
+find_library (SNMP netsnmp)
+execute_process (COMMAND net-snmp-config --libs
+    OUTPUT_VARIABLE SNMP_LDFLAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 #https://github.com/google/brotli
 pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.6)
 
@@ -43,9 +48,9 @@ if(NOT ZLIB_FOUND)
     message(FATAL_ERROR "zlib>=1.1.0 not found")
 endif(NOT ZLIB_FOUND)
 
-if (NOT SNMP_FOUND)
+if (NOT SNMP_LDFLAGS)
     message(FATAL_ERROR "netsnmp>=5.8.0 not found")
-endif(NOT SNMP_FOUND)
+endif(NOT SNMP_LDFLAGS)
 
 message("${OPENSSL_LDFLAGS}")
 message("${BROTLI_LDFLAGS}")
@@ -68,7 +73,7 @@ add_subdirectory(thirdpart/masscan)
 
 SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
 
-SET(MAC_STATIC "TRUE")
+#SET(MAC_STATIC "TRUE")
 
 if (MAC_STATIC)
     SET(STATIC_LIBS_DIR "${CMAKE_BINARY_DIR}/static")
@@ -80,14 +85,6 @@ if (MAC_STATIC)
     set(BROTLI_LDFLAGS "${STATIC_LIBS_DIR}/libbrotlidec-static.a;${STATIC_LIBS_DIR}/libbrotlicommon-static.a")
 endif(MAC_STATIC)
 
-
-
-#开发机静态选项
-#set(OPENSSL_LDFLAGS "libssl.a;libcrypto.a")
-#set(BROTLI_LDFLAGS "libbrotlidec-static.a;libbrotlicommon-static.a")
-#set(ZLIB_LDFLAGS "${CMAKE_BINARY_DIR}/libz.a")
-#set(SQLITE_LDFLAGS "${CMAKE_BINARY_DIR}/libsqlite3.a")
-#set(SSH_LDFLAGS "${CMAKE_BINARY_DIR}/libssh.a")
 
 set(WINRM_LDFLAGS "${CMAKE_BINARY_DIR}/winrm.a")
 
@@ -110,20 +107,20 @@ add_executable(Interpreter
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
-#add_custom_command(TARGET NVTEngine
-#    PRE_LINK
-#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-#    COMMAND echo "build winrm complete" 
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+add_custom_command(TARGET NVTEngine
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
-#set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
 
 
-#add_custom_command(TARGET Interpreter
-#    PRE_LINK
-#    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-#    COMMAND echo "build winrm complete" 
-#    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+add_custom_command(TARGET Interpreter
+    PRE_LINK
+    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
+    COMMAND echo "build winrm complete" 
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
 
 
 target_link_libraries(  NVTEngine  

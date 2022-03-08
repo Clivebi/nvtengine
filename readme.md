@@ -27,9 +27,9 @@ MAC、windows、linux、unix
 项目中大部分代码使用标准c++编写，很少依赖系统特性，能够在主流平台上编译和运行。  
 
 ## 依赖和编译  
-MAC、linux、unix使用CMake编译，本项目依赖如下一些第三方库：  
-zlib openssl sqlite3 libssh  libbrotlidec libkrb5-dev  
-sudo apt install libbrotli-dev libkrb5-dev libssh-dev libsqlite3-dev libssl-dev
+MAC、linux使用CMake编译，本项目依赖如下一些第三方库：  
+MACOS: zlib openssl sqlite3 libssh  libbrotlidec libkrb5-dev  
+ubuntu: sudo apt install libbrotli-dev libkrb5-dev libssh-dev libsqlite3-dev libssl-dev libsnmp-dev
 同时由于这几个平台使用winrm的golang版本，需要安装golang gcc开发工具  
 
 运行时依赖pcap，编译时不需要  
