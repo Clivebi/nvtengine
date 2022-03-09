@@ -244,7 +244,7 @@ void HostsTask::Execute() {
             tcb->Env[knowntext::kENV_opened_udp] = udps;
             tcb->ScannerTime = scannerTime;
             //tcb->Storage->SetItem("Settings/disable_cgi_scanning",true);
-            tcb->Storage->SetItem("default_credentials/disable_brute_force_checks", true);
+            //tcb->Storage->SetItem("default_credentials/disable_brute_force_checks", true);
         }
         tcb->TCPPorts = portsTCP;
         tcb->UDPPorts = portsUDP;

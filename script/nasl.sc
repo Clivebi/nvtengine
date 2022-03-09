@@ -2483,4 +2483,12 @@ if(get_kb_item("WinRM/Connect/Exist")){
     replace_kb_item( name: "SMB/transport",value:get_kb_item("Secret/WinRM/transport"));
 }
 
+if(get_kb_item("Host/mac_address")){
+    #1.3.6.1.4.1.25623.1.0.10330
+    set_kb_item( name: "HostDetails", value: "MAC" );
+	set_kb_item( name: "HostDetails/NVT", value: "1.3.6.1.4.1.25623.1.0.10330" );
+    replace_kb_item( name: "HostDetails/NVT/1.3.6.1.4.1.25623.1.0.10330", value: "builtin Scanner" );
+	set_kb_item( name: "HostDetails/NVT/1.3.6.1.4.1.25623.1.0.10330/MAC", value: get_kb_item("Host/mac_address") );
+}
+
 replace_kb_item("http/user-agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36");

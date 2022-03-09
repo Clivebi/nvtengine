@@ -96,6 +96,7 @@ add_executable(nvtengine
     nvtengine.cc 
     taskmgr.cc
     modules/module.cc
+    modules/openvas/api/snmpi.cc
     vfs/vfsreader.c
     manger.cc
 )
@@ -103,6 +104,7 @@ add_executable(nvtengine
 add_executable(interpreter
     Interpreter.cc 
     modules/module.cc
+    modules/openvas/api/snmpi.cc
 )
 
 
