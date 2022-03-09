@@ -176,18 +176,18 @@ bool HttpWriteResponse(scoped_refptr<net::Conn> con, const std::string& body,
                        std::string status_and_reason = "200 OK", std::string Version = "HTTP/1.1") {
     std::stringstream o;
     o << Version << " " << status_and_reason << "\r\n";
-    headers["Content-Length"] = ToString(body.size());
+    headers["Content-Length"] = ToString((int)body.size());
     for (auto iter : headers) {
         o << iter.first << ": " << iter.second << "\r\n";
     }
     o << "\r\n";
-    if (con->Write(o.str().c_str(), o.str().size()) <= 0) {
+    if (con->Write(o.str().c_str(), (int)o.str().size()) <= 0) {
         return false;
     }
     if (body.size() == 0) {
         return true;
     }
-    if (con->Write(body.c_str(), body.size()) <= 0) {
+    if (con->Write(body.c_str(), (int)body.size()) <= 0) {
         return false;
     }
     return true;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <pcap.h>
-
 #include <mutex>
 #include <string>
 

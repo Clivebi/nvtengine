@@ -133,7 +133,11 @@ public:
     }
 
     static int Accept(int fd, sockaddr* addr, unsigned int* addrSize) {
+        #ifdef _WIN32
+        return (int)accept(fd, addr,(int*)addrSize);
+        #else
         return accept(fd, addr, addrSize);
+        #endif
     }
 
     static int Listen(const char* host, const char* port) {
@@ -150,7 +154,7 @@ public:
                 continue;
             }
             SetBlock(sockfd, 1);
-            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            if (bind(sockfd, p->ai_addr, (int)p->ai_addrlen) == -1) {
                 Close(sockfd);
                 continue;
             }

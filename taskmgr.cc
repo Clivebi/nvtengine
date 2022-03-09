@@ -435,7 +435,7 @@ void HostsTask::ExecuteScriptOnHost(TCB* tcb) {
             break;
         }
     }
-    NVT_LOG_DEBUG("All script complete.... Total Count: ", mScriptCount,
+    NVT_LOG_DEBUG("All script complete.... Total Count: ", mScriptCount.Get(),
                   " Executed count: ", tcb->ExecutedScriptCount);
 }
 
@@ -519,12 +519,12 @@ bool HostsTask::InitScripts(std::list<std::string>& scripts) {
         loadOrder.push_back(nvti);
     }
 
-    mScriptCount = loadOrder.size();
+    mScriptCount = (int)loadOrder.size();
     for (auto nvti : loadOrder) {
         mGroupedScripts[nvti[knowntext::kNVTI_category].Integer].push_back(nvti);
         ThinNVTI(nvti, true);
     }
-    NVT_LOG_DEBUG("Total load NVTI count:", mScriptCount);
+    NVT_LOG_DEBUG("Total load NVTI count:", mScriptCount.Get());
     return true;
 }
 

@@ -149,5 +149,14 @@
     <ClCompile Include="..\..\vfs\vfsreader.c">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\snmp.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\snmpi.cc">
+      <Filter>modules\openvas\api</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\manger.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

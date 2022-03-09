@@ -108,7 +108,7 @@ typedef struct _ASYNC_CONTEXT {
               strStdout(""),
               strStderr(""),
               ExitCode(-1),
-              Error(""),
+              Error(L""),
               ErrorCode(-1) {}
 } ASYNC_CONTEXT, *PCASYNC_CONTEXT;
 
@@ -159,7 +159,7 @@ struct _ExecuteCommandResult {
     std::wstring Error;
     int ErrorCode;
     int ExitCode;
-    _ExecuteCommandResult() : Stdout(""), StdError(""), Error(""), ErrorCode(-1), ExitCode(-1) {}
+    _ExecuteCommandResult() : Stdout(""), StdError(""), Error(L""), ErrorCode(-1), ExitCode(-1) {}
 };
 
 std::string BuildPowerShellCommand(std::string cmd) {

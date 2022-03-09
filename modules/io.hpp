@@ -29,7 +29,11 @@ protected:
 public:
     explicit BufferedReader(Reader* reader, const void* init = NULL, int initSize = 0,
                             int cap = 16 * 1024) {
+        #ifdef _WIN32
+        cap = max(cap, initSize);
+        #else
         cap = std::max(cap, initSize);
+        #endif
         mBuffer = new unsigned char[cap];
         mCapSize = cap;
         mPos = 0;
@@ -44,7 +48,11 @@ public:
 
     int Read(void* buffer, int size) {
         if (mPos < mSize) {
+#ifdef _WIN32
+            size =min(size, (mSize - mPos));
+#else
             size = std::min(size, (mSize - mPos));
+#endif
             memcpy(buffer, mBuffer + mPos, size);
             mPos += size;
             return size;
@@ -58,7 +66,11 @@ public:
         }
         mSize = ReadSize;
         mPos = 0;
+#ifdef _WIN32
+        size = min(size, (mSize - mPos));
+#else
         size = std::min(size, (mSize - mPos));
+#endif
         memcpy(buffer, mBuffer + mPos, size);
         mPos += size;
         return size;

@@ -21,6 +21,9 @@
     <ClCompile Include="..\..\Interpreter.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\modules\openvas\api\snmpi.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\modules\modules.h">

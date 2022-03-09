@@ -19,7 +19,7 @@ namespace Interpreter {
 class AtomInt {
 protected:
 #ifdef _WIN32
-    DWORD mValue;
+    long mValue;
 #else
     int mValue;
 #endif
@@ -44,13 +44,13 @@ public:
         return *this;
     }
 #ifdef _WIN32
-    DWORD Get() { return InterlockedAdd(&mValue, 0); }
+    long Get() { return InterlockedAdd(&mValue, 0); }
 #else
     int Get() { return __sync_sub_and_fetch(&mValue, 0); }
 #endif
     operator int() { return (int)Get(); }
 #ifdef _WIN32
-    operator DWORD() { return (DWORD)Get(); }
+    operator long() { return (DWORD)Get(); }
 #endif
 };
 class Status {
