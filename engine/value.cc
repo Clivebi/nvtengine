@@ -760,6 +760,9 @@ bool IsDigestString(const std::string& src) {
     for (size_t i = 0; i < src.size(); i++) {
         int c = ((int)src[i]) & 0xFF;
         if (c < '0' || c > '9') {
+            if (i == 0 && c == '-') {
+                continue;
+            }
             return false;
         }
     }
