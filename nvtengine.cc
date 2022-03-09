@@ -57,6 +57,14 @@ void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::stri
     closedir(dir);
 }
 
+void WinPathToLinuxPath(std::string& path) {
+    for (size_t i = 0; i < path.size(); i++) {
+        if (path[i] == '\\') {
+            path[i] = '/';
+        }
+    }
+}
+
 void UpdateNVTIFromLocalFS(NVTPref& helper) {
     std::list<std::string> result;
     StdFileIO scriptIO(helper.script_folder());
@@ -83,6 +91,9 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
         if (iter.find(".inc.") != std::string::npos) {
             continue;
         }
+        #ifdef _WIN32
+        WinPathToLinuxPath(iter);
+        #endif
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
         bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning());
@@ -111,6 +122,9 @@ void UpdateNVTIFromLocalFS(NVTPref& helper) {
         if (iter.find(".inc.") == std::string::npos) {
             continue;
         }
+#ifdef _WIN32
+        WinPathToLinuxPath(iter);
+#endif
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
         bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning(), true);
@@ -145,6 +159,12 @@ void UpdateNVTIFromVFS(NVTPref& helper) {
     RegisgerModulesBuiltinMethod(&exe);
     exe.SetScriptCacheProvider(cachePtr);
     for (auto iter : result) {
+        if (iter.find(".inc.") != std::string::npos) {
+            continue;
+        }
+#ifdef _WIN32
+        WinPathToLinuxPath(iter);
+#endif
         OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
         exe.SetUserContext(&context);
         bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning());
@@ -164,6 +184,24 @@ void UpdateNVTIFromVFS(NVTPref& helper) {
         support::NVTIDataBase db(FilePath(helper.app_data_folder()) + "attributes.db");
         db.UpdateAll(ret);
         ret._array().clear();
+    }
+    if (!helper.enable_code_cache()) {
+        return;
+    }
+    //compire all left inc file
+    for (auto iter : result) {
+        if (iter.find(".inc.") == std::string::npos) {
+            continue;
+        }
+#ifdef _WIN32
+        WinPathToLinuxPath(iter);
+#endif
+        OVAContext context(iter, Value::MakeMap(), Value::MakeMap(), new support::ScriptStorage());
+        exe.SetUserContext(&context);
+        bool ok = exe.Execute(iter.c_str(), 5, helper.log_engine_warning(), true);
+        if (callback.mSyntaxError) {
+            break;
+        }
     }
 }
 
