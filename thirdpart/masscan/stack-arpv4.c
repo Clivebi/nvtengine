@@ -31,24 +31,11 @@
  * overlayed on the incoming ARP header, but instead each field
  * is parsed one-by-one and converted into this internal structure.
  */
-struct ARP_IncomingRequest
-{
-    unsigned is_valid;
-    unsigned opcode;
-    unsigned hardware_type;
-    unsigned protocol_type;
-    unsigned hardware_length;
-    unsigned protocol_length;
-    unsigned ip_src;
-    unsigned ip_dst;
-    const unsigned char *mac_src;
-    const unsigned char *mac_dst;
-};
 
 
 /****************************************************************************
  ****************************************************************************/
-static void
+void
 proto_arp_parse(struct ARP_IncomingRequest *arp,
                 const unsigned char px[], unsigned offset, unsigned max)
 {

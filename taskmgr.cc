@@ -155,6 +155,11 @@ void HostsTask::Execute() {
 
     if (bIsNeedARP) {
         arpItem = resolve_mac_address(mHosts.c_str(), &arpItemSize, 15);
+        for (unsigned int i = 0; i < arpItemSize; i++) {
+            ipaddress_formatted_t host = ipaddress_fmt(arpItem[i].ip);
+            ipaddress_formatted_t mac = macaddress_fmt(arpItem[i].mac);
+            NVT_LOG_DEBUG(host.string, "-->", mac.string);
+        }
     }
     HostScanTask* task = init_host_scan_task(mHosts.c_str(), mPorts.c_str(), false, false,
                                              helper.default_network_interface().c_str(), arpItem,

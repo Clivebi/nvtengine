@@ -34,4 +34,21 @@ int stack_arp_resolve(struct Adapter *adapter,
     ipv4address_t my_ipv4, macaddress_t my_mac_address,
     ipv4address_t your_ipv4, macaddress_t *your_mac_address,unsigned *shutdown);
 
+struct ARP_IncomingRequest {
+    unsigned is_valid;
+    unsigned opcode;
+    unsigned hardware_type;
+    unsigned protocol_type;
+    unsigned hardware_length;
+    unsigned protocol_length;
+    unsigned ip_src;
+    unsigned ip_dst;
+    const unsigned char* mac_src;
+    const unsigned char* mac_dst;
+};
+
+
+void proto_arp_parse(struct ARP_IncomingRequest* arp, const unsigned char px[], unsigned offset,
+                     unsigned max);
+
 #endif
