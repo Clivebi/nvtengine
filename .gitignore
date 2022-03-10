@@ -18,3 +18,4 @@ vs/*/Debug
 vs/*/Release
 vs/*/x64
 *.user
+etc/nvtengine_src.conf

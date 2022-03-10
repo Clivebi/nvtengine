@@ -118,6 +118,10 @@ add_executable(interpreter
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
+
+#set(DEVENV "TRUE")
+#编译过一次就不用编译了，开发的时候
+if (NOT DEVENV)
 add_custom_command(TARGET nvtengine
     PRE_LINK
     COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
@@ -132,6 +136,13 @@ add_custom_command(TARGET interpreter
     COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
     COMMAND echo "build winrm complete" 
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
+
+endif( NOT DEVENV)
+
+add_custom_command(
+        TARGET nvtengine
+        COMMAND sed "-e" "'s|SCRIPT_DIR|${DATA_DIR}/nvtscript|g'" "-e" "'s|APP_DATA_DIR|${DATA_DIR}|g'" "-e" "'s|BUILTIN_SCRIPT|${DATA_DIR}/script|g'" "${CMAKE_BINARY_DIR}/../etc/nvtengine_in.conf" > "${CMAKE_BINARY_DIR}/../etc/nvtengine_src.conf"
+        )
 
 
 target_link_libraries(  nvtengine  
@@ -181,5 +192,6 @@ install (TARGETS nvtengine
 install (DIRECTORY ${CMAKE_BINARY_DIR}/../script
          DESTINATION ${DATA_DIR})
 
-install (FILES ${CMAKE_BINARY_DIR}/../etc/nvtengine.conf
-         DESTINATION ${ECT_DIR})
+install (FILES ${CMAKE_BINARY_DIR}/../etc/nvtengine_src.conf
+         DESTINATION "${ECT_DIR}"
+         RENAME "nvtengine.conf")
