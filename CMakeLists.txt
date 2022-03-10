@@ -6,6 +6,13 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif(NOT CMAKE_BUILD_TYPE)
 
+SET (PRODUCT_NAME "nvtstudio")
+SET (PRODUCT_VERSION "0.1.1")
+SET(INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+SET(DATA_DIR "${CMAKE_INSTALL_PREFIX}/var/${PRODUCT_NAME}")
+SET(ECT_DIR "${CMAKE_INSTALL_PREFIX}/etc/${PRODUCT_NAME}")
+SET(BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin/")
+
 include (FindPkgConfig)
 if (NOT PKG_CONFIG_FOUND)
   message(FATAL_ERROR "pkg-config executable not found. Aborting.")
@@ -68,6 +75,8 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
 
 
+add_definitions (-DPRODUCT_NAME="${PRODUCT_NAME}")
+add_definitions (-DPRODUCT_VERSION="${PRODUCT_VERSION}")
 add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
 
@@ -157,3 +166,20 @@ target_link_libraries(  interpreter
                         ${CMAKE_THREAD_LIBS_INIT}
                         ${SSH_LDFLAGS}
                         ${SNMP_LDFLAGS}  )
+
+
+install (TARGETS interpreter
+         RUNTIME DESTINATION ${BIN_DIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (TARGETS nvtengine
+         RUNTIME DESTINATION ${BIN_DIR}
+         PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+install (DIRECTORY ${CMAKE_BINARY_DIR}/../script
+         DESTINATION ${DATA_DIR})
+
+install (FILES ${CMAKE_BINARY_DIR}/../etc/nvtengine.conf
+         DESTINATION ${ECT_DIR})

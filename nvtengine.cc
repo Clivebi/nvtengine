@@ -32,7 +32,9 @@ extern "C" {
 #include "testoids.hpp"
 #include "vfsfileio.hpp"
 
+#ifndef PRODUCT_NAME
 #define PRODUCT_NAME "nvtstudio"
+#endif
 
 void CollectAllScript(FilePath path, FilePath relative_path, std::list<std::string>& result) {
     struct dirent* entry = NULL;
