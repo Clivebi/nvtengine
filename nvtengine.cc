@@ -488,7 +488,7 @@ int main(int argc, char* argv[]) {
     allCommands.push_back(importCmd);
     allCommands.push_back(version);
 
-#ifdef __APPLE__
+#ifndef _WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
     init();
