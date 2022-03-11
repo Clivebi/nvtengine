@@ -16,6 +16,10 @@ extern "C" {
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#ifdef __linux__
+#include <signal.h>
+#endif
+
 #include "./modules/net/socket.hpp"
 #include "./modules/openvas/api.hpp"
 #include "./modules/openvas/support/sconfdb.hpp"
