@@ -85,7 +85,11 @@ public:
                                   int timeout) {
         int error = -1;
         int set = 1;
-#ifndef _WIN32
+#ifdef __linux__
+
+        setsockopt(sockfd, SOL_SOCKET, MSG_NOSIGNAL,(void*)&set, sizeof(int));
+#endif
+#ifdef __APPLE__
         setsockopt(sockfd, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
 #endif
         error = connect(sockfd, (struct sockaddr*)addr, addr_len);
@@ -133,11 +137,11 @@ public:
     }
 
     static int Accept(int fd, sockaddr* addr, unsigned int* addrSize) {
-        #ifdef _WIN32
-        return (int)accept(fd, addr,(int*)addrSize);
-        #else
+#ifdef _WIN32
+        return (int)accept(fd, addr, (int*)addrSize);
+#else
         return accept(fd, addr, addrSize);
-        #endif
+#endif
     }
 
     static int Listen(const char* host, const char* port) {
