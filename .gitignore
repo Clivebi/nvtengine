@@ -19,3 +19,5 @@ vs/*/Release
 vs/*/x64
 *.user
 etc/nvtengine_src.conf
+.DS_Store
+ */.DS_Store

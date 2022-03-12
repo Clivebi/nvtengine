@@ -34,6 +34,7 @@ pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
+pkg_check_modules (RE2 re2)
 
 find_library (SNMP netsnmp)
 execute_process (COMMAND net-snmp-config --libs
@@ -69,7 +70,8 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${BROTLI_INCLUDE_DIRS}
                      ${OPENSSL_INCLUDE_DIRS}
                      ${SNMP_INCLUDE_DIRS}
-                     ${SSH_INCLUDE_DIRS})
+                     ${SSH_INCLUDE_DIRS}
+                     ${RE2_INCLUDE_DIRS})
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
@@ -119,7 +121,7 @@ add_executable(interpreter
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
 
-#set(DEVENV "TRUE")
+set(DEVENV "TRUE")
 #编译过一次就不用编译了，开发的时候
 if (NOT DEVENV)
 add_custom_command(TARGET nvtengine
@@ -160,6 +162,7 @@ target_link_libraries(  nvtengine
                         ${CMAKE_THREAD_LIBS_INIT}
                         ${SSH_LDFLAGS}
                         ${SNMP_LDFLAGS} 
+                        ${RE2_LDFLAGS} 
                         )
 
 target_link_libraries(  interpreter  
@@ -176,6 +179,7 @@ target_link_libraries(  interpreter
                         ${SQLITE_LDFLAGS}
                         ${CMAKE_THREAD_LIBS_INIT}
                         ${SSH_LDFLAGS}
+                        ${RE2_LDFLAGS} 
                         ${SNMP_LDFLAGS}  )
 
 

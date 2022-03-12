@@ -8,20 +8,40 @@
             "name": "clang++ - 生成和调试活动文件",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/NVTEngine",
-            //"program": "${workspaceFolder}/build/Interpreter",
-            //"args": [ "scan","-h", "192.168.1.1/24","-p", "22,80,443,3389,23,25,161,21,110,139"],
+            "program": "${workspaceFolder}/build/nvtengine",
+            //"program": "${workspaceFolder}/build/interpreter",
+            "args": [
+                "scan",
+                "-h",
+                "192.168.3.24,192.168.3.67",
+                "-p",
+                "22,7007,44402,80,6379,28888,58888,3306,44400,44401,4444,44100,9200,8888,44500",
+                "-f",
+                "test"
+            ],
             //"args": ["${workspaceFolder}/test/test1.sc"],
             //"args": ["update"],
-            "args": ["daemon","-a","localhost","-p","6755"],
+            //"args": ["daemon","-a","localhost","-p","6755"],
             //"args": ["/Volumes/work/convert/ftpd_any_cmd.sc"],
             //"args": ["/Volumes/work/convert/ftpd_any_cmd.sc"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "C/C++: clang++ 生成活动文件"
+            "MIMode": "gdb",
+            "preLaunchTask": "C/C++: clang++ 生成活动文件",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "description": "enable pretty printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "text": "handle SIGPIPE nostop pass",
+                    "description": "disable SIGPIPE ",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

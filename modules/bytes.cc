@@ -1,5 +1,6 @@
+#include <re2/re2.h>
+
 #include <algorithm>
-#include <regex>
 
 #include "../engine/check.hpp"
 using namespace Interpreter;
@@ -255,19 +256,95 @@ Value ToLowerBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* v
     }
     return Value::MakeBytes(p0);
 }
-
-inline std::regex RegExp(const std::string& r, bool icase) {
-    std::string msg = "";
-    try {
-        if (icase) {
-            return std::regex(r, std::regex_constants::icase);
+namespace regex {
+bool Match(const std::string& text, const std::string& r, bool ignore_case) {
+    if (ignore_case) {
+        re2::StringPiece piece(r);
+        re2::RE2::Options opt;
+        opt.set_case_sensitive(false);
+        re2::RE2 re(piece, opt);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
         }
-        return std::regex(r);
-    } catch (std::regex_error err) {
-        msg = err.what();
+        return re2::RE2::FullMatch(re2::StringPiece(text), re);
+    } else {
+        re2::RE2 re(r);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        return re2::RE2::FullMatch(re2::StringPiece(text), re);
     }
-    throw RuntimeException(r + " is not a valid regex expression " + msg);
 }
+
+bool Contains(const std::string& text, const std::string& r, bool ignore_case) {
+    if (ignore_case) {
+        re2::StringPiece piece(r);
+        re2::RE2::Options opt;
+        opt.set_case_sensitive(false);
+        re2::RE2 re(piece, opt);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        return re2::RE2::PartialMatch(re2::StringPiece(text), re);
+    } else {
+        re2::RE2 re(r);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        return re2::RE2::PartialMatch(re2::StringPiece(text), re);
+    }
+}
+
+void Search(const std::string& text, const std::string& r, bool ignore_case,
+            std::list<std::string>& result) {
+    if (ignore_case) {
+        re2::StringPiece piece(r);
+        re2::RE2::Options opt;
+        opt.set_case_sensitive(false);
+        re2::RE2 re(piece, opt);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        re2::StringPiece input(text);
+        re2::StringPiece res;
+        while (re2::RE2::FindAndConsume(&input, re, &res)) {
+            result.push_back(res.as_string());
+        }
+    } else {
+        re2::RE2 re(r);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        re2::StringPiece input(text);
+        re2::StringPiece res;
+        while (re2::RE2::FindAndConsume(&input, re, &res)) {
+            result.push_back(res.as_string());
+        }
+    }
+}
+
+bool Replace(std::string* text, const std::string& r, const std::string& newt, bool ignore_case) {
+    if (ignore_case) {
+        re2::StringPiece piece(r);
+        re2::RE2::Options opt;
+        opt.set_case_sensitive(false);
+        re2::RE2 re(piece, opt);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        re2::StringPiece rep(newt);
+        return re2::RE2::Replace(text, re, rep);
+    } else {
+        re2::RE2 re(r);
+        if (!re.ok()) {
+            throw Interpreter::RuntimeException(re.error());
+        }
+        re2::StringPiece rep(newt);
+        return re2::RE2::Replace(text, re, rep);
+    }
+}
+
+} // namespace regex
 
 //buffer,partten,bool icase
 Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -281,9 +358,10 @@ Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
     }
-    std::regex re = RegExp(p1, icase);
-    bool found = std::regex_search(p0.begin(), p0.end(), re);
-    return Value(found);
+    if (p0.size() > 50000) {
+        std::cout << "here" << std::endl;
+    }
+    return regex::Contains(p0, p1, icase);
 }
 
 Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -294,15 +372,11 @@ Value SearchRegExp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
     }
-    std::smatch m;
-    std::string s = p0;
     Value ret = Value::MakeArray();
-    std::regex re = RegExp(p1, icase);
-    while (std::regex_search(s, m, re)) {
-        for (auto iter = m.begin(); iter != m.end(); iter++) {
-            ret._array().push_back(iter->str());
-        }
-        s = m.suffix().str();
+    std::list<std::string> result;
+    regex::Search(p0, p1, icase, result);
+    for (auto iter : result) {
+        ret._array().push_back(iter);
     }
     return ret;
 }
@@ -316,10 +390,10 @@ Value RegExpReplace(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size() > 3) {
         icase = args[3].ToBoolean();
     }
-    std::smatch m;
-    std::regex re = RegExp(p1, icase);
-    Value ret = std::regex_replace(p0, re, p2);
-    return ret;
+    if (regex::Replace(&p0, p1, p2, icase)) {
+        return p0;
+    }
+    return p0;
 }
 
 Value HexDumpBytes(std::vector<Value>& args, VMContext* ctx, Executor* vm) {

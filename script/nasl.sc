@@ -761,8 +761,9 @@ func toupper(str){
 
 func crap(length,data=nil){
 	if(!data){
-		data = " ";
+		data = "X";
 	}
+    Println("crap: "+length+" of ("+data+")");
 	return RepeatString(data,length);
 }
 
@@ -807,30 +808,7 @@ func ereg_replace(pattern, string,replace,icase=false){
 	if(!string){
 		return nil;
 	}
-	if(-1== IndexString(replace,"\\")){
-        return RegExpReplace(string,pattern,replace,icase);
-    }
-    var list = SearchRegExp(string,pattern,icase);
-    var reps = "";
-    if(!list || len(list) == 0){
-        return string;
-    }
-    var newr = "";
-    for(var i = 0; i< len(replace);i++){
-        if(replace[i]=='\\' && (i+1) < len(replace)){
-            if(replace[i+1]>='0' && replace[i+1]<='9' ){
-                if(replace[i+1]-'0' < len(list)){
-                    newr += list[replace[i+1]-'0'];
-                    i++;
-                    continue;
-                }
-            }
-			Println("ereg_replace :this may be have some error");
-            DisplayContext(false);
-        }
-        newr += replace[i];
-    }
-    return ReplaceString(string,list[0],newr,-1);
+    return RegExpReplace(string,pattern,replace,icase);
 }
 
 func eregmatch(pattern, string,icase=false){
