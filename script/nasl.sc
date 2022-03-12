@@ -763,7 +763,6 @@ func crap(length,data=nil){
 	if(!data){
 		data = "X";
 	}
-    Println("crap: "+length+" of ("+data+")");
 	return RepeatString(data,length);
 }
 

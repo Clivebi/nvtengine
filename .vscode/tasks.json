@@ -2,7 +2,7 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: clang++ 生成活动文件",
+            "label": "build",
             "command": "/usr/bin/make",
             "args": [
             ],

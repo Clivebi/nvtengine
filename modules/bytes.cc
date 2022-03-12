@@ -358,9 +358,6 @@ Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
     }
-    if (p0.size() > 50000) {
-        std::cout << "here" << std::endl;
-    }
     return regex::Contains(p0, p1, icase);
 }
 
