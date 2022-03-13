@@ -136,7 +136,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;YY_NO_UNISTD_H;_CRT_SECURE_NO_WARNINGS;LIBSSH_STATIC;_WINSOCK_DEPRECATED_NO_WARNINGS;NETSNMP_USE_OPENSSL;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;YY_NO_UNISTD_H;_CRT_SECURE_NO_WARNINGS;LIBSSH_STATIC;_WINSOCK_DEPRECATED_NO_WARNINGS;NETSNMP_USE_OPENSSL;_MBCS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4819;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -149,10 +149,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>D:\OpenCode\libs\x64\Release;$(OutputPath);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;libcrypto_static.lib;libssl_static.lib;zlib.lib;Engine.lib;Ws2_32.lib;masscan.lib;ssh.lib;WsmSvc.lib;libsnmp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;libcrypto_static.lib;libssl_static.lib;zlib.lib;Engine.lib;Ws2_32.lib;masscan.lib;ssh.lib;WsmSvc.lib;libsnmp.lib;re2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\blockfile.hpp" />
     <ClInclude Include="..\..\fileio.hpp" />
     <ClInclude Include="..\..\filepath.hpp" />
     <ClInclude Include="..\..\modules\modules.h" />
