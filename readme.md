@@ -29,7 +29,7 @@ MAC、windows、linux、unix
 ## 依赖和编译  
 安装gcc（xcode） go 开发环境  
 MACOS:  
-安装依赖 zlib openssl sqlite3 libssh  libbrotlidec libkrb5-dev net-snmp  
+安装依赖 zlib openssl sqlite3 libssh  libbrotlidec libkrb5-dev net-snmp re2
 mkdir build  
 cd build  
 cmake -DCMAKE_BUILD_TYPE=Release ..  
@@ -41,7 +41,7 @@ make
 
 
 ubuntu:  
-sudo apt install libbrotli-dev libkrb5-dev libssh-dev libsqlite3-dev libssl-dev libsnmp-dev  
+sudo apt install libbrotli-dev libkrb5-dev libssh-dev libsqlite3-dev libssl-dev libsnmp-dev libre2-dev  
 mkdir build  
 cd build  
 cmake -DCMAKE_BUILD_TYPE=Release ..  
