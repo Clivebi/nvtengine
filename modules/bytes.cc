@@ -5,6 +5,8 @@
 #include "../engine/check.hpp"
 using namespace Interpreter;
 
+#define MAX_MATCH_COUNT (25)
+
 Value ContainsBytesOrString(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_COUNT(2);
     if (args[0].IsNULL() || !(args[0].IsString() || args[0].IsBytes())) {
@@ -297,6 +299,9 @@ bool Contains(const std::string& text, const std::string& r, bool ignore_case) {
 
 void Search(const std::string& text, const std::string& r, bool ignore_case,
             std::list<std::string>& result) {
+    bool bResult = false;
+    int i = 0;
+    re2::StringPiece* submatch = NULL;
     if (ignore_case) {
         re2::StringPiece piece(r);
         re2::RE2::Options opt;
@@ -305,21 +310,31 @@ void Search(const std::string& text, const std::string& r, bool ignore_case,
         if (!re.ok()) {
             throw Interpreter::RuntimeException(re.error());
         }
+        submatch = new re2::StringPiece[MAX_MATCH_COUNT];
         re2::StringPiece input(text);
-        re2::StringPiece res;
-        while (re2::RE2::FindAndConsume(&input, re, &res)) {
-            result.push_back(res.as_string());
-        }
+        bResult = re.Match(input, 0, text.size(), re2::RE2::Anchor::UNANCHORED, submatch,
+                           MAX_MATCH_COUNT);
     } else {
         re2::RE2 re(r);
         if (!re.ok()) {
             throw Interpreter::RuntimeException(re.error());
         }
+        submatch = new re2::StringPiece[MAX_MATCH_COUNT];
         re2::StringPiece input(text);
-        re2::StringPiece res;
-        while (re2::RE2::FindAndConsume(&input, re, &res)) {
-            result.push_back(res.as_string());
+        bResult = re.Match(input, 0, text.size(), re2::RE2::Anchor::UNANCHORED, submatch,
+                           MAX_MATCH_COUNT);
+    }
+    if (bResult) {
+        for (i = 0; i < MAX_MATCH_COUNT; i++) {
+            if (submatch[i].data() == NULL) {
+                break;
+            }
+            result.push_back(submatch[i].as_string());
         }
+    }
+    delete[] submatch;
+    if (i == MAX_MATCH_COUNT) {
+        NVT_LOG_ERROR("the count of match result out of limit:" + ToString(MAX_MATCH_COUNT));
     }
 }
 
@@ -357,6 +372,9 @@ Value IsMatchRegexp(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     bool icase = true;
     if (args.size() > 2) {
         icase = args[2].ToBoolean();
+    }
+    if (p0.size() > 50000) {
+        std::cout << "here" << std::endl;
     }
     return regex::Contains(p0, p1, icase);
 }
