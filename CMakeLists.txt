@@ -30,10 +30,21 @@ execute_process (COMMAND krb5-config --libs gssapi
     OUTPUT_VARIABLE KRB5_LDFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
-    OUTPUT_VARIABLE WINRM_RESULT
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")  
+    execute_process (COMMAND xcrun --sdk macosx --show-sdk-path
+        OUTPUT_VARIABLE MACSDK
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    SET(ENV{SDKROOT} "${MACSDK}")
+    execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
+        OUTPUT_VARIABLE WINRM_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE) 
+ELSE()
+    execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
+        OUTPUT_VARIABLE WINRM_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE)  
+ENDIF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
 
 message("${WINRM_RESULT}")
 
