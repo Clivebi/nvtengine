@@ -3,8 +3,10 @@ project(onescript)
 
 #default build debug
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_BUILD_TYPE "Release")
 endif(NOT CMAKE_BUILD_TYPE)
+
+SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
 
 SET (PRODUCT_NAME "nvtstudio")
 SET (PRODUCT_VERSION "0.1.1")
@@ -27,6 +29,13 @@ endif(KRB5-NOTFOUND)
 execute_process (COMMAND krb5-config --libs gssapi
     OUTPUT_VARIABLE KRB5_LDFLAGS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
+    OUTPUT_VARIABLE WINRM_RESULT
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+message("${WINRM_RESULT}")
 
 find_package(Threads REQUIRED)
 
@@ -82,8 +91,6 @@ add_definitions (-DPRODUCT_VERSION="${PRODUCT_VERSION}")
 add_subdirectory(engine)
 add_subdirectory(thirdpart/masscan)
 
-SET(OUTDIR ${CMAKE_CURRENT_BINARY_DIR})
-
 #SET(MAC_STATIC "TRUE")
 
 if (MAC_STATIC)
@@ -121,25 +128,6 @@ add_executable(interpreter
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(DEVENV "TRUE")
-#编译过一次就不用编译了，开发的时候
-if (NOT DEVENV)
-add_custom_command(TARGET nvtengine
-    PRE_LINK
-    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-    COMMAND echo "build winrm complete" 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
-
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.h  PROPERTIES GENERATED TRUE)
-
-
-add_custom_command(TARGET interpreter
-    PRE_LINK
-    COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ${CMAKE_CURRENT_SOURCE_DIR}/winrm/winrm.go 
-    COMMAND echo "build winrm complete" 
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm)
-
-endif( NOT DEVENV)
 
 add_custom_command(
         TARGET nvtengine
