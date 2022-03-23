@@ -66,10 +66,10 @@ func __index_nil__(index){
 object NASLArray(hash_table={},vector={},max_index=0){
 	func __len__(){
 		var res = 0;
-		for v in hash_table{
+		for v in self.hash_table{
 			res += len(v);
 		}
-		return res + len(vector);
+		return res + len(self.vector);
 	}
 	func __get_index__(key){
 		if(typeof(key) == "integer"){
@@ -512,7 +512,7 @@ func ssh_userauth(session,login=nil,password=nil, privatekey=nil, passphrase=nil
 		privatekey = get_kb_item("Secret/SSH/privatekey");
 	}
 	if (passphrase == nil){
-		privatekey = get_kb_item("Secret/SSH/passphrase");
+		passphrase = get_kb_item("Secret/SSH/passphrase");
 	}
 	return SSHAuth(session,ToString(login),ToString(password),ToString(privatekey),ToString(passphrase));
 }

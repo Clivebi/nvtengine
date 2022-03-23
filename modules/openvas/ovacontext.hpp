@@ -10,9 +10,18 @@ struct ForkedValue {
     std::vector<int> Current;
     scoped_refptr<support::ScriptStorage> Snapshot;
 
-    bool IsForked() { return Names.size() > 0; }
+    bool IsForked() const { return Names.size() > 0; }
 
-    int GetItemPos(const std::string& name) {
+    bool IsNameExist(const std::string& name) const{
+        for (auto n : Names) {
+            if (n == name) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int GetItemPos(const std::string& name) const{
         for (size_t i = 0; i < Names.size(); i++) {
             if (name == Names[i]) {
                 return Current[i];

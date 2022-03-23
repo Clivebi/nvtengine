@@ -90,7 +90,7 @@ Value OVAContext::GetKbItem(const std::string& name) {
         return Fork.Snapshot->GetItem(name, Fork.GetItemPos(name));
     }
     size_t Count = Storage->GetItemSize(name);
-    if (Count > 1) {
+    if (Count > 1 && !Fork.IsNameExist(name)) {
         Fork.Names.push_back(name);
         Fork.Values.push_back((int)Count);
         Fork.Current.push_back(0);
@@ -102,7 +102,7 @@ Value OVAContext::GetKbItem(const std::string& name) {
 void OVAContext::SetKbItem(const std::string& name, const Value& val) {
     if (IsForkedTask) {
         if (Fork.GetItemPos(name) != -1) {
-            NVT_LOG_ERROR("In forked task update a forking key: " + name);
+            NVT_LOG_WARNING("In forked task update a forking key: " + name + "-->", val.ToString());
         }
     }
     return Storage->SetItem(name, val);
