@@ -1,5 +1,5 @@
 ## 为什么会有这个项目  
-OpenVAS是现在开源中比较活跃的NVT扫描引擎，目前它大概拥有大于7W个脚本，而且还在不断升级中，但是OpenVAS是一个老旧的脚本引擎，拥有臃肿的代码架构，而且不能跨平台，Nesses具有很好的跨平台性，而且脚本语言更加完善，所以本项目便应运而生，本项目旨在实现一个能够最大限度兼容openVAS现有脚本的扫描引擎，同时能够实现更加实用，简洁的脚本语法的可跨平台的NVT脚本引擎。
+OpenVAS是现在开源中比较活跃的NVT扫描引擎，目前它大概拥有大于7W个脚本，而且还在不断升级中，但是OpenVAS是一个老旧的脚本引擎，拥有臃肿的代码架构，而且不能跨平台，Nesses具有很好的跨平台性，而且脚本语言更加完善，但是不开源，所以本项目便应运而生，本项目旨在实现一个能够最大限度兼容openVAS现有脚本的扫描引擎，同时能够实现更加实用，简洁的脚本语法的可跨平台的NVT脚本引擎。
 
 ## 与openvas的区别  
 脚本语法区别:  
@@ -21,6 +21,10 @@ API区别:
 4. 除了脚本管理相关接口保留，其余部分c++代码几乎移除了所有业务相关的代码。  
 5. 更加严格的脚本运行时检查，通过这个功能目前已经发现很多个nasl的脚本bug。  
 6. 废除redis的引用，改为内部内存实现,实现了更为强大的脚本间数据共享，现在可以共享连接等系统资源。  
+
+## 为什么要设计一个新的脚本语言？  
+1. 期望脚本语法能够实现openvas 的nasl和nesses的nasl语法的超集，这样本脚本有能力执行openvas脚本转换过来的脚本和nesses脚本转换过来的脚本。
+2. 希望实现一个更加现代化的脚本语法，使得学习和使用更加方便。
 
 ## 目标平台
 MAC、windows、linux、unix
@@ -51,8 +55,21 @@ ubuntu 不支持全静态编译~~
 运行时依赖pcap，编译时不需要  
 
 windows 使用vs2022编译，解决方案位于vs目录，依赖如下一些库：  
-zlib openssl sqlite3 libssh  libbrotlidec  net-snmp 
+zlib openssl sqlite3 libssh  libbrotlidec  net-snmp re2  
 运行时依赖winpcap   
+
+使用re2是因为stl的正则表达式在处理大文本的时候经常导致栈溢出  
+
+
+## 如何使用
+目前转换过来的openvas的脚本（同步到2021年11月的脚本）位于：https://github.com/Clivebi/nvtscript 
+修改配置文件etc/nvtengine.conf 中的相关路径即可  
+首次使用需要更新脚本信息一次 nvtengine update 
+
+nvtengine scan -h 192.168.3.46 -p 22,1022,3000 -c ../etc/nvtengine.conf -f all
+扫描一个目标
+
+nvtengine daemon -a localhost -p 6755 启动一个服务，通过jsonrpc接收控制
 
 ## 架构  
 ![整体架构](https://github.com/Clivebi/nvtengine/blob/main/doc/img/nvtengine.png)
