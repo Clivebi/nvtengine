@@ -35,11 +35,13 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         OUTPUT_VARIABLE MACSDK
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     SET(ENV{SDKROOT} "${MACSDK}")
+    message("build winrm.a on macos")
     execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
         OUTPUT_VARIABLE WINRM_RESULT
         OUTPUT_STRIP_TRAILING_WHITESPACE) 
 ELSE()
+    message("build winrm.a on linux")
     execute_process (COMMAND go build -buildmode=c-archive -o ${OUTDIR}/winrm.a ./winrm.go
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/winrm 
         OUTPUT_VARIABLE WINRM_RESULT
