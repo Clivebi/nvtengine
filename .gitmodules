@@ -1,0 +1,4 @@
+[submodule "modules/thirdpart/http-parser"]
+	path = modules/thirdpart/http-parser
+	url = https://github.com/nodejs/http-parser
+	branch = v2.9.4
