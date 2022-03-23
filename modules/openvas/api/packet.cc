@@ -105,9 +105,9 @@ Value PcapSend(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         if (raw_socket_recv(hSocket, &pk, &pk_size)) {
             continue;
         }
-        std::stringstream o;
-        o << AddressString(pk) << " :" << pk_size << std::endl;
-        std::cout << o.str();
+        //std::stringstream o;
+        //o << AddressString(pk) << " :" << pk_size << std::endl;
+        //std::cout << o.str();
         if (pk == NULL || pk_size < 34 || pk_size > 1514) {
             continue;
         }
@@ -144,9 +144,9 @@ Value CapturePacket(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
         if (CapturePacket(Handle, &pkt, &pkt_size)) {
             continue;
         }
-        std::stringstream o;
-        o << AddressString(pk) << " :" << pk_size << std::endl;
-        std::cout << o.str();
+        //std::stringstream o;
+        //o << AddressString(pk) << " :" << pk_size << std::endl;
+        //std::cout << o.str();
         if (pk == NULL || pk_size < 34 || pk_size > 1514) {
             continue;
         }
