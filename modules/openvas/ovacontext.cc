@@ -90,10 +90,12 @@ Value OVAContext::GetKbItem(const std::string& name) {
         return Fork.Snapshot->GetItem(name, Fork.GetItemPos(name));
     }
     size_t Count = Storage->GetItemSize(name);
-    if (Count > 1 && !Fork.IsNameExist(name)) {
-        Fork.Names.push_back(name);
-        Fork.Values.push_back((int)Count);
-        Fork.Current.push_back(0);
+    if (Count > 1) {
+        if (!Fork.IsNameExist(name)) {
+            Fork.Names.push_back(name);
+            Fork.Values.push_back((int)Count);
+            Fork.Current.push_back(0);
+        }
         return Storage->GetItem(name, 0);
     }
     return Storage->GetItem(name, -1);
