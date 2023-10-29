@@ -10,10 +10,12 @@ Value Md5Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING_OR_BYTES(0);
     std::string p0 = GetString(args, 0);
     BYTE hash[MD5_DIGEST_LENGTH] = {0};
-    MD5_CTX shCtx = {0};
-    MD5_Init(&shCtx);
-    MD5_Update(&shCtx, p0.c_str(), p0.size());
-    MD5_Final(hash, &shCtx);
+    unsigned int hashSize = MD5_DIGEST_LENGTH;
+    EVP_MD_CTX* shCtx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(shCtx, EVP_md5(), NULL);
+    EVP_DigestUpdate(shCtx, p0.c_str(), p0.size());
+    EVP_DigestFinal_ex(shCtx,hash,&hashSize);
+    EVP_MD_CTX_free(shCtx);
     std::string ret = "";
     ret.append((char*)hash, sizeof(hash));
     return ret;
@@ -24,10 +26,12 @@ Value SHA1Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING_OR_BYTES(0);
     std::string p0 = GetString(args, 0);
     BYTE hash[SHA_DIGEST_LENGTH] = {0};
-    SHA_CTX shCtx = {0};
-    SHA1_Init(&shCtx);
-    SHA1_Update(&shCtx, args[0].text.c_str(), args[0].text.size());
-    SHA1_Final(hash, &shCtx);
+    unsigned int hashSize = SHA_DIGEST_LENGTH;
+    EVP_MD_CTX* shCtx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(shCtx, EVP_sha1(), NULL);
+    EVP_DigestUpdate(shCtx, p0.c_str(), p0.size());
+    EVP_DigestFinal_ex(shCtx,hash,&hashSize);
+    EVP_MD_CTX_free(shCtx);
     std::string ret = "";
     ret.append((char*)hash, sizeof(hash));
     return ret;
@@ -38,10 +42,12 @@ Value SHA256Buffer(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     CHECK_PARAMETER_STRING_OR_BYTES(0);
     std::string p0 = GetString(args, 0);
     BYTE hash[SHA256_DIGEST_LENGTH] = {0};
-    SHA256_CTX shCtx = {0};
-    SHA256_Init(&shCtx);
-    SHA256_Update(&shCtx, p0.c_str(), p0.size());
-    SHA256_Final(hash, &shCtx);
+    unsigned int hashSize = SHA256_DIGEST_LENGTH;
+    EVP_MD_CTX* shCtx = EVP_MD_CTX_new();
+    EVP_DigestInit_ex(shCtx, EVP_sha256(), NULL);
+    EVP_DigestUpdate(shCtx, p0.c_str(), p0.size());
+    EVP_DigestFinal_ex(shCtx,hash,&hashSize);
+    EVP_MD_CTX_free(shCtx);
     std::string ret = "";
     ret.append((char*)hash, sizeof(hash));
     return ret;
@@ -68,11 +74,9 @@ std::string GetHMAC(std::string hashMethod, const std::string& key, const std::s
     } else {
         return "";
     }
-    HMAC_CTX* hCtx = HMAC_CTX_new();
-    HMAC_Init_ex(hCtx, key.c_str(), (int)key.size(), engine, NULL);
-    HMAC_Update(hCtx, (BYTE*)input.c_str(), input.size());
-    HMAC_Final(hCtx, buffer, &finalSize);
-    HMAC_CTX_free(hCtx);
+    if(!HMAC(EVP_sha256(), key.c_str(), (int)key.size(),(BYTE*)input.c_str(), input.size(), buffer, &finalSize)){
+      return "";
+    }
     std::string ret;
     ret.assign((char*)buffer, finalSize);
     return ret;

@@ -63,7 +63,7 @@ Value Sleep(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
 }
 
 Value vendor_version(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
-    return Value("NVTEngine "+std::string(VERSION_STR));
+    return Value("NVTEngine " + std::string(VERSION_STR));
 }
 
 Value GetHostName(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
@@ -337,20 +337,24 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (cmd == "fpr-sha-256") {
         unsigned char hash[SHA256_DIGEST_LENGTH];
         std::string der = X509DER(x509);
-        SHA256_CTX shCtx = {0};
-        SHA256_Init(&shCtx);
-        SHA256_Update(&shCtx, der.c_str(), der.size());
-        SHA256_Final(hash, &shCtx);
+        unsigned int hashSize = SHA256_DIGEST_LENGTH;
+        EVP_MD_CTX* shCtx = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(shCtx, EVP_sha256(), NULL);
+        EVP_DigestUpdate(shCtx, der.c_str(), der.size());
+        EVP_DigestFinal_ex(shCtx, hash, &hashSize);
+        EVP_MD_CTX_free(shCtx);
         return HexEncode((char*)hash, SHA224_DIGEST_LENGTH);
     }
 
     if (cmd == "fpr-sha-1") {
         unsigned char hash[SHA256_DIGEST_LENGTH];
         std::string der = X509DER(x509);
-        SHA_CTX shCtx = {0};
-        SHA1_Init(&shCtx);
-        SHA1_Update(&shCtx, der.c_str(), der.size());
-        SHA1_Final(hash, &shCtx);
+        unsigned int hashSize = SHA256_DIGEST_LENGTH;
+        EVP_MD_CTX* shCtx = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(shCtx, EVP_sha1(), NULL);
+        EVP_DigestUpdate(shCtx, der.c_str(), der.size());
+        EVP_DigestFinal_ex(shCtx, hash, &hashSize);
+        EVP_MD_CTX_free(shCtx);
         return HexEncode((char*)hash, SHA224_DIGEST_LENGTH);
     }
 
@@ -376,7 +380,7 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (cmd == "modulus") {
         EVP_PKEY* pkey = X509_get0_pubkey(x509);
         if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA) {
-            RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+            const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
             const BIGNUM* n = RSA_get0_n(rsa);
             int size = BN_num_bytes(n);
             unsigned char* buffer = new unsigned char[size];
@@ -392,7 +396,7 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
     if (cmd == "exponent") {
         EVP_PKEY* pkey = X509_get0_pubkey(x509);
         if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA) {
-            RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+            /*RSA* rsa = EVP_PKEY_get0_RSA(pkey);
             const BIGNUM* e = RSA_get0_e(rsa);
             int size = BN_num_bytes(e);
             unsigned char* buffer = new unsigned char[size];
@@ -400,7 +404,7 @@ Value X509Query(std::vector<Value>& args, VMContext* ctx, Executor* vm) {
             std::string str;
             str.assign((char*)buffer, size);
             delete[] buffer;
-            return str;
+            return str;*/
         }
         return Value();
     }

@@ -329,7 +329,7 @@ void Search(const std::string& text, const std::string& r, bool ignore_case,
             if (submatch[i].data() == NULL) {
                 break;
             }
-            result.push_back(submatch[i].as_string());
+            result.push_back(std::string(submatch[i]));
         }
     }
     delete[] submatch;

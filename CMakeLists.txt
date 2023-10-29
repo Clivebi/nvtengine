@@ -52,7 +52,8 @@ message("${WINRM_RESULT}")
 
 find_package(Threads REQUIRED)
 
-pkg_check_modules (OPENSSL REQUIRED openssl>=1.1.0)
+#/openssl@1.1/1.1.1w/
+pkg_check_modules (OPENSSL REQUIRED openssl>=3.0.0)
 pkg_check_modules (ZLIB REQUIRED zlib>=1.2.11)
 pkg_check_modules (SQLITE REQUIRED sqlite3>=3.0.0)
 pkg_check_modules (SSH REQUIRED libssh>=0.9.0)
@@ -67,7 +68,7 @@ execute_process (COMMAND net-snmp-config --libs
 pkg_check_modules (BROTLI REQUIRED libbrotlidec>=1.0.6)
 
 if(NOT OPENSSL_FOUND)
-    message(FATAL_ERROR "openssl >=1.1.0 not found")
+    message(FATAL_ERROR "openssl >=3.0.0 not found")
 endif(NOT OPENSSL_FOUND)
 
 if(NOT BROTLI_FOUND)
@@ -96,7 +97,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR}
                      ${RE2_INCLUDE_DIRS})
 
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -std=c++17 -Werror -Wno-error=deprecated-declarations")
 
 
 add_definitions (-DPRODUCT_NAME="${PRODUCT_NAME}")

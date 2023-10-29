@@ -54,7 +54,7 @@ void RegisgerEngineBuiltinMethod(Interpreter::Executor* vm);
 
 void yyerror(Interpreter::Parser* parser, const char* s) {
     char message[1024] = {0};
-    sprintf(message, "%s on line:%i column:%i ", s, yyget_lineno(parser->GetContext()),
+    snprintf(message,1024, "%s on line:%i column:%i ", s, yyget_lineno(parser->GetContext()),
             yyget_column(parser->GetContext()));
     parser->mLastError = message;
 }

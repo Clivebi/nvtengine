@@ -146,7 +146,7 @@ int yywrap( yyscan_t yyscanner)
         buf[0] = yytext[0];
         buf[1] = '\0';
     } else {
-        sprintf(buf, "0x%02x", (unsigned char)yytext[0]);
+        snprintf(buf,1024, "0x%02x", (unsigned char)yytext[0]);
     }
     printf("meet:%s %d",buf,yylineno);
     abort();

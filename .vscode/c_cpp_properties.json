@@ -4,9 +4,10 @@
             "name": "Mac",
             "includePath": [
                 "${default}",
-                "/usr/local//Cellar/brotli/1.0.9/include",
-                "/usr/local/Cellar/openssl@1.1/1.1.1m/include",
-                "/usr/local/Cellar/libssh/0.9.6/include"
+                "/opt/homebrew/Cellar/brotli/1.1.0/include",
+                "/opt/homebrew/Cellar/openssl@3/3.1.4/include",
+                "/opt/homebrew/Cellar/libssh/0.10.5_1/include",
+                "/opt/homebrew/Cellar/openssl@3/3.1.4/include"
             ],
             "defines": [],
             "macFrameworkPath": [],
